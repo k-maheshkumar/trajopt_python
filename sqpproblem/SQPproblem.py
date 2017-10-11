@@ -26,11 +26,10 @@ class SQPproblem:
         # self.G = np.array([0.0, 0.0, 0.0])
 
 
-        for i in range(self.numJoints):
-            self.getStartAndEnd(i)
+        self.getStartAndEnd(0)
 
-            self.fillbounds(i)
-            self.fillBoundsforA(i)
+        self.fillbounds(0)
+        self.fillBoundsforA(0)
 
 
 

@@ -6,49 +6,51 @@ from numpy import array, hstack, ones, vstack, zeros
 
 
 class SQPproblem:
-    def __init__(self, samples, duration, joint, maxNoOfIteration):
-        self.joint = joint
-        self.samples = samples
+    def __init__(self, problem):
+        self.problem = problem
+        self.joints = problem["joints"]
+        self.numJoints = len(problem["joints"])
+        self.samples = problem["samples"]
         # self.jointsVelocities = problem["jointsVelocities"]
 
 
-        self.nWSR = maxNoOfIteration
+        self.nWSR = np.array([problem["maxIteration"]])
 
-        self.duration = duration
+        self.duration = problem["duration"]
         self.fillH()
         self.fillA()
 
         self.G = np.zeros((1, self.samples))
-        # self.G = self.G.flatten()
+        self.G = self.G.flatten()
 
         # self.G = np.array([0.0, 0.0, 0.0])
 
 
-        # for i in range(self.numJoints):
-        self.getStartAndEnd()
+        for i in range(self.numJoints):
+            self.getStartAndEnd(i)
 
-        self.fillbounds()
-        self.fillBoundsforA()
+            self.fillbounds(i)
+            self.fillBoundsforA(i)
 
 
 
-    def getStartAndEnd(self):
-        self.start = self.joint["start"]
-        self.end = self.joint["end"]
+    def getStartAndEnd(self, index):
+        self.start = self.joints[index]["start"]
+        self.end = self.joints[index]["end"]
 
-    def fillbounds(self):
+    def fillbounds(self, index):
 
         self.lb = np.zeros((1, self.samples))
         self.ub = np.zeros((1, self.samples))
 
-        # print self.joints
+        print self.joints
 
         for i in range(self.lb.shape[1]):
-            self.lb[0, i] = self.joint["lower_joint_limit"]
+            self.lb[0, i] = self.joints[index]["lower_joint_limit"]
 
         for i in range(self.ub.shape[1]):
 
-            self.ub[0, i] = self.joint["upper_joint_limit"]
+            self.ub[0, i] = self.joints[index]["upper_joint_limit"]
 
 
         # lb = np.array([min_pos, min_pos, min_pos])
@@ -59,7 +61,7 @@ class SQPproblem:
         self.ub = self.ub.flatten()
 
 
-    def fillBoundsforA(self):
+    def fillBoundsforA(self, index):
         # print self.A.shape
         self.lbA = np.zeros((1, self.A.shape[0]))
         self.ubA = np.zeros((1, self.A.shape[0]))
@@ -68,9 +70,9 @@ class SQPproblem:
         #
         # min_vel = self.jointsVelocities[index]["lower_joint_limit"]
 
-        max_vel = self.joint["max_velocity"]
+        max_vel = self.joints[index]["max_velocity"]
 
-        min_vel = self.joint["min_velocity"]
+        min_vel = self.joints[index]["min_velocity"]
 
         # print self.joints
         # for i in range(self.A.shape[0] - 2):
@@ -119,10 +121,10 @@ class SQPproblem:
         self.hShape = self.H.shape
         self.H[0, 0] = 1.0
         self.H[self.hShape[0] - 1, self.hShape[0] - 1] = 1.0
-        self.H[np.arange(self.hShape[0]- 1), np.arange(self.hShape[0]- 1) + 1] = -2.0
+        self.H[np.arange(self.hShape[0]- 1), np.arange(self.hShape[0]- 1) + 1] = -2
 
 
-        # self.H = 2 * self.H
+        self.H = 2 * self.H
 
 
 
@@ -173,9 +175,6 @@ class SQPproblem:
         print "ubA"
         print self.ubA
 
-        print "nwsr"
-        print self.nWSR
-
 
 
     def solveQp(self):
@@ -204,75 +203,24 @@ class SQPproblem:
         # # Setting up QProblem object.
         # C = vstack([self.G, self.A, self.A])
 
-        # print "self.H.shape[0], self.A.shape[0]", self.H.shape[0], self.A.shape[0]
+        print "self.H.shape[0], self.A.shape[0]", self.H.shape[0], self.A.shape[0]
         example = QProblem(self.H.shape[0], self.A.shape[0])
         options = Options()
-        options.printLevel = PrintLevel.HIGH
+        options.printLevel = PrintLevel.NONE
         example.setOptions(options)
 
-        # print "before init"
-        # self.display()
-        self.G = self.G.flatten()
+        print "before init"
+        self.display()
 
         # TODO: check return value for error code; throw exception if unsuccessful
-        example.init(self.H, self.G, self.A, self.lb, self.ub, self.lbA, self.ubA, np.array([self.nWSR]))
+        example.init(self.H, self.G, self.A, self.lb, self.ub, self.lbA, self.ubA, self.nWSR)
 
         # print "before hotstart"
+        # self.display()
 
         self.A = self.A.flatten()
         # TODO: check return value for error code; throw exception if unsuccessful
-        print 'foo'
-
-        self.display()
-        example.hotstart(self.G, self.lb, self.ub, self.lbA, self.ubA, np.array([self.nWSR]))
+        example.hotstart(self.G, self.A, self.lb, self.ub, self.lbA, self.ubA, self.nWSR)
 
         return example, self.H.shape[0]
-
-
-    # def solveQp(self, H, G, A, lb, ub, lbA, ubA, nWSR):
-    #     # options = Options()
-    #     # options.printLevel = PrintLevel.MEDIUM
-    #
-    #     # qp = QProblem(self.H.shape[0], self.A.shape[0])
-    #     # qp.setOptions(options)
-    #
-    #     # H = np.array([1.0, 0.0, 0.0, 0.5]).reshape((2, 2))
-    #     # A = np.array([1.0, 1.0]).reshape((2, 1))
-    #     # g = np.array([1.5, 1.0])
-    #     # lb = np.array([0.5, -2.0])
-    #     # ub = np.array([5.0, 2.0])
-    #     # lbA = np.array([-1.0])
-    #     # ubA = np.array([2.0])
-    #     #
-    #     # # Setup data of second QP.
-    #     #
-    #     # g_new = np.array([1.0, 1.5])
-    #     # lb_new = np.array([0.0, -1.0])
-    #     # ub_new = np.array([5.0, -0.5])
-    #     # lbA_new = np.array([-2.0])
-    #     # ubA_new = np.array([1.0])
-    #     #
-    #     # # Setting up QProblem object.
-    #     # C = vstack([self.G, self.A, self.A])
-    #
-    #     # print "self.H.shape[0], self.A.shape[0]", self.H.shape[0], self.A.shape[0]
-    #     example = QProblem(self.H.shape[0], self.A.shape[0])
-    #     options = Options()
-    #     options.printLevel = PrintLevel.NONE
-    #     example.setOptions(options)
-    #
-    #     # print "before init"
-    #     # self.display()
-    #
-    #     # TODO: check return value for error code; throw exception if unsuccessful
-    #     example.init(H, G, A, lb, ub, lbA, ubA, nWSR)
-    #
-    #     # print "before hotstart"
-    #     # self.display()
-    #
-    #     self.A = self.A.flatten()
-    #     # TODO: check return value for error code; throw exception if unsuccessful
-    #     example.hotstart(G, A, lb, ub, lbA, ubA, nWSR)
-    #
-    #     return example, self.H.shape[0]
 

@@ -1,64 +1,96 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from sqpproblem import SQPproblem as sqp
+from trajPlanner import trajPlanner
+import numpy as np
+# from sqpproblem import SQPproblem.SQPproblem as sp
+
+request = {
+    "samples" : 8,
+    "duration" : 20,
+    "maxIteration" : 10000,
+    "joints" : [
+        {"start": 0.2, "end": 0.7, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity" : 0.1},
+        {"start": 0.3, "end": 0.9, 'xOPt': 0.1, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
+
+    ]
+}
+
+
+'''
+
+        minimize
+            (1/2) * x.T * P * x + q.T * x
+
+        subject to
+            lbG <= G * x <= ubG
+            lb <= x <= ub
+            A * x == b
+
+'''
+P = np.array([
+    [1., - 2.,  0.],
+    [0.,  2., - 2.],
+    [0.,  0., 1.]])
+
+q = np.array([ 0.,  0.,  0.])
+
+
+G = np.array([
+    [-1.,  1.,  0.],
+    [ 0., -1.,  1.]])
+
+A = np.array([
+    [1., 0., 0.],
+    [0., 0., 1.]])
+
+# l = array([3., 2., -2.]).reshape((3,))
 #
-# Copyright (C) 2016-2017 Stephane Caron <stephane.caron@normalesup.org>
 #
-# This file is part of qpsolvers.
+# h = array([3., 2., -2.]).reshape((3,))
+
+lb = np.array([-0.3, -0.3, -0.3])
+ub = np.array([1.1, 1.1,  1.1])
+
+lbG = np.array([-0.25, -0.25])
+ubG = np.array([0.25,  0.25])
+
+b = np.array([0.2,  0.7])
+
+
+# nwsr = array([100])
+
+
+# from qpsolvers.qpsolvers import qpoases_ as qp
 #
-# qpsolvers is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
-# version.
+# sol = qp.qpoases_solve_qp(P, q, G, lb, ub, lbG, ubG, A, b, initvals=None,
+#                      max_wsr=100)
 #
-# qpsolvers is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
+# print sol
+
+
+sp = trajPlanner.TrajectoryPlanner(request)
+
+# sp = trajPlanner.solveQp()
+
+# sp.displayProblem()
+sp.solveProblem()
 #
-# You should have received a copy of the GNU General Public License along with
-# qpsolvers. If not, see <http://www.gnu.org/licenses/>.
-
-import sys
-
-from numpy import array, dot
-from numpy.linalg import norm
-from os.path import basename, dirname, realpath
-from scipy.sparse import csc_matrix
-
-try:
-    from qpsolvers import dense_solvers, sparse_solvers
-    from qpsolvers import solve_qp
-except ImportError:  # run locally if not installed
-    sys.path.append(dirname(realpath(__file__)) + '/..')
-    from qpsolvers import dense_solvers, sparse_solvers
-    from qpsolvers import solve_qp
-
-
-# QP matrices
-M = array([
-    [1., 2., 0.],
-    [-8., 3., 2.],
-    [0., 1., 1.]])
-P = dot(M.T, M)
-q = dot(array([3., 2., 3.]), M).reshape((3,))
-G = array([
-    [1., 2., 1.],
-    [2., 0., 1.],
-    [-1., 2., -1.]])
-h = array([3., 2., -2.]).reshape((3,))
-P_csc = csc_matrix(P)
-G_csc = csc_matrix(G)
-
-
-if __name__ == "__main__":
-
-    sol = solve_qp(P, q, G, h, solver="qpoases")
-    sol1 = solve_qp(P_csc, q, G_csc, h, solver="osqp")
-
-    print "qpoases"
-    print sol
-    print "osqp"
-
-    print sol1
-
-
+# example, num = sp.solveProblem()
+# # print num
+# xOpt = np.zeros(num)
+# example.getPrimalSolution(xOpt)
+# #
+# # # analyser = SolutionAnalysis()
+# # # maxStat = np.zeros(1)
+# # # maxFeas = np.zeros(1)
+# # # maxCmpl = np.zeros(1)
+# # # analyser.getKktViolation(example, maxStat, maxFeas, maxCmpl)
+# # # print("maxStat: %e, maxFeas:%e, maxCmpl: %e\n"%(maxStat, maxFeas, maxCmpl))
+# #
+# # print "solution"
+# # # print xOpt , example.getObjVal()
+# #
+# numJoints = len(request["joints"])
+# print "numJoints", numJoints
+# print np.split(xOpt, numJoints)
+# # print("\nxOpt = [ %e, %e, %e ];  objVal = %e\n\n"%(xOpt[0],xOpt[1],xOpt[2],example.getObjVal()))
+# # example.printOptions()

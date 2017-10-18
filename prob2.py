@@ -1,15 +1,15 @@
 from sqpproblem import SQPproblem as sqp
-from trajPlanner import trajPlanner
+from trajPlanner import trajPlanner1
 import numpy as np
 from qpoases import PySolutionAnalysis as SolutionAnalysis
 
 request = {
-    "samples" : 3,
-    "duration" : 5,
+    "samples" : 23,
+    "duration" : 50,
     "maxIteration" : 1000,
     "joints" : [
-        {"start": 0.2, "end": 0.7, 'xOPt': 0.1, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity" : 0.1},
-        # {"start": 0.3, "end": 0.9, 'xOPt': 0.1, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
+        {"start": 0.2, "end": 0.7, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity" : 0.1},
+        {"start": 0.3, "end": 0.9, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
         # {"start": 0.2, "end": 0.3, 'xOPt': 0.21, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
         # {"start": 0.5, "end": 0.7, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
         # {"start": 0.1, "end": 0.4, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
@@ -50,11 +50,11 @@ request = {
 
 
 
-sp = trajPlanner.TrajectoryPlanner(request)
+sp = trajPlanner1.TrajectoryPlanner(request)
 
 # sp = trajPlanner.solveQp()
 
-# sp.displayProblem()
+sp.displayProblem()
 #
 example, num = sp.solveQp()
 # print num

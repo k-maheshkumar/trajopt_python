@@ -160,9 +160,9 @@ class TrajectoryPlanner:
         # TODO: check return value for error code; throw exception if unsuccessful
 
         if self.isXOptAvailable:
-            status =  qp.initWithInitial(self.H, self.G, self.A, self.lb, self.ub, self.lbA, self.ubA,np.array([self.maxNoOfIteration]), 0.0, np.array([self.xOPtInitial]).flatten())
+            status =  qp.init(self.H, self.G, self.A, self.lb, self.ub, self.lbA, self.ubA,np.array([self.maxNoOfIteration]), 0.0, np.array([self.xOPtInitial]).flatten())
         else:
-            status = qp.init(self.H, self.G, self.A, self.lb, self.ub, self.lbA, self.ubA,
+            status = qp.init1(self.H, self.G, self.A, self.lb, self.ub, self.lbA, self.ubA,
                              np.array([self.maxNoOfIteration]))
         # if (status == 0):
         print "init status: ", status

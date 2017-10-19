@@ -16,7 +16,7 @@ class TrajectoryPlanner:
         out[r, :, r, :] = L
         return out.reshape(np.asarray(shp) * N)
 
-    def __init__(self, problem):
+    def __init__(self, problem, solver):
         self.problem = problem
         self.samples = problem["samples"]
         self.duration = problem["duration"]
@@ -66,30 +66,50 @@ class TrajectoryPlanner:
             # self.G.append(self.sqp[i].G)
             # self.A.append(self.sqp[i].A)
 
-            self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A]))
 
-            self.lb.append(self.sqp[i].lb.tolist())
-            self.ub.append(self.sqp[i].ub.tolist())
+            if solver == "osqp":
+                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
+                # self.lb.append(self.sqp[i].lb.tolist())
+                self.lb.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
+                # self.ub.append(self.sqp[i].ub.tolist())
+                self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
+
+            else:
+                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A]))
+                print self.sqp[i].lbG
+                self.lb.append(np.hstack([self.sqp[i].lbG]))
+                # self.ub.append(self.sqp[i].ub.tolist())
+                self.ub.append(np.hstack([self.sqp[i].ubG]))
+
             self.lbG.append(self.sqp[i].lbG.tolist())
             self.ubG.append(self.sqp[i].ubG.tolist())
             self.b.append(self.sqp[i].b.tolist())
-
+            # sp.display()
+            # print (self.lb)
 
 
         # print self.G
+        # self.q = self.q[0]
+        self.q = np.hstack(self.q)
+        self.lb = np.hstack(self.lb)
+        self.ub = np.hstack(self.ub)
+
         self.P = self.diag_block_mat_slicing(self.P)
-        self.q = self.diag_block_mat_slicing(self.q)
+        # self.q = self.diag_block_mat_slicing(self.q)
+
         # self.A = self.diag_block_mat_slicing(self.A)
         # self.G = self.diag_block_mat_slicing(self.G)
         self.C = self.diag_block_mat_slicing(self.C)
+        # print self.C
 
 
-        self.lb = [item for sublist in self.lb for item in sublist]
-        self.ub = [item for sublist in self.ub for item in sublist]
+        # self.lb = [item for sublist in self.lb for item in sublist]
+        # self.ub = [item for sublist in self.ub for item in sublist]
         self.lbG = [item for sublist in self.lbG for item in sublist]
         self.ubG = [item for sublist in self.ubG for item in sublist]
         self.b = [item for sublist in self.b for item in sublist]
 
+        # self.q = [item for sublist in self.q for item in sublist]
 
         self.lb = np.asarray(self.lb)
         self.ub = np.asarray(self.ub)
@@ -97,9 +117,10 @@ class TrajectoryPlanner:
         self.ubG = np.asarray(self.ubG)
         self.b = np.asarray(self.b)
 
-
+        self.q = np.asarray(self.q)
+        # print "q.shape", self.q.shape
         # self.H = self.H.astype(float)
-        self.q = self.q.astype(float)
+        # self.q = self.q.astype(float)
         # self.G = self.G.astype(float)
 
 
@@ -138,7 +159,7 @@ class TrajectoryPlanner:
         print "q"
         print self.q
         print "G"
-        print self.G
+        print self.C
         print "lb"
         print self.lb
         print "ub"
@@ -228,9 +249,36 @@ class TrajectoryPlanner:
     def solveProblem(self):
 
         from qpsolvers.qpsolvers import qpoases_ as qp
-        sol = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, None, self.b, initvals=None,
+        qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, None, self.b, initvals=None,
                                   max_wsr=np.array([self.maxNoOfIteration]))
 
-        print sol
+        x_opt = np.zeros(self.P.shape[0])
+        ret = qp.getPrimalSolution(x_opt)
+        if ret != 0:  # 0 == SUCCESSFUL_RETURN code of qpOASES
+            warn("qpOASES failed with return code %d" % ret)
+
+        print "numJoints", self.numJoints
+        print np.split(x_opt, self.numJoints)
+
+        # print sol
 
 
+    def solveQpProb1(self):
+        # import osqp
+        # from scipy.sparse import csc_matrix
+        #
+        # m = osqp.OSQP()
+        # m.setup(P=csc_matrix(self.P), q=self.q, A=csc_matrix(self.A), l=self.l, u=self.u, max_iter=10000)
+        # results = m.solve()
+        # print results.x
+
+        from qpsolvers.qpsolvers import osqp_ as qp
+
+        from scipy.sparse import csc_matrix
+
+        # print "before call", self.q
+        sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbG, self.ubG, None, self.b,
+                                 initvals=None,
+                                 max_wsr=np.array([self.maxNoOfIteration]))
+
+        print np.split(sol, self.numJoints)

@@ -62,7 +62,6 @@ class SQPproblem:
         self.lbG = np.full((1, self.G.shape[0]), min_vel * self.duration / (self.samples - 1))
         self.ubG = np.full((1, self.G.shape[0]), max_vel * self.duration / (self.samples - 1))
 
-
             # self.ubA[0, i] = max_vel / self.duration
 
         # self.lbG[0, self.G.shape[0] - 2] = self.start
@@ -120,6 +119,7 @@ class SQPproblem:
         self.P[0, 0] = 1.0
         self.P[self.hShape[0] - 1, self.hShape[0] - 1] = 1.0
         self.P[np.arange(self.hShape[0] - 1), np.arange(self.hShape[0] - 1) + 1] = -2.0
+
 
 
         # self.P = 2.0 * self.P

@@ -23,6 +23,7 @@ class TrajectoryPlanner:
         self.maxNoOfIteration = problem["maxIteration"]
         self.joints = problem["joints"]
         self.numJoints = len(problem["joints"])
+        self.solver = solver
 
         self.sqp = []
 
@@ -75,11 +76,14 @@ class TrajectoryPlanner:
                 self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
 
             else:
-                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A]))
-                print self.sqp[i].lbG
+                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A]))
+                # print np.array([self.sqp[i].lbG[0][0]])
                 self.lb.append(np.hstack([self.sqp[i].lbG]))
+                self.lb = np.dstack([self.lb, self.sqp[i].lbG[0][0]])
                 # self.ub.append(self.sqp[i].ub.tolist())
                 self.ub.append(np.hstack([self.sqp[i].ubG]))
+                self.ub = np.dstack([self.ub, self.sqp[i].ubG[0][0]])
+
 
             self.lbG.append(self.sqp[i].lbG.tolist())
             self.ubG.append(self.sqp[i].ubG.tolist())
@@ -248,18 +252,48 @@ class TrajectoryPlanner:
 
     def solveProblem(self):
 
-        from qpsolvers.qpsolvers import qpoases_ as qp
-        qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, None, self.b, initvals=None,
-                                  max_wsr=np.array([self.maxNoOfIteration]))
+        if self.solver == "osqp":
+            from qpsolvers.qpsolvers import osqp_ as qp
 
-        x_opt = np.zeros(self.P.shape[0])
-        ret = qp.getPrimalSolution(x_opt)
-        if ret != 0:  # 0 == SUCCESSFUL_RETURN code of qpOASES
-            warn("qpOASES failed with return code %d" % ret)
+            from scipy.sparse import csc_matrix
 
-        print "numJoints", self.numJoints
-        print np.split(x_opt, self.numJoints)
+            # print "before call", self.q
+            sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbG,
+                                    self.ubG, None, self.b,
+                                    initvals=None,
+                                    max_wsr=np.array([self.maxNoOfIteration]))
 
+            print np.split(sol, self.numJoints)
+        else:
+            from qpsolvers.qpsolvers import qpoases_ as qp
+            print "before call", self.lbG
+            qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, None, self.b, initvals=None,
+                                      max_wsr=np.array([self.maxNoOfIteration]))
+
+            x_opt = np.zeros(self.P.shape[0])
+            ret = qp.getPrimalSolution(x_opt)
+            if ret != 0:  # 0 == SUCCESSFUL_RETURN code of qpOASES
+                warn("qpOASES failed with return code %d" % ret)
+
+            print "numJoints", self.numJoints
+            print np.split(x_opt, self.numJoints)
+
+
+            # example = QProblem(self.P.shape[0], self.q.shape[0])
+            # options = Options()
+            # options.printLevel = PrintLevel.LOW
+            # example.setOptions(options)
+
+            # print "before init"
+            # self.display()
+            # g = g.flatten()
+
+
+            # example.init(self.P, self.q.flatten(), self.C, self.lb.flatten(), self.ub.flatten(), self.lbG.flatten(), ubA.flatten(), np.array([1000]))
+            # # example.hotstart(A.flatten(), lb, ub, lbA, ubA, np.array([1000]))
+            # xOpt = np.zeros(g.shape[0])
+            # example.getPrimalSolution(xOpt)
+            # print xOpt
         # print sol
 
 

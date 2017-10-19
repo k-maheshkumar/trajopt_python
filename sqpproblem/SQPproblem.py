@@ -152,9 +152,10 @@ class SQPproblem:
         # self.A[np.arange(self.aShape[0] - 1) + 1, np.arange(self.aShape[0] - 1) + 1] = -1
         # self.A[np.arange(self.aShape[0] - 1) , np.arange(self.aShape[0] - 1) + 1] = -1
 
-
+        # to slice zero last row
         self.G.resize(self.samples - 1, self.samples)
-        #
+
+
         # Q = np.zeros((self.samples -1 , self.samples))
         #
         # Q[0, 0] = 1.0
@@ -230,7 +231,7 @@ class SQPproblem:
         self.G = self.G.flatten()
 
         # TODO: check return value for error code; throw exception if unsuccessful
-        example.init(self.P, self.G, self.G, self.lb, self.ub, self.lbG, self.ubG, np.array([self.nWSR]))
+        example.init(self.P, self.q, self.G, self.lb, self.ub, self.lbG, self.ubG, np.array([self.nWSR]))
 
         # print "before hotstart"
 
@@ -238,7 +239,7 @@ class SQPproblem:
         # TODO: check return value for error code; throw exception if unsuccessful
         print 'foo'
 
-        self.display()
+        # self.display()
         example.hotstart(self.G, self.lb, self.ub, self.lbG, self.ubG, np.array([self.nWSR]))
 
         return example, self.P.shape[0]

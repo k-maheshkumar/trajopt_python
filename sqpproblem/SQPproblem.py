@@ -6,9 +6,10 @@ from numpy import array, hstack, ones, vstack, zeros
 
 
 class SQPproblem:
-    def __init__(self, samples, duration, joint, maxNoOfIteration):
+    def __init__(self, samples, duration, joint, maxNoOfIteration, initVals = None):
         self.joint = joint
         self.samples = samples
+        self.initVals  = initVals
         # self.jointsVelocities = problem["jointsVelocities"]
 
 
@@ -33,6 +34,11 @@ class SQPproblem:
         self.fillBoundsforG()
         self.fillEqualityConstraintforA()
 
+        if initVals is not None:
+            self.fillInitvals()
+
+    def fillInitvals(self):
+        self.initVals = np.full((1, self.P.shape[0]), self.initVals).flatten()
 
 
     def getStartAndEnd(self):
@@ -48,7 +54,6 @@ class SQPproblem:
         self.ub = np.full((1, self.P.shape[0]), self.joint["upper_joint_limit"])
 
 
-
         # self.lb = self.lb.flatten()
         # self.ub = self.ub.flatten()
 
@@ -61,6 +66,7 @@ class SQPproblem:
 
         self.lbG = np.full((1, self.G.shape[0]), min_vel * self.duration / (self.samples - 1))
         self.ubG = np.full((1, self.G.shape[0]), max_vel * self.duration / (self.samples - 1))
+
 
             # self.ubA[0, i] = max_vel / self.duration
 

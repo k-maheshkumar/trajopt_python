@@ -46,16 +46,23 @@ class TrajectoryPlanner:
             self.isXOptAvailable = False
 
         for i in range(self.numJoints):
-            sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration)
+
+
             # sp.display()
+            if self.joints[i].has_key("xOPt") :
+                sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration,
+                                    self.joints[i]["xOPt"])
+                # sp.display()
+                self.sqp.append(sp)
+
+                self.xOPtInitial.append(self.sqp[i].initVals)
+                # self.xOPtInitial.append(np.full((1, 3), self.joints[i]["xOPt"]))
+            else:
+                sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration)
+                self.sqp.append(sp)
 
 
 
-
-            self.sqp.append(sp)
-            # sp.display()
-            # if self.joints[i].has_key("xOPt") :
-            #     self.xOPtInitial.append(self.joints[i]["xOPt"])
             # print "h " + str(i)
 
             # print self.sqp[i].H
@@ -76,13 +83,16 @@ class TrajectoryPlanner:
                 self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
 
             else:
-                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A]))
+                # self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A]))
+                self.C.append(self.sqp[i].G)
+                self.A.append(self.sqp[i].A)
+
                 # print np.array([self.sqp[i].lbG[0][0]])
                 self.lb.append(np.hstack([self.sqp[i].lbG]))
                 self.lb = np.dstack([self.lb, self.sqp[i].lbG[0][0]])
                 # self.ub.append(self.sqp[i].ub.tolist())
-                self.ub.append(np.hstack([self.sqp[i].ubG]))
-                self.ub = np.dstack([self.ub, self.sqp[i].ubG[0][0]])
+                self.ub.append(np.hstack([self.sqp[i].ub]))
+                self.ub = np.dstack([self.ub, self.sqp[i].ub[0][0]])
 
 
             self.lbG.append(self.sqp[i].lbG.tolist())
@@ -97,11 +107,13 @@ class TrajectoryPlanner:
         self.q = np.hstack(self.q)
         self.lb = np.hstack(self.lb)
         self.ub = np.hstack(self.ub)
-
+        # print  self.xOPtInitial
+        # print  len(self.xOPtInitial)
         self.P = self.diag_block_mat_slicing(self.P)
         # self.q = self.diag_block_mat_slicing(self.q)
 
-        # self.A = self.diag_block_mat_slicing(self.A)
+        if solver != "osqp":
+            self.A = self.diag_block_mat_slicing(self.A)
         # self.G = self.diag_block_mat_slicing(self.G)
         self.C = self.diag_block_mat_slicing(self.C)
         # print self.C
@@ -122,6 +134,12 @@ class TrajectoryPlanner:
         self.b = np.asarray(self.b)
 
         self.q = np.asarray(self.q)
+        if self.joints[i].has_key("xOPt"):
+            self.xOPtInitial = np.hstack(self.xOPtInitial)
+            self.xOPtInitial = np.asarray(self.xOPtInitial)
+
+        else:
+            self.xOPtInitial = None
         # print "q.shape", self.q.shape
         # self.H = self.H.astype(float)
         # self.q = self.q.astype(float)
@@ -260,24 +278,31 @@ class TrajectoryPlanner:
             # print "before call", self.q
             sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbG,
                                     self.ubG, None, self.b,
-                                    initvals=None,
+                                    initvals= self.xOPtInitial,
                                     max_wsr=np.array([self.maxNoOfIteration]))
 
             print np.split(sol, self.numJoints)
+
+
+
         else:
-            from qpsolvers.qpsolvers import qpoases_ as qp
-            print "before call", self.lbG
-            qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, None, self.b, initvals=None,
-                                      max_wsr=np.array([self.maxNoOfIteration]))
+            # from qpsolvers.qpsolvers import qpoases_ as qp
+            # qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, self.A, self.b, initvals=None,
+            #                           max_wsr=np.array([self.maxNoOfIteration]))
+            #
+            # x_opt = np.zeros(self.P.shape[0])
+            # ret = qp.getPrimalSolution(x_opt)
+            #
+            # if ret != 0:  # 0 == SUCCESSFUL_RETURN code of qpOASES
+            #     warn("qpOASES failed with return code %d" % ret)
+            #
+            # print "numJoints", self.numJoints
+            # print np.split(x_opt, self.numJoints)
 
-            x_opt = np.zeros(self.P.shape[0])
-            ret = qp.getPrimalSolution(x_opt)
-            if ret != 0:  # 0 == SUCCESSFUL_RETURN code of qpOASES
-                warn("qpOASES failed with return code %d" % ret)
+            from qpsolvers.qpsolvers import cvxopt_ as qp
 
-            print "numJoints", self.numJoints
-            print np.split(x_opt, self.numJoints)
-
+            qp = qp.cvxopt_solve_qp1(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, self.A, self.b,
+                                     initvals=None)
 
             # example = QProblem(self.P.shape[0], self.q.shape[0])
             # options = Options()

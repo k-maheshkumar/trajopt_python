@@ -3,9 +3,19 @@ from qpoases import PyQProblem as QProblem
 from qpoases import PyOptions as Options
 from qpoases import PyPrintLevel as PrintLevel
 from sqpproblem import SQPproblem as sqp
+from warnings import warn
 
-from qpoases import PyBooleanType as BooleanType
-from qpoases import PySubjectToStatus as SubjectToStatus
+'''
+        minimize
+            (1/2) * x.T * P * x + q.T * x
+
+        subject to
+            lbC <= C * x <= ubC
+            # lb <= x <= ub
+            # A * x == b
+
+'''
+
 class TrajectoryPlanner:
 
     def diag_block_mat_slicing(self,L):
@@ -18,6 +28,9 @@ class TrajectoryPlanner:
 
     def __init__(self, problem, solver):
         self.problem = problem
+
+        # self.check_input()
+
         self.samples = problem["samples"]
         self.duration = problem["duration"]
         self.maxNoOfIteration = problem["maxIteration"]
@@ -33,33 +46,31 @@ class TrajectoryPlanner:
         self.q = []
         self.lb = []
         self.ub = []
-        self.lbG = []
-        self.ubG = []
+        self.lbC = []
+        self.ubC = []
         self.b = []
         self.C = []
 
-
-        if self.joints[0].has_key("xOPt"):
-            self.xOPtInitial = []
-            self.isXOptAvailable = True
+        if 'initialGuess' in self.joints[0]:
+            self.initialGuess = []
+            self.isInitialGuessAvailable = True
         else:
-            self.isXOptAvailable = False
+            self.isInitialGuessAvailable = False
 
         for i in range(self.numJoints):
 
 
             # sp.display()
-            if self.joints[i].has_key("xOPt") :
+            if self.joints[i].has_key("initialGuess") :
                 sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration,
-                                    self.joints[i]["xOPt"])
-                # sp.display()
-                self.sqp.append(sp)
+                                    self.joints[i]["initialGuess"])
 
-                self.xOPtInitial.append(self.sqp[i].initVals)
-                # self.xOPtInitial.append(np.full((1, 3), self.joints[i]["xOPt"]))
+                self.initialGuess.append(sp.initVals)
+                # self.initialGuessInitial.append(np.full((1, 3), self.joints[i]["initialGuess"]))
             else:
                 sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration)
-                self.sqp.append(sp)
+
+            self.sqp.append(sp)
 
 
 
@@ -69,8 +80,6 @@ class TrajectoryPlanner:
 
             self.P.append(self.sqp[i].P)
             self.q.append(self.sqp[i].q)
-            # print  "G in iteration"
-            # print self.G
             # self.G.append(self.sqp[i].G)
             # self.A.append(self.sqp[i].A)
 
@@ -95,8 +104,8 @@ class TrajectoryPlanner:
                 self.ub = np.dstack([self.ub, self.sqp[i].ub[0][0]])
 
 
-            self.lbG.append(self.sqp[i].lbG.tolist())
-            self.ubG.append(self.sqp[i].ubG.tolist())
+            self.lbC.append(self.sqp[i].lbG.tolist())
+            self.ubC.append(self.sqp[i].ubG.tolist())
             self.b.append(self.sqp[i].b.tolist())
             # sp.display()
             # print (self.lb)
@@ -107,8 +116,8 @@ class TrajectoryPlanner:
         self.q = np.hstack(self.q)
         self.lb = np.hstack(self.lb)
         self.ub = np.hstack(self.ub)
-        # print  self.xOPtInitial
-        # print  len(self.xOPtInitial)
+        # print  self.initialGuess
+        # print  len(self.initialGuess)
         self.P = self.diag_block_mat_slicing(self.P)
         # self.q = self.diag_block_mat_slicing(self.q)
 
@@ -121,25 +130,26 @@ class TrajectoryPlanner:
 
         # self.lb = [item for sublist in self.lb for item in sublist]
         # self.ub = [item for sublist in self.ub for item in sublist]
-        self.lbG = [item for sublist in self.lbG for item in sublist]
-        self.ubG = [item for sublist in self.ubG for item in sublist]
+        self.lbC = [item for sublist in self.lbC for item in sublist]
+        self.ubC = [item for sublist in self.ubC for item in sublist]
         self.b = [item for sublist in self.b for item in sublist]
 
         # self.q = [item for sublist in self.q for item in sublist]
 
         self.lb = np.asarray(self.lb)
         self.ub = np.asarray(self.ub)
-        self.lbG = np.asarray(self.lbG)
-        self.ubG = np.asarray(self.ubG)
+        self.lbC = np.asarray(self.lbC)
+        self.ubC = np.asarray(self.ubC)
         self.b = np.asarray(self.b)
 
         self.q = np.asarray(self.q)
-        if self.joints[i].has_key("xOPt"):
-            self.xOPtInitial = np.hstack(self.xOPtInitial)
-            self.xOPtInitial = np.asarray(self.xOPtInitial)
+        # if self.joints[i].has_key("initialGuess"):
+        if 'initialGuess' in self.joints[i]:
+            self.initialGuess = np.hstack(self.initialGuess)
+            self.initialGuess = np.asarray(self.initialGuess)
 
         else:
-            self.xOPtInitial = None
+            self.initialGuess = None
         # print "q.shape", self.q.shape
         # self.H = self.H.astype(float)
         # self.q = self.q.astype(float)
@@ -158,17 +168,22 @@ class TrajectoryPlanner:
         # self.G = self.G.flatten()
 
 
-        # print self.xOPtInitial
+        # print self.initialGuess
 
         # example, num = sp.solveQp()
             # # print num
-            # xOpt = np.zeros(num)
-            # example.getPrimalSolution(xOpt)
+            # initialGuess = np.zeros(num)
+            # example.getPrimalSolution(initialGuess)
 
             # print "solution"
-            # print xOpt, example.getObjVal()
+            # print initialGuess, example.getObjVal()
 
-
+    # def check_input(self):
+    #     print "bhfgd"
+    #     if 'start' in self.problem:
+    #         print "bhfgd"
+    #         warn("need key: start")
+    #         exit(1)
 
     def getStartAndEnd(self, index):
         self.start = self.joints[index]["start"]
@@ -176,27 +191,27 @@ class TrajectoryPlanner:
 
 
     def displayProblem(self):
-        print "P"
-        print self.P
-        print "q"
-        print self.q
-        print "G"
-        print self.C
-        print "lb"
-        print self.lb
-        print "ub"
-        print self.ub
-        print "lbG"
-        print self.lbG
-        print "ubG"
-        print self.ubG
-        print "b"
-        print self.b
-        print "A"
-        print self.A
+        print ("P")
+        print (self.P)
+        print ("q")
+        print (self.q)
+        print ("G")
+        print (self.C)
+        print ("lb")
+        print (self.lb)
+        print ("ub")
+        print (self.ub)
+        print ("lbG")
+        print (self.lbC)
+        print ("ubG")
+        print (self.ubC)
+        print ("b")
+        print (self.b)
+        print ("A")
+        print (self.A)
 
-        print "maxNoOfIteration"
-        print self.maxNoOfIteration
+        print ("maxNoOfIteration")
+        print (self.maxNoOfIteration)
 
     def solveQp(self):
         # options = Options()
@@ -234,28 +249,28 @@ class TrajectoryPlanner:
         # print "before init"
         # self.display()
 
-        # temp =  np.asarray(self.xOPtInitial)
+        # temp =  np.asarray(self.initialGuess)
 
         # print temp
 
         # TODO: check return value for error code; throw exception if unsuccessful
 
-        if self.isXOptAvailable:
-            status =  qp.init(self.P, self.G, self.q, self.lb, self.ub, self.lbG, self.ubG, np.array([self.maxNoOfIteration]), 0.0, np.array([self.xOPtInitial]).flatten())
+        if self.isInitialGuessAvailable:
+            status =  qp.init(self.P, self.G, self.q, self.lb, self.ub, self.lbC, self.ubC, np.array([self.maxNoOfIteration]), 0.0, np.array([self.initialGuess]).flatten())
         else:
-            status = qp.init1(self.P, self.G, self.q, self.lb, self.ub, self.lbG, self.ubG,
+            status = qp.init1(self.P, self.G, self.q, self.lb, self.ub, self.lbC, self.ubC,
                               np.array([self.maxNoOfIteration]))
         # if (status == 0):
-        print "init status: ", status
+        print ("init status: ", status)
 
         # print "before hotstart"
         # self.display()
 
         self.q = self.q.flatten()
         # TODO: check return value for error code; throw exception if unsuccessful
-        status = qp.hotstart(self.G, self.lb, self.ub, self.lbG, self.ubG, np.array([self.maxNoOfIteration]))
+        status = qp.hotstart(self.G, self.lb, self.ub, self.lbC, self.ubC, np.array([self.maxNoOfIteration]))
 
-        print "hotstart status: ", status
+        print ("hotstart status: ", status)
 
         # assert type(status) is type(int), "Cannot solver for given number of duration"
 
@@ -276,13 +291,14 @@ class TrajectoryPlanner:
             from scipy.sparse import csc_matrix
 
             # print "before call", self.q
-            sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbG,
-                                    self.ubG, None, self.b,
-                                    initvals= self.xOPtInitial,
+            result = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbC,
+                                    self.ubC, None, self.b,
+                                    initvals= self.initialGuess,
                                     max_wsr=np.array([self.maxNoOfIteration]))
 
-            print np.split(sol, self.numJoints)
-
+            # print np.split(sol, self.numJoints)
+            sol = np.split(result.x, self.numJoints)
+            return  result, sol
 
 
         else:
@@ -301,7 +317,7 @@ class TrajectoryPlanner:
 
             from qpsolvers.qpsolvers import cvxopt_ as qp
 
-            qp = qp.cvxopt_solve_qp1(self.P, self.q, self.C, self.lb, self.ub, self.lbG, self.ubG, self.A, self.b,
+            qp = qp.cvxopt_solve_qp1(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b,
                                      initvals=None)
 
             # example = QProblem(self.P.shape[0], self.q.shape[0])
@@ -336,8 +352,8 @@ class TrajectoryPlanner:
         from scipy.sparse import csc_matrix
 
         # print "before call", self.q
-        sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbG, self.ubG, None, self.b,
+        sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbC, self.ubC, None, self.b,
                                  initvals=None,
                                  max_wsr=np.array([self.maxNoOfIteration]))
 
-        print np.split(sol, self.numJoints)
+        print (np.split(sol, self.numJoints))

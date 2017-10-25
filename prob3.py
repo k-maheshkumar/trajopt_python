@@ -39,9 +39,11 @@ nJoints = p.getNumJoints(kukaId)
 
 jointNameToId = {}
 request = {"joints":[]}
-for i in range(nJoints):
+reduceJoints = 4
+
+for i in range(nJoints-reduceJoints):
     jointInfo = p.getJointInfo(kukaId, i)
-    print jointInfo
+    # print jointInfo
     jointNameToId[jointInfo[1].decode('UTF-8')] = jointInfo[0]
     joint = {}
     joint["id"] = jointInfo[0]
@@ -49,20 +51,20 @@ for i in range(nJoints):
     joint["upper_joint_limit"] = jointInfo[9]
     request["joints"].append(joint)
 
-request.update({'samples' : 10, 'duration' : 15, 'maxIteration': 100})
+request.update({'samples' : 100, 'duration' : 15, 'maxIteration': 100})
 
-print "request"
-print request
+# print "request"
+# print request
     # print jointInfo[1], jointNameToId[jointInfo[1]]
 
 lbr_iiwa_joint_1 = jointNameToId['lbr_iiwa_joint_1']
 lbr_iiwa_joint_2 = jointNameToId['lbr_iiwa_joint_2']
 lbr_iiwa_joint_3 = jointNameToId['lbr_iiwa_joint_3']
-lbr_iiwa_joint_4 = jointNameToId['lbr_iiwa_joint_4']
-lbr_iiwa_joint_5 = jointNameToId['lbr_iiwa_joint_5']
-lbr_iiwa_joint_6 = jointNameToId['lbr_iiwa_joint_6']
-lbr_iiwa_joint_7 = jointNameToId['lbr_iiwa_joint_7']
-#
+# lbr_iiwa_joint_4 = jointNameToId['lbr_iiwa_joint_4']
+# lbr_iiwa_joint_5 = jointNameToId['lbr_iiwa_joint_5']
+# lbr_iiwa_joint_6 = jointNameToId['lbr_iiwa_joint_6']
+# lbr_iiwa_joint_7 = jointNameToId['lbr_iiwa_joint_7']
+# #
 # motordir = [-1, -1, -1, -1, 1, 1, 1, -1]
 # halfpi = 1.57079632679
 # kneeangle = -2.1834
@@ -105,11 +107,11 @@ trailDuration = 15
 
 p.setGravity(0, 0, -10)
 
-logId1 = p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT, "LOG0001.txt", [0, 1, 2])
-logId2 = p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS, "LOG0002.txt", bodyUniqueIdA=2)
+# logId1 = p.startStateLogging(p.STATE_LOGGING_GENERIC_ROBOT, "LOG0001.txt", [0, 1, 2])
+# logId2 = p.startStateLogging(p.STATE_LOGGING_CONTACT_POINTS, "LOG0002.txt", bodyUniqueIdA=2)
 
-for i in range(5):
-    print("Body %d's name is %s." % (i, p.getBodyInfo(i)[1]))
+# for i in range(5):
+    # print("Body %d's name is %s." % (i, p.getBodyInfo(i)[1]))
 
 # print "get contact points"
 # print contactpts[0][5]
@@ -156,8 +158,7 @@ while 1:
                 jointPoses = p.calculateInverseKinematics(kukaId, kukaEndEffectorIndex, pos)
 
         if (useSimulation):
-            for i in range(numJoints):
-
+            for i in range(numJoints-reduceJoints):
                 request["joints"][i].update({"start" : p.getJointState(kukaId, request["joints"][i]["id"])[0], "end": jointPoses[i], "min_velocity" : -0.2, "max_velocity" : 0.2,})
                     # .append(p.getJointState(kukaId, request["joints"][i]["id"]))
 
@@ -165,7 +166,21 @@ while 1:
                 #                         targetPosition=jointPoses[i], targetVelocity=0, force=500, positionGain=0.03,
                 #                         velocityGain=1)
 
-            print request
+            # print request
+            from trajPlanner import trajPlanner
+
+            sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+            # sp.displayProblem()
+            jointPoses = sp.solveProblem()
+            # print jointPoses
+            for i in range(numJoints-4):
+                for j in range(len(jointPoses[i])):
+                    # print len(jointPoses[i])
+                    # print "setting pose: ", j
+                    # print jointPoses[i][j]
+                    p.setJointMotorControl2(bodyIndex=kukaId, jointIndex=i, controlMode=p.POSITION_CONTROL,
+                                            targetPosition=jointPoses[i][j], targetVelocity=0, force=500, positionGain=0.03,
+                                            velocityGain=.5)
 
         else:
             # reset the joint state (ignoring all dynamics, not recommended to use during simulation)

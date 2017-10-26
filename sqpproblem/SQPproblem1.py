@@ -6,39 +6,30 @@ from numpy import array, hstack, ones, vstack, zeros
 
 
 class SQPproblem:
-    def __init__(self, samples, duration, joint, maxNoOfIteration, initVals = None):
+    def __init__(self, samples, duration, joint, maxNoOfIteration):
         self.joint = joint
         self.samples = samples
-        self.initVals  = initVals
         # self.jointsVelocities = problem["jointsVelocities"]
 
 
         self.nWSR = maxNoOfIteration
 
         self.duration = duration
-        self.fillP()
-        self.fillG()
+        self.fillH()
         self.fillA()
 
+        self.G = np.zeros((1, self.samples))
+        # self.G = self.G.flatten()
 
-        self.q = np.zeros((1, self.samples))
-        # self.q = self.G.flatten()
-
-        # self.q = np.array([0.0, 0.0, 0.0])
+        # self.G = np.array([0.0, 0.0, 0.0])
 
 
         # for i in range(self.numJoints):
         self.getStartAndEnd()
 
         self.fillbounds()
-        self.fillBoundsforG()
-        self.fillEqualityConstraintforA()
+        self.fillBoundsforA()
 
-        if initVals is not None:
-            self.fillInitvals()
-
-    def fillInitvals(self):
-        self.initVals = np.full((1, self.P.shape[0]), self.initVals).flatten()
 
 
     def getStartAndEnd(self):
@@ -47,34 +38,66 @@ class SQPproblem:
 
     def fillbounds(self):
 
-        # self.lb = np.zeros((1, self.samples))
-        # self.ub = np.zeros((1, self.samples))
+        self.lb = np.zeros((1, self.samples))
+        self.ub = np.zeros((1, self.samples))
 
-        self.lb = np.full((1, self.P.shape[0]), self.joint["lower_joint_limit"])
-        self.ub = np.full((1, self.P.shape[0]), self.joint["upper_joint_limit"])
+        # print self.joints
+
+        for i in range(self.lb.shape[1]):
+            self.lb[0, i] = self.joint["lower_joint_limit"]
+
+        for i in range(self.ub.shape[1]):
+
+            self.ub[0, i] = self.joint["upper_joint_limit"]
 
 
-        # self.lb = self.lb.flatten()
-        # self.ub = self.ub.flatten()
+        # lb = np.array([min_pos, min_pos, min_pos])
+        # ub = np.array([max_pos, max_pos, max_pos])
 
 
-    def fillBoundsforG(self):
+        self.lb = self.lb.flatten()
+        self.ub = self.ub.flatten()
+
+
+    def fillBoundsforA(self):
+        # print self.A.shape
+        self.lbA = np.zeros((1, self.A.shape[0]))
+        self.ubA = np.zeros((1, self.A.shape[0]))
+
+        # max_vel = self.jointsVelocities[index]["upper_joint_limit"]
+        #
+        # min_vel = self.jointsVelocities[index]["lower_joint_limit"]
 
         max_vel = self.joint["max_velocity"]
 
         min_vel = self.joint["min_velocity"]
 
-        self.lbG = np.full((1, self.G.shape[0]), min_vel * self.duration / (self.samples - 1))
-        self.ubG = np.full((1, self.G.shape[0]), max_vel * self.duration / (self.samples - 1))
+        # print self.joints
+        # for i in range(self.A.shape[0] - 2):
+        #     self.lbA[0, i] = self.jointsVelocities[index]["lower_joint_limit"]
+        #     self.lbA[0, i] = self.jointsVelocities[index]["lower_joint_limit"]
+        #
+        #     self.ubA[0, i] = self.jointsVelocities[index]["upper_joint_limit"]
+        #     self.ubA[0, i] = self.jointsVelocities[index]["upper_joint_limit"]
+        #
+        # self.lbA[0, self.A.shape[0] - 2] = self.joints[index]["lower_joint_limit"]
+        # self.lbA[0, self.A.shape[0] - 1] = self.joints[index]["lower_joint_limit"]
+        #
+        # self.ubA[0, self.A.shape[0] - 2] = self.joints[index]["upper_joint_limit"]
+        # self.ubA[0, self.A.shape[0] - 1] = self.joints[index]["upper_joint_limit"]
 
+
+        for i in range(self.A.shape[0] - 2):
+            self.lbA[0, i] = min_vel * self.duration / (self.samples - 1)
+            self.ubA[0, i] = max_vel * self.duration / (self.samples - 1)
 
             # self.ubA[0, i] = max_vel / self.duration
 
-        # self.lbG[0, self.G.shape[0] - 2] = self.start
-        # self.lbG[0, self.G.shape[0] - 1] = self.end
-        #
-        # self.ubG[0, self.G.shape[0] - 2] = self.start
-        # self.ubG[0, self.G.shape[0] - 1] = self.end
+        self.lbA[0, self.A.shape[0] - 2] = self.start
+        self.lbA[0, self.A.shape[0] - 1] = self.end
+
+        self.ubA[0, self.A.shape[0] - 2] = self.start
+        self.ubA[0, self.A.shape[0] - 1] = self.end
 
         # self.lbA = np.array([min_vel / self.duration, min_vel / self.duration, self.start, self.end])
         # self.ubA = np.array([max_vel / self.duration, max_vel / self.duration, self.start, self.end])
@@ -82,118 +105,73 @@ class SQPproblem:
 
 
 
-        # self.lbG = self.lbG.flatten()
-        # self.ubG = self.ubG.flatten()
+        self.lbA = self.lbA.flatten()
+        self.ubA = self.ubA.flatten()
 
         # print self.lbA
         # print self.ubA
 
-    def fillEqualityConstraintforA(self):
 
 
-
-        self.b = np.zeros((1, 2))
-
-        self.b[0,0] = self.joint["start"]
-
-        self.b[0,1] = self.joint["end"]
-
-            # self.ubA[0, i] = max_vel / self.duration
-
-        # self.lbG[0, self.G.shape[0] - 2] = self.start
-        # self.lbG[0, self.G.shape[0] - 1] = self.end
-        #
-        # self.ubG[0, self.G.shape[0] - 2] = self.start
-        # self.ubG[0, self.G.shape[0] - 1] = self.end
-
-        # self.lbA = np.array([min_vel / self.duration, min_vel / self.duration, self.start, self.end])
-        # self.ubA = np.array([max_vel / self.duration, max_vel / self.duration, self.start, self.end])
+    def fillH(self):
+        self.H = np.zeros((self.samples, self.samples))
+        np.fill_diagonal(self.H, 2.0)
+        self.hShape = self.H.shape
+        self.H[0, 0] = 1.0
+        self.H[self.hShape[0] - 1, self.hShape[0] - 1] = 1.0
+        self.H[np.arange(self.hShape[0]- 1), np.arange(self.hShape[0]- 1) + 1] = -2.0
 
 
+        # self.H = 2 * self.H
 
 
-        # self.lbG = self.lbG.flatten()
-        # self.ubG = self.ubG.flatten()
-
-        # print self.lbA
-        # print self.ubA
-
-    def fillP(self):
-        self.P = np.zeros((self.samples, self.samples))
-        np.fill_diagonal(self.P, 2.0)
-        self.hShape = self.P.shape
-        self.P[0, 0] = 1.0
-        self.P[self.hShape[0] - 1, self.hShape[0] - 1] = 1.0
-        self.P[np.arange(self.hShape[0] - 1), np.arange(self.hShape[0] - 1) + 1] = -2.0
-
-
-
-        # self.P = 2.0 * self.P
 
     def fillA(self):
-        self.A = np.zeros((2, self.samples))
-
-        # self.A[0, self.A.shape[0] - 2] = 1
-        # self.A[1, self.A.shape[1] - 1] = 1
-
-        self.A[0, 0] = 1.0
-        self.A[1, self.A.shape[1] - 1] = 1.0
-
-
-
-        # self.P = 2 * self.P
-
-
-
-    def fillG(self):
-        self.G = np.zeros((self.samples , self.samples))
+        self.A = np.zeros((self.samples , self.samples))
         # np.fill_diagonal(self.A, 2.0)
-        self.aShape = self.G.shape
+        self.aShape = self.A.shape
         # # self.A[0, 0] = -1.0
         # # self.A[self.aShape[0] - 1, self.aShape[0] - 1] = -1.0
-        self.G[np.arange(self.aShape[0] - 1), np.arange(self.aShape[0] - 1)] = -1
+        self.A[np.arange(self.aShape[0] - 1), np.arange(self.aShape[0] - 1) ] = -1
 
-        self.G[np.arange(self.aShape[0] - 1), np.arange(self.aShape[0] - 1) + 1] = 1
+        self.A[np.arange(self.aShape[0] - 1), np.arange(self.aShape[0] - 1) + 1] = 1
 
         # self.A[np.arange(self.aShape[0] - 1) + 1, np.arange(self.aShape[0] - 1) + 1] = -1
         # self.A[np.arange(self.aShape[0] - 1) , np.arange(self.aShape[0] - 1) + 1] = -1
 
-        # to slice zero last row
-        self.G.resize(self.samples - 1, self.samples)
 
+        self.A.resize(self.samples -1, self.samples)
 
-        # Q = np.zeros((self.samples -1 , self.samples))
-        #
-        # Q[0, 0] = 1.0
-        #
-        # Q[1 , self.samples - 1] = 1.0
-        #
-        # self.A = vstack([self.A,  Q])
-        # self.A.resize(self.samples + 1, self.samples)
+        Q = np.zeros((self.samples -1 , self.samples))
+
+        Q[0, 0] = 1.0
+
+        Q[1 , self.samples - 1] = 1.0
+
+        self.A = vstack([self.A,  Q])
+        self.A.resize(self.samples + 1, self.samples)
 
 
 
 
     def display(self):
         # print "Problem ", self.problem
-        print "P"
-        print self.P
-        print "q"
-        print self.q
+        print "H"
+        print self.H
+        print "A"
+        print self.A
+        #
         print "G"
+
         print self.G
         print "lb"
         print self.lb
         print "ub"
         print self.ub
-        print "lbG"
-        print self.lbG
-        print "ubG"
-        print self.ubG
-        print "b"
-        print self.b
-        print "A"
-        print self.A
+        print "lbA"
+        print self.lbA
+        print "ubA"
+        print self.ubA
 
         print "nwsr"
         print self.nWSR
@@ -227,7 +205,7 @@ class SQPproblem:
         # C = vstack([self.G, self.A, self.A])
 
         # print "self.H.shape[0], self.A.shape[0]", self.H.shape[0], self.A.shape[0]
-        example = QProblem(self.P.shape[0], self.G.shape[0])
+        example = QProblem(self.H.shape[0], self.A.shape[0])
         options = Options()
         options.printLevel = PrintLevel.HIGH
         example.setOptions(options)
@@ -237,18 +215,18 @@ class SQPproblem:
         self.G = self.G.flatten()
 
         # TODO: check return value for error code; throw exception if unsuccessful
-        example.init(self.P, self.q, self.G, self.lb, self.ub, self.lbG, self.ubG, np.array([self.nWSR]))
+        example.init(self.H, self.G, self.A, self.lb, self.ub, self.lbA, self.ubA, np.array([self.nWSR]))
 
         # print "before hotstart"
 
-        self.G = self.G.flatten()
+        self.A = self.A.flatten()
         # TODO: check return value for error code; throw exception if unsuccessful
         print 'foo'
 
-        # self.display()
-        example.hotstart(self.G, self.lb, self.ub, self.lbG, self.ubG, np.array([self.nWSR]))
+        self.display()
+        example.hotstart(self.G, self.lb, self.ub, self.lbA, self.ubA, np.array([self.nWSR]))
 
-        return example, self.P.shape[0]
+        return example, self.H.shape[0]
 
 
     # def solveQp(self, H, G, A, lb, ub, lbA, ubA, nWSR):

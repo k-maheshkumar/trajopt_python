@@ -3,19 +3,21 @@ import numpy as np
 
 request = {
     "samples" : 3,
-    "duration" : 4,
+    "duration" : 5,
     "maxIteration" : 100,
     "joints" : [
         {"start": 0.2, "end": 0.7, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity" : -0.1, "max_velocity" : 0.1}
     ]
 }
 
-sp = sqp.SQPproblem(request)
+sp = sqp.SQPproblem(request["samples"] , request["duration"], request["joints"][0], request["maxIteration"])
 sp.display()
+
 
 example, num = sp.solveQp()
 # print num
 xOpt = np.zeros(num)
+print "bla"
 example.getPrimalSolution(xOpt)
 
 print "solution"

@@ -7,9 +7,9 @@ import numpy as np
 from scipy.sparse import csc_matrix
 
 request = {
-    "samples" : 3,
+    "samples" : 3000,
     "duration" : 6,
-    "maxIteration" : 100,
+    "maxIteration" : 1000,
     "joints" : [
         # { "end": 0.7, 'initialGuess': 0.2, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
         #  "min_velocity": -0.1, "max_velocity": 0.1},
@@ -78,15 +78,16 @@ request = {
 
 # nwsr = array([100])
 
-sp = trajPlanner.TrajectoryPlanner(request, "osqp1")
-# sp.displayProblem()
+sp = trajPlanner.TrajectoryPlanner(request, "osqp")
 start = time.time()
-
-result, sol = sp.solveProblem()
-# sp.solveQpProb1()
-print (sol)
-print (result.info.status)
-
+sp.solveProblem()
+# sp.displayProblem()
+#
+# result, sol = sp.solveProblem()
+# # sp.solveQpProb1()
+# print (sol)
+# print (result.info.status)
+#
 end = time.time()
 print(end - start)
 

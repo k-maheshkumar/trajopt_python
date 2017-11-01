@@ -49,6 +49,9 @@ for i in range(nJoints-reduceJoints):
     joint["id"] = jointInfo[0]
     joint["lower_joint_limit"] = jointInfo[8]
     joint["upper_joint_limit"] = jointInfo[9]
+    joint["min_velocity"] = -jointInfo[11]
+    joint["max_velocity"] = jointInfo[11]
+
     request["joints"].append(joint)
 
 request.update({'samples' : 100, 'duration' : 15, 'maxIteration': 100})
@@ -167,20 +170,20 @@ while 1:
                 #                         velocityGain=1)
 
             # print request
-            from trajPlanner import trajPlanner
+            # from trajPlanner import trajPlanner
 
-            sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+            # sp = trajPlanner.TrajectoryPlanner(request, "osqp")
             # sp.displayProblem()
-            jointPoses = sp.solveProblem()
+            # jointPoses = sp.solveProblem()
             # print jointPoses
-            for i in range(numJoints-4):
-                for j in range(len(jointPoses[i])):
-                    # print len(jointPoses[i])
-                    # print "setting pose: ", j
-                    # print jointPoses[i][j]
-                    p.setJointMotorControl2(bodyIndex=kukaId, jointIndex=i, controlMode=p.POSITION_CONTROL,
-                                            targetPosition=jointPoses[i][j], targetVelocity=0, force=500, positionGain=0.03,
-                                            velocityGain=.5)
+            # for i in range(numJoints-4):
+            #     for j in range(len(jointPoses[i])):
+            #         # print len(jointPoses[i])
+            #         # print "setting pose: ", j
+            #         # print jointPoses[i][j]
+            #         p.setJointMotorControl2(bodyIndex=kukaId, jointIndex=i, controlMode=p.POSITION_CONTROL,
+            #                                 targetPosition=jointPoses[i][j], targetVelocity=0, force=500, positionGain=0.03,
+            #                                 velocityGain=.5)
 
         else:
             # reset the joint state (ignoring all dynamics, not recommended to use during simulation)

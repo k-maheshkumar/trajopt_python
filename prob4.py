@@ -7,7 +7,7 @@ import numpy as np
 from scipy.sparse import csc_matrix
 
 request = {
-    "samples" : 3000,
+    "samples" : 3,
     "duration" : 6,
     "maxIteration" : 1000,
     "joints" : [
@@ -16,7 +16,16 @@ request = {
 
         {"start": 0.2, "end": 0.7, 'initialGuess': 0.2,"lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity" : 0.1},
         {"start": 0.3, "end": 0.9, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
-
+        # {"start": 0.5, "end": 0.9, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
+        #  "min_velocity": -0.1, "max_velocity": 0.1},
+        # {"start": 0.1, "end": 0.3, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
+        #  "min_velocity": -0.1, "max_velocity": 0.1},
+        # {"start": 0.22, "end": 0.6, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
+        #  "min_velocity": -0.1, "max_velocity": 0.1},
+        # {"start": 0.5, "end": 0.6, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
+        #  "min_velocity": -0.1, "max_velocity": 0.1},
+        # {"start": 0.3, "end": 0.6, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
+        #  "min_velocity": -0.1, "max_velocity": 0.1},
 
     ]
 }
@@ -78,9 +87,22 @@ request = {
 
 # nwsr = array([100])
 
-sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+# sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+# start = time.time()
+# result, sol = sp.solveProblem()
+# end = time.time()
+# print("osqp",end - start)
+# print sol
+# sp = trajPlanner.TrajectoryPlanner(request, "osqp1")
+# start = time.time()
+# sp.solveProblem()
+# end = time.time()
+# print("qpoases",end - start)
+sp = trajPlanner.TrajectoryPlanner(request, "osqp2")
 start = time.time()
 sp.solveProblem()
+end = time.time()
+print("cvxopt",end - start)
 # sp.displayProblem()
 #
 # result, sol = sp.solveProblem()
@@ -88,8 +110,7 @@ sp.solveProblem()
 # print (sol)
 # print (result.info.status)
 #
-end = time.time()
-print(end - start)
+
 
 # from qpsolvers.qpsolvers import qpoases_ as qp
 #

@@ -220,7 +220,7 @@ class TrajectoryPlanner:
     def solveProblem(self):
 
         if self.solver == "osqp":
-            from qpsolvers.qpsolvers import osqp_ as qp
+            from qpsolvers import osqp_ as qp
 
             from scipy.sparse import csc_matrix
 
@@ -236,7 +236,7 @@ class TrajectoryPlanner:
 
 
         elif self.solver == "osqp1":
-            from qpsolvers.qpsolvers import qpoases_ as qp
+            from qpsolvers import qpoases_ as qp
             qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b, initvals=None,
                                       max_wsr=np.array([self.maxNoOfIteration]))
 
@@ -249,12 +249,12 @@ class TrajectoryPlanner:
             print "numJoints", self.numJoints
             print np.split(x_opt, self.numJoints)
         elif self.solver == "osqp2":
-            from qpsolvers.qpsolvers import cvxopt_ as qp
+            from qpsolvers import cvxopt_ as qp
 
             qp = qp.cvxopt_solve_qp1(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b,
                                      initvals=None)
         else:
-            from qpsolvers.qpsolvers import osqp_ as qp
+            from qpsolvers import osqp_ as qp
 
             result = qp.solve_with_cvxpy(self.P, self.q, self.C, self.lb, self.ub, self.lbC,
                                        self.ubC, None, self.b,

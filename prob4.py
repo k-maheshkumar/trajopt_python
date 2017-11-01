@@ -98,7 +98,7 @@ request = {
 # sp.solveProblem()
 # end = time.time()
 # print("qpoases",end - start)
-sp = trajPlanner.TrajectoryPlanner(request, "osqp2")
+sp = trajPlanner.TrajectoryPlanner(request, "OSQP")
 start = time.time()
 sp.solveProblem()
 end = time.time()

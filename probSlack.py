@@ -31,10 +31,15 @@ A = np.array([[-1.,  1.,  0.,  0.,  0., 0.],
              [ 0.,  0.,  0.,  1.,  0.,  0.],
              [ 0.,  0.,  0.,  0.,  1.,  0.],
              [ 0.,  0.,  0.,  0.,  0.,  1.],
-             [ 0,  1.,  0.,  0,  1.,  0.]])
+             # [ 0,  1.,  0.,  0,  1.,  0.]
+              ])
 
-lbA =   np.array([-0.3,-0.3, 0.2,0.7,0.2,0.7,-0.3,-0.3,-0.3,-0.3,-0.3,0.3,0.9,0.3,0.9,-0.3,-0.3,-0.3, 1.7])
-ubA =   np.array([ 0.3, 0.3,0.2,0.7,0.2,0.7,1.1,1.1,1.1,0.3,0.3,0.3,0.9,0.3,0.9,1.1,1.1,1.1, 1.8])
+lbA =   np.array([-0.3,-0.3, 0.2,0.7,0.2,0.7,-0.3,-0.3,-0.3,-0.3,-0.3,0.3,0.9,0.3,0.9,-0.3,-0.3,-0.3,
+                  # 1.7
+                  ])
+ubA =   np.array([ 0.3, 0.3,0.2,0.7,0.2,0.7,1.1,1.1,1.1,0.3,0.3,0.3,0.9,0.3,0.9,1.1,1.1,1.1,
+                   # 1.8
+                   ])
 # P =  .5 * (P + P.transpose())
 P_csc = csc_matrix(P)
 P = .5 * (P + P.T) + 1e-08 * sparse.eye(P.shape[0])
@@ -51,7 +56,7 @@ A_csc = csc_matrix(A)
 #
 
 # print "P"
-# print P_csc.todense()
+# print P
 # print "q"
 # print q
 # print "A"
@@ -61,9 +66,9 @@ A_csc = csc_matrix(A)
 # # print "ub"
 # # print ub
 # print "lbA"
-# print lbA
+# print lbA.shape
 # print "ubA"
-# print ubA
+# print ubA.shape
 # P_csc = .5 * (P_csc + P_csc.transpose())
 # m = osqp.OSQP()
 # m.setup(P=P_csc, q=q, A=A_csc, l=lbA, u=ubA, max_iter = 1000, verbose=True)
@@ -91,7 +96,6 @@ objective += mu * (cvxpy.norm1(A * x - ubA) + cvxpy.norm1(-A * x + lbA))
 problem = cvxpy.Problem(cvxpy.Minimize(objective))
 objective_osqp_cvxpy = problem.solve(solver=cvxpy.OSQP, verbose=True)
 
-
-# print "Result OSQP Python x =", np.round(results_osqp.x, 3)
+print "solvers", cvxpy.installed_solvers()
 print "Results OSQP CVXPY x =", np.round(x.value, 3)
 print "Result OSQP Python x =", np.round(results_osqp.x, 3)

@@ -83,15 +83,7 @@ class TrajectoryPlanner:
             # self.G.append(self.sqp[i].G)
             # self.A.append(self.sqp[i].A)
 
-
-            if solver == "osqp":
-                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
-                # self.lb.append(self.sqp[i].lb.tolist())
-                self.lb.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
-                # self.ub.append(self.sqp[i].ub.tolist())
-                self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
-
-            else:
+            if solver == "qpoases":
                 self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A]))
                 # self.C.append(self.sqp[i].G)
                 self.A.append(self.sqp[i].A)
@@ -104,6 +96,12 @@ class TrajectoryPlanner:
                 # self.ub.append(self.sqp[i].ub.tolist())
                 self.ub.append(np.hstack([self.sqp[i].ub]))
                 # self.ub = np.dstack([self.ub, self.sqp[i].ub[0][0]])
+            else:
+                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
+                # self.lb.append(self.sqp[i].lb.tolist())
+                self.lb.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
+                # self.ub.append(self.sqp[i].ub.tolist())
+                self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
 
 
 
@@ -126,7 +124,7 @@ class TrajectoryPlanner:
         self.P = self.diag_block_mat_slicing(self.P)
         # self.q = self.diag_block_mat_slicing(self.q)
 
-        if solver != "osqp":
+        if solver == "qpoases":
             self.A = self.diag_block_mat_slicing(self.A)
         # self.G = self.diag_block_mat_slicing(self.G)
         self.C = self.diag_block_mat_slicing(self.C)
@@ -250,29 +248,18 @@ class TrajectoryPlanner:
 
             print "numJoints", self.numJoints
             print np.split(x_opt, self.numJoints)
-        else:
-
+        elif self.solver == "osqp2":
             from qpsolvers.qpsolvers import cvxopt_ as qp
 
             qp = qp.cvxopt_solve_qp1(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b,
                                      initvals=None)
+        else:
+            from qpsolvers.qpsolvers import osqp_ as qp
 
-            # example = QProblem(self.P.shape[0], self.q.shape[0])
-            # options = Options()
-            # options.printLevel = PrintLevel.LOW
-            # example.setOptions(options)
-
-            # print "before init"
-            # self.display()
-            # g = g.flatten()
-
-
-            # example.init(self.P, self.q.flatten(), self.C, self.lb.flatten(), self.ub.flatten(), self.lbG.flatten(), ubA.flatten(), np.array([1000]))
-            # # example.hotstart(A.flatten(), lb, ub, lbA, ubA, np.array([1000]))
-            # xOpt = np.zeros(g.shape[0])
-            # example.getPrimalSolution(xOpt)
-            # print xOpt
-        # print sol
+            result = qp.solve_with_cvxpy(self.P, self.q, self.C, self.lb, self.ub, self.lbC,
+                                       self.ubC, None, self.b,
+                                       initvals=self.initialGuess,
+                                       max_wsr=np.array([self.maxNoOfIteration]), solver= self.solver)
 
 
     def solveQpProb1(self):

@@ -10,6 +10,8 @@ request = {
     "samples" : 3,
     "duration" : 6,
     "maxIteration" : 1000,
+    "penaltyMax": 500,
+    "deltaMax": 5,
     "joints" : [
         # { "end": 0.7, 'initialGuess': 0.2, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
         #  "min_velocity": -0.1, "max_velocity": 0.1},
@@ -98,9 +100,10 @@ request = {
 # sp.solveProblem()
 # end = time.time()
 # print("qpoases",end - start)
-sp = trajPlanner.TrajectoryPlanner(request, "OSQP")
+sp = trajPlanner.TrajectoryPlanner(request, "SCS")
 start = time.time()
-sp.solveProblem()
+# sp.solveProblem()
+sp.solveSQP()
 end = time.time()
 print("cvxopt",end - start)
 # sp.displayProblem()

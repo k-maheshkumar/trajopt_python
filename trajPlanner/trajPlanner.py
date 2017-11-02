@@ -37,6 +37,8 @@ class TrajectoryPlanner:
         self.joints = problem["joints"]
         self.numJoints = len(problem["joints"])
         self.solver = solver
+        self.penaltyMax = problem["penaltyMax"]
+        self.deltaMax = problem["deltaMax"]
 
         self.sqp = []
 
@@ -50,6 +52,7 @@ class TrajectoryPlanner:
         self.ubC = []
         self.b = []
         self.C = []
+        self.initialX = []
 
         if 'initialGuess' in self.joints[0]:
             self.initialGuess = []
@@ -66,6 +69,7 @@ class TrajectoryPlanner:
                                     self.joints[i]["initialGuess"])
 
                 self.initialGuess.append(sp.initVals)
+                self.initialX.append(self.interpolate(sp.start, sp.end, self.samples))
                 # self.initialGuessInitial.append(np.full((1, 3), self.joints[i]["initialGuess"]))
             else:
                 sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration)
@@ -116,6 +120,10 @@ class TrajectoryPlanner:
 
         # print self.G
         # self.q = self.q[0]
+
+        self.initialX = np.hstack(self.initialX).tolist()
+
+
         self.q = np.hstack(self.q)
         self.lb = np.hstack(self.lb)
         self.ub = np.hstack(self.ub)
@@ -281,3 +289,58 @@ class TrajectoryPlanner:
                                  max_wsr=np.array([self.maxNoOfIteration]))
 
         print (np.split(sol, self.numJoints))
+
+    def interpolate(self, start, end, samples):
+
+        data = []
+        for i in range(samples - 1):
+            percentage = 1 / (i + 1.0)
+            data.append((percentage * start) + ((1 - percentage) * end))
+        data.append(end)
+
+        return np.round(data, 3)
+
+    def solveSQP(self):
+        convexify = True
+        trustregion = True
+        mu = 0.01
+        delta = 2
+        INFINITY = 1e+100
+        improve_ratio_threshold_ = .25;
+        min_trust_box_size_ = 1e-4;
+        min_approx_improve_ = 1e-4;
+        min_approx_improve_frac_ = -INFINITY;
+        max_iter_ = 50;
+        trust_shrink_ratio_ = .1;
+        trust_expand_ratio_ = 1.5;
+        cnt_tolerance_ = 1e-4;
+        max_merit_coeff_increases_ = 5;
+        merit_coeff_increase_ratio_ = 10;
+        max_time_ = INFINITY;
+
+        merit_error_coeff_ = 10;
+        trust_box_size_ = 1e-1;
+        trustregionSize = 0.1
+        x = self.initialX
+        delta = 0.01
+        # print self.penaltyMax
+        while mu <= self.penaltyMax - 400:
+            # while convexify:
+            # while trust_box_size_ >= min_trust_box_size_:
+            from qpsolvers import osqp_ as qp
+            # print trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5
+            x_new = qp.solve_with_cvxpy(self.P, self.q, self.C, self.lb, self.ub, self.lbC,
+                                        self.ubC, None, self.b,
+                                        initvals=x,
+                                        max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver, mu= mu,
+                                        delta=delta)
+            # trustregion = False
+            trust_box_size_ = np.fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5);
+            # convexify = False
+            x = x_new
+            mu = mu * 10
+            delta = delta * 10
+            print mu
+
+        # print x_new
+        return x_new

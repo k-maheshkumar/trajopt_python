@@ -48,7 +48,7 @@ P = .5 * (P + P.T) + 1e-08 * sparse.eye(P.shape[0])
 
 print cvxpy.installed_solvers()
 
-mu = 0.01  # Penalty parameter
+mu = 10  # Penalty parameter
 
 
 # m = osqp.OSQP()

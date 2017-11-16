@@ -7,7 +7,7 @@ import numpy as np
 from scipy.sparse import csc_matrix
 
 request = {
-    "samples" : 3,
+    "samples" : 10,
     "duration" : 6,
     "maxIteration" : 1000,
     "penaltyMax": 500,
@@ -17,7 +17,7 @@ request = {
         #  "min_velocity": -0.1, "max_velocity": 0.1},
 
         {"start": 0.2, "end": 0.7, 'initialGuess': 0.2,"lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity" : 0.1},
-        {"start": 0.3, "end": 0.9, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
+        # {"start": 0.3, "end": 0.9, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
         # {"start": 0.5, "end": 0.9, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
         #  "min_velocity": -0.1, "max_velocity": 0.1},
         # {"start": 0.1, "end": 0.3, 'initialGuess': 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
@@ -102,10 +102,13 @@ request = {
 # print("qpoases",end - start)
 sp = trajPlanner.TrajectoryPlanner(request, "SCS")
 start = time.time()
-# sp.solveProblem()
-sp.solveSQP()
+sp.solveProblem()
+# prob = sp.solveSQP()
 end = time.time()
 print("cvxopt",end - start)
+# print prob.status
+# data = prob.get_problem_data("SCS")
+# print data
 # sp.displayProblem()
 #
 # result, sol = sp.solveProblem()

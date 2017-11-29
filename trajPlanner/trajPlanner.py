@@ -76,24 +76,13 @@ class TrajectoryPlanner:
         self.G = self.diag_block_mat_slicing(self.G)
 
 
-        # self.lb = [item for sublist in self.lb for item in sublist]
         self.b = np.hstack(self.b)
         # self.q = [item for sublist in self.q for item in sublist]
-
-        # self.lb = np.asarray(self.lb)
-        # self.ub = np.asarray(self.ub)
-        # self.lbC = np.asarray(self.lbC)
-        # self.ubC = np.asarray(self.ubC)
-        # self.b = np.asarray(self.b)
-
         # self.q = np.asarray(self.q)
 
         self.G = self.G.astype(float)
 
         self.P = 2.0 * self.P + 1e-08 * np.eye(self.P.shape[1])
-
-
-
 
     def diag_block_mat_slicing(self, L):
         shp = L[0].shape
@@ -194,12 +183,8 @@ class TrajectoryPlanner:
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
         penalty.value = 1
-        # x_0 = np.array([10.2, 10.7, 10.1])
-        # print self.initialX
-        # x_0 = np.array([2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0])
-        # x_0 = np.full((1, self.P.shape[0]), 1.0).flatten()
-        x_0 = self.initial_guess
-        # x_0 = self.initialX
+        x_0 = np.full((1, self.P.shape[0]), 1.0).flatten()
+        # x_0 = self.initial_guess
         p_0 = np.zeros(p.shape[0])
         trust_box_size = 1
         max_penalty = 1e4
@@ -208,14 +193,13 @@ class TrajectoryPlanner:
         max_trust_box_size = 5
 
         trust_shrink_ratio = 0.25
-        min_model_improve = 1e-4;
         trust_expand_ratio = 2
 
         trust_good_region_ratio = 0.75
         max_iteration = 20
         iteration_count = 0
 
-        min_model_improve = 1e-4;
+        min_model_improve = 1e-4
         improve_ratio_threshold = .25;
         min_approx_improve_frac = - float('inf')
         is_converged = False
@@ -229,8 +213,7 @@ class TrajectoryPlanner:
         min_actual_worse_redution = -100
         min_const_violation = 2.4
         con1_norm, con2_norm = self.get_constraints_norm(x_k)
-        same_trust_region_count = 0
-        old_trust_region = 0
+
         while con1_norm + con2_norm >= 2 or penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             while iteration_count < max_iteration:
@@ -304,8 +287,8 @@ class TrajectoryPlanner:
                         trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
                         # print "expanding trust region", trust_box_size
                         x_k += p_k
+                        # new_x_k = copy.copy(x_k)
                         break
-                        new_x_k = copy.copy(x_k)
 
                     if trust_box_size < 0.01:
                         isAdjustPenalty = True

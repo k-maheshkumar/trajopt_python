@@ -42,11 +42,13 @@ class TrajectoryPlanner:
         self.sqp = []
 
         self.P = []
+        self.q = []
         self.G = []
         self.A = []
-        self.q = []
         self.lb = []
         self.ub = []
+        self.lbA = []
+        self.ubA = []
         self.lbC = []
         self.ubC = []
         self.b = []
@@ -68,15 +70,10 @@ class TrajectoryPlanner:
 
                 self.initialGuess.append(sp.initVals)
                 self.initialX.append(self.interpolate(sp.start, sp.end, self.samples))
-                # self.initialGuessInitial.append(np.full((1, 3), self.joints[i]["initialGuess"]))
             else:
                 sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration)
 
             self.sqp.append(sp)
-
-            # print "h " + str(i)
-
-            # print self.sqp[i].H
 
             self.P.append(self.sqp[i].P)
             self.q.append(self.sqp[i].q)
@@ -86,7 +83,7 @@ class TrajectoryPlanner:
             if solver == "qpoases":
                 self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A]))
                 # self.C.append(self.sqp[i].G)
-                self.A.append(self.sqp[i].A)
+                self.A.append(self.sqp[i].A.tolist())
 
                 # print np.array([self.sqp[i].lbG[0][0]])
                 # self.lb.append(np.hstack([self.sqp[i].lbG]))
@@ -97,12 +94,20 @@ class TrajectoryPlanner:
                 self.ub.append(np.hstack([self.sqp[i].ub]))
                 # self.ub = np.dstack([self.ub, self.sqp[i].ub[0][0]])
             else:
-                self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
-                # self.lb.append(self.sqp[i].lb.tolist())
-                self.lb.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
-                # self.ub.append(self.sqp[i].ub.tolist())
-                self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
+                # self.C.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
+                self.C.append(np.vstack([self.sqp[i].G, np.identity(self.samples)]))
 
+                self.A.append(np.vstack([self.sqp[i].A, self.sqp[i].A, self.sqp[i].A]))
+
+                # self.A.append(self.sqp[i].A)
+                # self.lbA.append(self.sqp[i].b)
+                self.b.append(np.hstack([self.sqp[i].b, self.sqp[i].b, self.sqp[i].b]))
+
+                # self.lb.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
+                self.lb.append(np.hstack([self.sqp[i].lbG, self.sqp[i].lb]))
+
+                # self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
+                self.ub.append(np.hstack([self.sqp[i].ubG, self.sqp[i].ub]))
 
 
                 # self.lbC.append(self.sqp[i].lbG.tolist())
@@ -117,16 +122,19 @@ class TrajectoryPlanner:
         # print self.G
         # self.q = self.q[0]
 
-        self.initialX = np.hstack(self.initialX).tolist()
+        self.initialX = np.hstack(self.initialX)
 
         self.q = np.hstack(self.q)
         self.lb = np.hstack(self.lb)
+        self.b = np.hstack(self.b).flatten()
+
         self.ub = np.hstack(self.ub)
         # print  self.initialGuess
         # print  len(self.initialGuess)
         self.P = self.diag_block_mat_slicing(self.P)
         # self.q = self.diag_block_mat_slicing(self.q)
 
+        self.A = self.diag_block_mat_slicing(self.A)
         if solver == "qpoases":
             self.A = self.diag_block_mat_slicing(self.A)
         # self.G = self.diag_block_mat_slicing(self.G)
@@ -166,9 +174,6 @@ class TrajectoryPlanner:
 
         self.P = 2.0 * self.P + 1e-08 * np.eye(self.P.shape[1])
 
-        self.P_model = .5 * (self.P + self.P.T) + 1e-08 * np.eye(self.P.shape[0])
-
-
 
         # self.A = 1.0 * self.A
         # self.G = 1.0 * self.G
@@ -185,16 +190,8 @@ class TrajectoryPlanner:
         # print "solution"
         # print initialGuess, example.getObjVal()
 
-    # def check_input(self):
-    #     print "bhfgd"
-    #     if 'start' in self.problem:
-    #         print "bhfgd"
-    #         warn("need key: start")
-    #         exit(1)
+        # self.displayProblem()
 
-    def getStartAndEnd(self, index):
-        self.start = self.joints[index]["start"]
-        self.end = self.joints[index]["end"]
 
     def displayProblem(self):
         print ("P")
@@ -203,14 +200,14 @@ class TrajectoryPlanner:
         print (self.q)
         print ("G")
         print (self.C)
-        print ("lb")
-        print (self.lb)
-        print ("ub")
-        print (self.ub)
+        print ("lbA")
+        print (self.lbA)
+        print ("ubA")
+        print (self.ubA)
         print ("lbG")
-        print (self.lbC)
+        print (self.lb)
         print ("ubG")
-        print (self.ubC)
+        print (self.ub)
         print ("b")
         print (self.b)
         print ("A")
@@ -219,90 +216,28 @@ class TrajectoryPlanner:
         print ("maxNoOfIteration")
         print (self.maxNoOfIteration)
 
-    def solveProblem(self):
-
-        if self.solver == "osqp":
-            from qpsolvers import osqp_ as qp
-
-            from scipy.sparse import csc_matrix
-
-            # print "before call", self.q
-            result = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbC,
-                                       self.ubC, None, self.b,
-                                       initvals=self.initialGuess,
-                                       max_wsr=np.array([self.maxNoOfIteration]))
-
-            sol = np.split(result.x, self.numJoints)
-            # print sol
-            return result, sol
-
-
-        elif self.solver == "osqp1":
-            from qpsolvers import qpoases_ as qp
-            qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b,
-                                     initvals=None,
-                                     max_wsr=np.array([self.maxNoOfIteration]))
-
-            x_opt = np.zeros(self.P.shape[0])
-            ret = qp.getPrimalSolution(x_opt)
-
-            if ret != 0:  # 0 == SUCCESSFUL_RETURN code of qpOASES
-                warn("qpOASES failed with return code %d" % ret)
-
-            print "numJoints", self.numJoints
-            print np.split(x_opt, self.numJoints)
-        elif self.solver == "osqp2":
-            from qpsolvers import cvxopt_ as qp
-
-            qp = qp.cvxopt_solve_qp1(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b,
-                                     initvals=None)
-        else:
-            from qpsolvers import osqp_ as qp
-
-            result = qp.solve_with_cvxpy1(self.P, self.q, self.C, self.lb.flatten(),
-                                          self.ub.flatten(), initvals=self.initialGuess,
-                                          max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver)
-
-    def solveQpProb1(self):
-        # import osqp
-        # from scipy.sparse import csc_matrix
-        #
-        # m = osqp.OSQP()
-        # m.setup(P=csc_matrix(self.P), q=self.q, A=csc_matrix(self.A), l=self.l, u=self.u, max_iter=10000)
-        # results = m.solve()
-        # print results.x
-
-        from qpsolvers import osqp_ as qp
-
-        from scipy.sparse import csc_matrix
-
-        # print "before call", self.q
-        sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbC, self.ubC,
-                                None, self.b,
-                                initvals=None,
-                                max_wsr=np.array([self.maxNoOfIteration]))
-
-        print (np.split(sol, self.numJoints))
 
 
     def interpolate(self, start, end, samples):
-        data = []
+        guess = []
         stepSize = (end - start) / (samples - 1)
         intermediate = start
         for i in range(samples):
-            data.append(intermediate)
+            guess.append(intermediate)
             intermediate += stepSize
-        return np.round(data, 3)
+        return np.round(guess, 3)
 
     def evaluate_constraints(self, x_k):
-        cons1 = np.subtract(np.matmul(self.C, x_k), self.ub)
-        cons2 = np.add(np.matmul(-self.C, x_k), self.lb)
-        return cons1.flatten(), cons2.flatten()
+        cons1 = np.subtract(np.matmul(self.C, x_k), self.ub).flatten()
+        cons2 = np.add(np.matmul(-self.C, x_k), self.lb).flatten()
+        cons3 = np.subtract(np.matmul(self.A, x_k), self.b).flatten()
+        return cons1, cons2, cons3
 
     def get_constraints_grad(self):
         cons1_grad = self.C
         cons2_grad = -self.C
-        return cons1_grad, cons2_grad
+        cons3_grad = self.A
+        return cons1_grad, cons2_grad, cons3_grad
 
     def get_objective_grad_and_hess(self, g):
         model_grad = 0.5 * np.matmul((self.P + self.P.T), g)
@@ -310,17 +245,23 @@ class TrajectoryPlanner:
         return model_grad, model_hess
 
     def get_model_objective(self, xk, penalty, p):
-        cons1_at_xk, cons2_at_xk = self.evaluate_constraints(xk)
-        cons1_grad_at_xk, cons2_grad_at_xk = self.get_constraints_grad()
+        cons1_at_xk, cons2_at_xk, cons3_at_xk = self.evaluate_constraints(xk)
+        cons1_grad_at_xk, cons2_grad_at_xk, cons3_grad_at_xk = self.get_constraints_grad()
 
         cons1_model = cons1_at_xk + cons1_grad_at_xk * p
         cons2_model = cons2_at_xk + cons2_grad_at_xk * p
+        cons3_model = cons3_at_xk + cons3_grad_at_xk * p
 
+        # print "A", self.A
+        # cons3_model = np.subtract(np.matmul(self.A, xk), self.lbA).flatten()
+        # cons3_model += self.A * p
+        # print "xk", xk, self.lbA
+        # print cons3_model
         objective_grad_at_xk, objective_hess_at_xk = self.get_objective_grad_and_hess(xk)
         objective_at_xk = self.get_actual_objective(xk, penalty)
         model = objective_at_xk.value + objective_grad_at_xk * p + 0.5 * cvxpy.quad_form(p, objective_hess_at_xk)
 
-        model += penalty * (cvxpy.norm1(cons1_model) + cvxpy.norm1(cons2_model))
+        model += penalty * (cvxpy.norm1(cons1_model) + cvxpy.norm1(cons2_model) + cvxpy.norm1(cons3_model))
 
         return model, objective_at_xk
 
@@ -329,7 +270,8 @@ class TrajectoryPlanner:
         x.value = copy.copy(xk)
         objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
         objective += penalty * (
-        cvxpy.norm1(self.C * x - self.ub.flatten()) + cvxpy.norm1(-self.C * x + self.lb.flatten()))
+        cvxpy.norm1(self.C * x - self.ub.flatten()) + cvxpy.norm1(-self.C * x + self.lb.flatten())
+        + cvxpy.norm1(self.A * x - self.b))
 
         return objective
 
@@ -341,10 +283,13 @@ class TrajectoryPlanner:
         return p.value, model_objective, actual_objective, problem.status
 
     def get_constraints_norm(self, x_k):
-        con1, con2 = self.evaluate_constraints(x_k)
+        con1, con2, con3 = self.evaluate_constraints(x_k)
+        # print con3
         max_con1 = (np.linalg.norm(con1, np.inf))
         max_con2 = (np.linalg.norm(con2, np.inf))
-        return max_con1, max_con2
+        max_con3 = (np.linalg.norm(con3, np.inf))
+
+        return max_con1, max_con2, max_con3
 
     def solveSQP(self):
         x = cvxpy.Variable(self.P.shape[0])
@@ -354,9 +299,10 @@ class TrajectoryPlanner:
         # x_0 = np.array([10.2, 10.7, 10.1])
         # print self.initialX
         # x_0 = np.array([2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0])
-        # x_0 = np.full((1, 3), 2.0).flatten()
+        # x_0 = np.full((1, self.P.shape[0]), 2.0).flatten()
+        # print x_0
         # x_0 = self.initialGuess
-        x_0 = self.initialX
+        x_0 = (self.initialX + np.full((1, self.P.shape[0]), 0.2)).flatten()
         p_0 = np.zeros(p.shape[0])
         trust_box_size = 1
         max_penalty = 1e4
@@ -385,7 +331,7 @@ class TrajectoryPlanner:
 
         min_actual_worse_redution = -100
         min_const_violation = 2.4
-        con1_norm, con2_norm = self.get_constraints_norm(x_k)
+        con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
         same_trust_region_count = 0
         old_trust_region = 0
         while con1_norm + con2_norm >= 2 or penalty.value <= max_penalty:
@@ -416,9 +362,10 @@ class TrajectoryPlanner:
                     rho_k = actual_reduction / predicted_reduction
 
                     # print "rho_k", rho_k, abs(actual_reduction)
-                    print x_k
+                    print"x_k  ", x_k
                     print "x_k + pk ", x_k + p_k, trust_box_size, penalty.value, abs(actual_reduction)
-                    con1_norm, con2_norm = self.get_constraints_norm(x_k)
+                    con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
+                    print "con3_norm", con3_norm
                     # max_con1 = (np.linalg.norm(con1, np.inf))
                     # max_con2 = (np.linalg.norm(con2, np.inf))
                     # print "max_con1, max_con2", con1_norm, con2_norm, actual_reduction
@@ -443,11 +390,11 @@ class TrajectoryPlanner:
                         is_converged = True
                         break
 
-                    if con1_norm + con2_norm <= min_const_violation:
-                        print "constraint violations are satisfied, so converged to optimal solution"
-                        x_k += p_k
-                        is_converged = True
-                        break
+                    # if con1_norm + con2_norm <= min_const_violation:
+                    #     print "constraint violations are satisfied, so converged to optimal solution"
+                    #     x_k += p_k
+                    #     is_converged = True
+                    #     break
 
                     if abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= min_x_redution:
                         if con1_norm + con2_norm >= min_const_violation:
@@ -470,14 +417,16 @@ class TrajectoryPlanner:
                         break
                     if rho_k <= 0.25:
                         trust_box_size *= trust_shrink_ratio
-                        # print "shrinking trust region", trust_box_size
-                        break
+                        print "shrinking trust region", trust_box_size
                         x_k = copy.copy(new_x_k)
+                        break
                     else:
                         # elif rho_k >= 0.75:
                         trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
-                        # print "expanding trust region", trust_box_size
+                        print "expanding trust region", trust_box_size
+                        print "test . .. . .", x_k
                         x_k += p_k
+                        print "test after. .. . .", x_k
                         new_x_k = copy.copy(x_k)
                         break
 

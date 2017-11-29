@@ -208,7 +208,6 @@ gamma = cvxpy.Parameter(nonneg=True)
 min_model_improve= 1e-4;
 improve_ratio_threshold = .25;
 min_approx_improve_frac = - float('inf')
-
 while penalty <= max_penalty:
     penalty *= 10
     gamma.value = penalty

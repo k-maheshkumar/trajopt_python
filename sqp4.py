@@ -201,7 +201,7 @@ x_0 = np.array([0.1, 0.3, 0.8])
 p_0 = np.zeros(p.shape[0])
 # p = cvxpy.Variable(P.shape[1])
 penalty = 1
-max_penalty = 100000000000
+max_penalty = 1000000
 min_trust_box_size = 1e-4
 trust_box_size = 0.5
 max_iteration = 20
@@ -209,23 +209,23 @@ iterationCount = 0
 x_k = copy.deepcopy(x_0)
 max_wsr = 2000
 # Standard objective
-objective = cvxpy.quad_form(x, P) + q * x
 min_improve_rhok_threshold = .25;
 
 gamma = cvxpy.Parameter(nonneg=True)
+objective = cvxpy.quad_form(x, P) + q * x
+
+objective += gamma * (cvxpy.norm1(A * x - ubA) + cvxpy.norm1(-A * x + lbA))
 
 isAdjustPenalty = False
 trust_shrink_ratio = 0.25
 min_model_improve = 1e-4;
 trust_expand_ratio = 1.5
-trust_good_region_ratio = 0.75
+trust_good_region_ratio = 0.6
 while penalty <= max_penalty:
 
     iterationCount = 0
     gamma.value = penalty
     # if trust_box_size < min_trust_box_size:
-    trust_box_size *= 2
-
     # print "new penalty:", gamma.value, trust_box_size
     while iterationCount < max_iteration:
         iterationCount += 1
@@ -241,7 +241,6 @@ while penalty <= max_penalty:
 
             x.value = x_k
             # Penalty part of the objective
-            objective += gamma * (cvxpy.norm1(A * x - ubA) + cvxpy.norm1(-A * x + lbA))
 
             objective_model = convexifyProblem(objective.value, x_k, gamma)
             constraints = [cvxpy.norm(p, "inf") <= trust_box_size]
@@ -272,7 +271,6 @@ while penalty <= max_penalty:
             predicted_model_obj_at_p0 = objective_model.value
             # print "predicted_model_obj_at_p0: ", predicted_model_obj_at_p0
 
-            x.value = x_k
             actual_obj_at_xk = objective.value
 
             x.value = x_k + p_k
@@ -289,55 +287,58 @@ while penalty <= max_penalty:
             modelImprove = predicted_model_obj_at_p0[0] - predicted_model_obj_at_pk[0]  # predicted reduction
             # print "model improve", modelImprove
             rhoK = trueImprove / modelImprove
-            print rhoK
-            print x_k
+            print rhoK, iterationCount
+        #     print x_k
             temp = (np.linalg.norm(p_k, np.inf))
-            # print "temp", temp, trust_box_size
-
-            # if modelImprove < -1e-5:
-            #     # warnings.warn("approximate merit function got worse. (convexification is probably wrong to zeroth order)",
-            #     #               modelImprove)
-            #     # print("approximate merit function got worse. (convexification is probably wrong to zeroth order)",
-            #     #     modelImprove, iterationCount)
-            #     isAdjustPenalty = True
-            #     break
-            if modelImprove < min_model_improve:
-                # warnings.warn("converged because improvement was small (%.3e < %.3e)", modelImprove,
-                #               min_model_improve)
-                # print("converged because improvement was small", modelImprove,
-                #               min_model_improve, iterationCount, penalty)
-                isAdjustPenalty = True
-                break
-            if modelImprove / predicted_model_obj_at_pk < -float("inf"):
-                print "need to adjust penalty"
-                isAdjustPenalty = True
-                break
-
-            if trueImprove < 0 or rhoK < min_improve_rhok_threshold:
-                print "shrinking trust region", trust_box_size
-                trust_box_size *= trust_shrink_ratio
-                # x_k -= p_k
-                break
-            # else:
+        #     # print "temp", temp, trust_box_size
+        #
+        #     # if modelImprove < -1e-5:
+        #     #     # warnings.warn("approximate merit function got worse. (convexification is probably wrong to zeroth order)",
+        #     #     #               modelImprove)
+        #     #     # print("approximate merit function got worse. (convexification is probably wrong to zeroth order)",
+        #     #     #     modelImprove, iterationCount)
+        #     #     isAdjustPenalty = True
+        #     #     break
+        #     if modelImprove < min_model_improve:
+        #         # warnings.warn("converged because improvement was small (%.3e < %.3e)", modelImprove,
+        #         #               min_model_improve)
+        #         # print("converged because improvement was small", modelImprove,
+        #         #               min_model_improve, iterationCount, penalty)
+        #         isAdjustPenalty = True
+        #         break
+        #     if modelImprove / predicted_model_obj_at_pk < -float("inf"):
+        #         print "need to adjust penalty"
+        #         isAdjustPenalty = True
+        #         break
+        #
+        #     if trueImprove < 0 or rhoK < min_improve_rhok_threshold:
+        #         trust_box_size *= trust_shrink_ratio
+        #         print "shrinking trust region", trust_box_size
+        #         # x_k -= p_k
+        #         break
+        #     # else:
             if rhoK > trust_good_region_ratio or temp == trust_box_size:
-                print "expanding trust region", trust_box_size
                 trust_box_size *= trust_expand_ratio
+                print "expanding trust region", trust_box_size
                 x_k += p_k
                 break
             elif rhoK <= 0.25:
                 print "shrinking trust region", trust_box_size
                 trust_box_size *= trust_shrink_ratio
                 # x_k -= p_k
-
-
-            # if trust_box_size <
-
-        if isAdjustPenalty:
-            isAdjustPenalty = False
-            penalty *= 10
-            # print "trust_box_size", trust_box_size
-
-            break
+        #
+        #
+        #     # if trust_box_size <
+        #
+        #     if iterationCount >= max_iteration:
+        #         break
+        #
+        # if isAdjustPenalty:
+        #     isAdjustPenalty = False
+        #     penalty *= 10
+        #     # print "trust_box_size", trust_box_size
+        #
+        #     break
 
 
         # for cons in problem.constraints:
@@ -345,14 +346,11 @@ while penalty <= max_penalty:
 
 
         if iterationCount >= max_iteration:
-            print "max iterations reached"
+            # print "max iterations reached"
             break
 
 
-
-
-
-#         trust_box_size_ = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 1.5)
+        trust_box_size_ = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
 #         print "after fmax", trust_box_size
 #
 #             # print iterationCount

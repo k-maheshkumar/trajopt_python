@@ -257,7 +257,7 @@ while penalty <= max_penalty:
             rhoK = trueImprove / modelImprove[0]
             # print modelImprove, trueImprove, rhoK
             print "rho",  rhoK, problem.status
-            # print "x_new", x_k + p_k
+            print "x_new", x_k + p_k
             # for constraint in problem.constraints:
             #     print constraint.violation()
             if rhoK < 0.25:

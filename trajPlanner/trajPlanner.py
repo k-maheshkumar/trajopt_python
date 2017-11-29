@@ -1,9 +1,8 @@
 import numpy as np
-from qpoases import PyQProblem as QProblem
-from qpoases import PyOptions as Options
-from qpoases import PyPrintLevel as PrintLevel
 from sqpproblem import SQPproblem as sqp
 from warnings import warn
+import cvxpy
+import copy
 
 '''
         minimize
@@ -16,9 +15,9 @@ from warnings import warn
 
 '''
 
-class TrajectoryPlanner:
 
-    def diag_block_mat_slicing(self,L):
+class TrajectoryPlanner:
+    def diag_block_mat_slicing(self, L):
         shp = L[0].shape
         N = len(L)
         r = range(N)
@@ -62,9 +61,8 @@ class TrajectoryPlanner:
 
         for i in range(self.numJoints):
 
-
             # sp.display()
-            if self.joints[i].has_key("initialGuess") :
+            if self.joints[i].has_key("initialGuess"):
                 sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration,
                                     self.joints[i]["initialGuess"])
 
@@ -75,8 +73,6 @@ class TrajectoryPlanner:
                 sp = sqp.SQPproblem(self.samples, self.duration, self.joints[i], self.maxNoOfIteration)
 
             self.sqp.append(sp)
-
-
 
             # print "h " + str(i)
 
@@ -109,11 +105,11 @@ class TrajectoryPlanner:
 
 
 
-            self.lbC.append(self.sqp[i].lbG.tolist())
-            self.ubC.append(self.sqp[i].ubG.tolist())
-            self.b.append(self.sqp[i].b.tolist())
-            # sp.display()
-            # print (self.lb)
+                # self.lbC.append(self.sqp[i].lbG.tolist())
+                # self.ubC.append(self.sqp[i].ubG.tolist())
+                # self.b.append(self.sqp[i].b.tolist())
+                # sp.display()
+                # print (self.lb)
 
         # print self.C
         # print self.A
@@ -122,7 +118,6 @@ class TrajectoryPlanner:
         # self.q = self.q[0]
 
         self.initialX = np.hstack(self.initialX).tolist()
-
 
         self.q = np.hstack(self.q)
         self.lb = np.hstack(self.lb)
@@ -141,17 +136,17 @@ class TrajectoryPlanner:
 
         # self.lb = [item for sublist in self.lb for item in sublist]
         # self.ub = [item for sublist in self.ub for item in sublist]
-        self.lbC = [item for sublist in self.lbC for item in sublist]
-        self.ubC = [item for sublist in self.ubC for item in sublist]
-        self.b = [item for sublist in self.b for item in sublist]
+        # self.lbC = [item for sublist in self.lbC for item in sublist]
+        # self.ubC = [item for sublist in self.ubC for item in sublist]
+        # self.b = [item for sublist in self.b for item in sublist]
 
         # self.q = [item for sublist in self.q for item in sublist]
 
         self.lb = np.asarray(self.lb)
         self.ub = np.asarray(self.ub)
-        self.lbC = np.asarray(self.lbC)
-        self.ubC = np.asarray(self.ubC)
-        self.b = np.asarray(self.b)
+        # self.lbC = np.asarray(self.lbC)
+        # self.ubC = np.asarray(self.ubC)
+        # self.b = np.asarray(self.b)
 
         self.q = np.asarray(self.q)
         # if self.joints[i].has_key("initialGuess"):
@@ -169,7 +164,7 @@ class TrajectoryPlanner:
 
         self.C = self.C.astype(float)
 
-        self.P = 2.0 * self.P
+        self.P = 2.0 * self.P + 1e-08 * np.eye(self.P.shape[1])
 
         self.P_model = .5 * (self.P + self.P.T) + 1e-08 * np.eye(self.P.shape[0])
 
@@ -183,12 +178,12 @@ class TrajectoryPlanner:
         # print self.initialGuess
 
         # example, num = sp.solveQp()
-            # # print num
-            # initialGuess = np.zeros(num)
-            # example.getPrimalSolution(initialGuess)
+        # # print num
+        # initialGuess = np.zeros(num)
+        # example.getPrimalSolution(initialGuess)
 
-            # print "solution"
-            # print initialGuess, example.getObjVal()
+        # print "solution"
+        # print initialGuess, example.getObjVal()
 
     # def check_input(self):
     #     print "bhfgd"
@@ -200,7 +195,6 @@ class TrajectoryPlanner:
     def getStartAndEnd(self, index):
         self.start = self.joints[index]["start"]
         self.end = self.joints[index]["end"]
-
 
     def displayProblem(self):
         print ("P")
@@ -225,7 +219,6 @@ class TrajectoryPlanner:
         print ("maxNoOfIteration")
         print (self.maxNoOfIteration)
 
-
     def solveProblem(self):
 
         if self.solver == "osqp":
@@ -235,19 +228,20 @@ class TrajectoryPlanner:
 
             # print "before call", self.q
             result = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbC,
-                                    self.ubC, None, self.b,
-                                    initvals= self.initialGuess,
-                                    max_wsr=np.array([self.maxNoOfIteration]))
+                                       self.ubC, None, self.b,
+                                       initvals=self.initialGuess,
+                                       max_wsr=np.array([self.maxNoOfIteration]))
 
-            # print np.split(sol, self.numJoints)
             sol = np.split(result.x, self.numJoints)
-            return  result, sol
+            # print sol
+            return result, sol
 
 
         elif self.solver == "osqp1":
             from qpsolvers import qpoases_ as qp
-            qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b, initvals=None,
-                                      max_wsr=np.array([self.maxNoOfIteration]))
+            qp = qp.qpoases_solve_qp(self.P, self.q, self.C, self.lb, self.ub, self.lbC, self.ubC, self.A, self.b,
+                                     initvals=None,
+                                     max_wsr=np.array([self.maxNoOfIteration]))
 
             x_opt = np.zeros(self.P.shape[0])
             ret = qp.getPrimalSolution(x_opt)
@@ -265,11 +259,9 @@ class TrajectoryPlanner:
         else:
             from qpsolvers import osqp_ as qp
 
-            result = qp.solve_with_cvxpy(self.P, self.q, self.C, self.lb, self.ub, self.lbC,
-                                       self.ubC, None, self.b,
-                                       initvals=self.initialGuess,
-                                       max_wsr=np.array([self.maxNoOfIteration]), solver= self.solver)
-
+            result = qp.solve_with_cvxpy1(self.P, self.q, self.C, self.lb.flatten(),
+                                          self.ub.flatten(), initvals=self.initialGuess,
+                                          max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver)
 
     def solveQpProb1(self):
         # import osqp
@@ -285,9 +277,10 @@ class TrajectoryPlanner:
         from scipy.sparse import csc_matrix
 
         # print "before call", self.q
-        sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbC, self.ubC, None, self.b,
-                                 initvals=None,
-                                 max_wsr=np.array([self.maxNoOfIteration]))
+        sol = qp.osqp_solve_qp1(csc_matrix(self.P), self.q, csc_matrix(self.C), self.lb, self.ub, self.lbC, self.ubC,
+                                None, self.b,
+                                initvals=None,
+                                max_wsr=np.array([self.maxNoOfIteration]))
 
         print (np.split(sol, self.numJoints))
 
@@ -311,159 +304,345 @@ class TrajectoryPlanner:
 
         # return np.round(data1, 3)
         data = []
-        stepSize = (end - start) / (samples -1)
+        stepSize = (end - start) / (samples - 1)
         intermediate = start
         data.append(start)
 
-        for i in range(samples-1):
+        for i in range(samples - 1):
             intermediate += stepSize
             data.append(intermediate)
         return np.round(data, 3)
 
+    # def evaluate_objective(self, p, x):
+    #
+    #     if x is not  None:
+    #         x = x.reshape((x.shape[0],1))
+    #         obj = np.matmul(x.T,p)
+    #         obj = np.matmul(obj, x)
+    #         return obj[0, 0]
+    #
+    # def evaluate_Constraints(self, A, x):
+    #     x = x.reshape((6,1))
+    #     cons = np.matmul(A, x)
+    #
+    #     # return obj[0, 0]
+    #
 
-    def evaluate_objective(self, p, x):
+    def evaluate_constraints(self, x_k):
+        cons1 = np.subtract(np.matmul(self.C, x_k), self.ub)
+        cons2 = np.add(np.matmul(-self.C, x_k), self.lb)
+        return cons1.flatten(), cons2.flatten()
 
-        if x is not  None:
-            x = x.reshape((x.shape[0],1))
-            obj = np.matmul(x.T,p)
-            obj = np.matmul(obj, x)
-            return obj[0, 0]
+    def get_constraints_grad(self):
+        cons1_grad = self.C
+        cons2_grad = -self.C
+        return cons1_grad, cons2_grad
 
-    def evaluate_Constraints(self, A, x):
-        x = x.reshape((6,1))
-        cons = np.matmul(A, x)
+    def get_objective_grad_and_hess(self, g):
+        model_grad = 0.5 * np.matmul((self.P + self.P.T), g)
+        model_hess = 0.5 * (self.P + self.P.T)
+        return model_grad, model_hess
 
-        # return obj[0, 0]
+    def get_model_objective(self, xk, penalty, p):
+        cons1_at_xk, cons2_at_xk = self.evaluate_constraints(xk)
+        cons1_grad_at_xk, cons2_grad_at_xk = self.get_constraints_grad()
 
+        cons1_model = cons1_at_xk + cons1_grad_at_xk * p
+        cons2_model = cons2_at_xk + cons2_grad_at_xk * p
 
+        objective_grad_at_xk, objective_hess_at_xk = self.get_objective_grad_and_hess(xk)
+        objective_at_xk = self.get_actual_objective(xk, penalty)
+        model = objective_at_xk.value + objective_grad_at_xk * p + 0.5 * cvxpy.quad_form(p, objective_hess_at_xk)
 
+        model += penalty * (cvxpy.norm1(cons1_model) + cvxpy.norm1(cons2_model))
 
+        return model, objective_at_xk
 
+    def get_actual_objective(self, xk, penalty):
+        x = cvxpy.Variable(self.P.shape[0])
+        x.value = copy.copy(xk)
+        objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
+        objective += penalty * (
+        cvxpy.norm1(self.C * x - self.ub.flatten()) + cvxpy.norm1(-self.C * x + self.lb.flatten()))
+
+        return objective
+
+    def sovle_problem(self, xk, penalizer, p, delta):
+        model_objective, actual_objective = self.get_model_objective(xk, penalizer, p)
+        constraints = [cvxpy.norm(p, "inf") <= delta]
+        problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
+        result = problem.solve(solver=cvxpy.SCS, warm_start=True, verbose=False)
+        return p.value, model_objective, actual_objective, problem.status
+
+    def get_constraints_norm(self, x_k):
+        con1, con2 = self.evaluate_constraints(x_k)
+        max_con1 = (np.linalg.norm(con1, np.inf))
+        max_con2 = (np.linalg.norm(con2, np.inf))
+        return max_con1, max_con2
 
     def solveSQP(self):
-        convexify = True
-        trustregion = True
-        mu = 0.01
-        delta = 2
-        INFINITY = 1e+100
-        improve_ratio_threshold_ = .25;
-        min_trust_box_size_ = 1e-4;
+        x = cvxpy.Variable(self.P.shape[0])
+        p = cvxpy.Variable(x.shape[0])
+        penalty = cvxpy.Parameter(nonneg=True)
+        penalty.value = 1
+        # x_0 = np.array([10.2, 10.7, 10.1, 10.2, 10.7, 10.1])
+        # print self.initialX
+        # x_0 = np.array([2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0])
+        x_0 = self.initialGuess
+        # x_0 = self.initialX
+        p_0 = np.zeros(p.shape[0])
+        trust_box_size = 1
+        max_penalty = 1e4
+        min_trust_box_size = 1e-4
+        x_k = copy.copy(x_0)
+        max_trust_box_size = 5
+
+        trust_shrink_ratio = 0.25
         min_model_improve = 1e-4;
-        min_model_improve_frac = -INFINITY;
-        max_iter_ = 50;
-        trust_shrink_ratio_ = .1;
-        trust_expand_ratio_ = 1.5;
-        cnt_tolerance_ = 1e-4;
-        max_merit_coeff_increases_ = 100;
-        merit_coeff_increase_ratio_ = 10;
-        max_time_ = INFINITY;
+        trust_expand_ratio = 2
 
-        merit_error_coeff_ = 10;
-        trust_box_size_ = 1e-1;
-        trustregionSize = 0.1
-        x = self.initialX
-        delta = 0.01
-        # print self.penaltyMax
-        # from qpsolvers import osqp_ as qp
-        # prob, x_new = qp.solve_with_cvxpy(self.P_model, self.q, self.C, self.lb, self.ub, self.lbC,
-        #                                   self.ubC, None, self.b,
-        #                                   initvals=x,
-        #                                   max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver, mu=mu,
-        #                                   delta=delta)
-        # model_obj_x = self.evaluate_objective(self.P_model, np.array(x))
-        # model_obj_xK = self.evaluate_objective(self.P_model, x_new)
-        # modelImprove = model_obj_x- model_obj_xK
-        # actual_obj_x = self.evaluate_objective(self.P, np.array(x))
-        # actual_obj_xk = self.evaluate_objective(self.P, np.array(x_new))
-        # trueImprove = actual_obj_x - actual_obj_xk
-        # rhoK = trueImprove / modelImprove
-        # print modelImprove, trueImprove, rhoK
+        trust_good_region_ratio = 0.75
+        max_iteration = 20
+        iteration_count = 0
 
-        # trustregion = False
-        # while mu <= self.penaltyMax - 400:
-        #     # while convexify:
-        #     # while trust_box_size_ >= min_trust_box_size_:
-        #     from qpsolvers import osqp_ as qp
-        #     # print trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5
-        #     prob, x_new = qp.solve_with_cvxpy(self.P, self.q, self.C, self.lb, self.ub, self.lbC,
-        #                                 self.ubC, None, self.b,
-        #                                 initvals=x,
-        #                                 max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver, mu= mu,
-        #                                 delta=delta)
-        #     # trustregion = False
-        #     # trust_box_size_ *= np.fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5);
-        #     trust_box_size_ = np.fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5);
-        #     # convexify = False
-        #     print "trust_box_size_", trust_box_size_
-        #     self.evaluate_objective(x_new)
-        #
-        #     x = x_new
-        #     mu = mu * 10
-        #     delta = delta * 10
-        #     # print mu
-        #
-        # print "x_new: ", x_new
-        # return x_new
+        min_model_improve = 1e-4;
+        improve_ratio_threshold = .25;
+        min_approx_improve_frac = - float('inf')
+        is_converged = False
+        isAdjustPenalty = False
 
-        merit_increases = 1
-        iterationCount = 0
-        # x_new = x
-        while merit_increases < max_merit_coeff_increases_:
-            merit_increases *= 10
-            iterationCount = 0
+        old_rho_k = 0
+        new_x_k = copy.copy(x_0)
+        min_actual_redution = 1e-1
+        min_actual_worse_redution = -100
+        min_const_violation = 2.4
+        con1_norm, con2_norm = self.get_constraints_norm(x_k)
+        same_trust_region_count = 0
+        old_trust_region = 0
+        while con1_norm + con2_norm >= 2 or penalty.value <= max_penalty:
+            # print "penalty ", penalty.value
+            while iteration_count < max_iteration:
+                iteration_count += 1
+                # print "iteration_count", iteration_count
+                while trust_box_size >= min_trust_box_size:
+                    # print "iteration_count in trust loop", iteration_count
 
-            print "merit increases .. . .."
-            while iterationCount <= max_iter_:
-                while trust_box_size_ >= min_trust_box_size_:
-                    iterationCount += 1
-                    from qpsolvers import osqp_ as qp
-                    import cvxpy
+                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.sovle_problem(x_k,
+                                                                                                             penalty, p,
+                                                                                                             trust_box_size)
 
-                    # print trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5
-                    prob, x_k = qp.solve_with_cvxpy(self.P_model, self.q, self.C, self.lb, self.ub, self.lbC,
-                                                      self.ubC, None, self.b,
-                                                      initvals=x,
-                                                      max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver, mu= merit_increases,
-                                                      delta=trust_box_size_, verbose= False)
+                    # print "pk ", p_k, solver_status
 
-                    if prob.status == cvxpy.INFEASIBLE or prob.status == cvxpy.INFEASIBLE_INACCURATE or prob.status == cvxpy.UNBOUNDED or prob.status == cvxpy.UNBOUNDED_INACCURATE:
-                        x_new = x
-                        print prob.status
+                    actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty)
+                    model_objective_at_p_0 = self.get_actual_objective(p_0, penalty)
+
+                    # print "objective_at_x_plus_p_k", actual_objective_at_x_plus_p_k.value
+                    # print "model_objective_at_x_plus_p_k", model_objective_at_p_0.value
+                    # print "actual xk, xk1", actual_objective_at_x_plus_p_k.value, actual_objective_at_x_k.value
+                    # print "model p0, pk",model_objective_at_p_0.value, model_objective_at_p_k.value
+
+                    actual_reduction = actual_objective_at_x_plus_p_k.value - actual_objective_at_x_k.value
+                    predicted_reduction = model_objective_at_p_0.value - model_objective_at_p_k.value
+
+                    rho_k = actual_reduction / predicted_reduction
+
+                    # print "rho_k", rho_k, abs(actual_reduction)
+                    # print "x_k + pk ", x_k + p_k, trust_box_size, penalty.value, abs(actual_reduction)
+                    con1_norm, con2_norm = self.get_constraints_norm(x_k)
+                    # max_con1 = (np.linalg.norm(con1, np.inf))
+                    # max_con2 = (np.linalg.norm(con2, np.inf))
+                    # print "max_con1, max_con2", con1_norm, con2_norm, actual_reduction
+                    max_p_k = (np.linalg.norm(p_k, np.inf))
+                    if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
+                        # print problem.status
+                        # Todo: throw error when problem is not solved
                         break
 
-                        # Todo: throw error when problem is not solved
-                    else:
-                        x_new = x_k
-                        model_obj_x = self.evaluate_objective(self.P_model, np.array(x))
-                        model_obj_xK = self.evaluate_objective(self.P_model, x_new)
-                        modelImprove = model_obj_x - model_obj_xK
-                        actual_obj_x = self.evaluate_objective(self.P, np.array(x))
-                        actual_obj_xk = self.evaluate_objective(self.P, np.array(x_new))
-                        trueImprove = actual_obj_x - actual_obj_xk
-                        rhoK = trueImprove / modelImprove
-                        # print modelImprove, trueImprove, rhoK
-                        print  rhoK, prob.status
-                        print "x_new",x_new
+                    if old_rho_k == rho_k:
+                        # print "rho_k are same"
+                        isAdjustPenalty = True
+                        break
 
-
-                        if rhoK < 0.25:
-                            print "shrinking ....."
-                            trust_box_size_ = 0.25 * trust_box_size_
-                        else:
-                            if rhoK > 0.75:
-                                print "expanding... .. ... . .", iterationCount
-                                # delta = min(2 * delta, )
-                                trust_box_size_ = 2 * trust_box_size_
-                                # trust_box_size_ = np.fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5)
-
-                                x = x_new
-                        # if modelImprove < min_model_improve:
-                        #     print "les"
-                        #     break
-                        if iterationCount >= max_iter_:
-                            print "last print ",trust_box_size_, merit_increases
+                    if abs(actual_reduction) <= min_actual_redution or (
+                                    con1_norm + con2_norm <= min_const_violation):
+                        if con1_norm + con2_norm >= min_const_violation:
+                            print "infeasible intial guess"
+                            is_converged = True  # to force loop exit
                             break
+                        print "actual reduction is very small, so converged to optimal solution"
+                        x_k += p_k
+                        is_converged = True
+                        break
+                    if actual_reduction <= min_actual_worse_redution:
+                        print "infeasible intial guess"
+                        is_converged = True  # to force loop exit
+                        break
+                    if predicted_reduction / model_objective_at_p_k.value < -float("inf"):
+                        # print "need to adjust penalty"
+                        isAdjustPenalty = True
+                        break
+                    if rho_k <= 0.25:
+                        trust_box_size *= trust_shrink_ratio
+                        # print "shrinking trust region", trust_box_size
+                        break
+                        x_k = copy.copy(new_x_k)
+                    else:
+                        # elif rho_k >= 0.75:
+                        trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
+                        # print "expanding trust region", trust_box_size
+                        x_k += p_k
+                        new_x_k = copy.copy(x_k)
+                        break
 
-        print x
-        return prob
+                    if trust_box_size < 0.01:
+                        isAdjustPenalty = True
+                        break
+                    if iteration_count >= max_iteration:
+                        print "max iterations reached"
+                        break
+
+                    if old_trust_region == trust_box_size:
+                        same_trust_region_count += 1
+                    if same_trust_region_count >= 5:
+                        # print "resetting trust region, since trust region size is same for last ", same_trust_region_count, " iterations"
+                        trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
+                    old_rho_k = rho_k
+                    old_trust_region = copy.copy(trust_box_size)
+                if is_converged:
+                    break
+                trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
+            if is_converged or isAdjustPenalty:
+                break
+            penalty.value *= 10
+            iteration_count = 0
+        print "initial x_0", x_0
+        print "final x_k", x_k, trust_box_size, penalty.value
+        # print "final x_k + p_k", x_k + p_k
+
+        # def solveSQP(self):
+        #     convexify = True
+        #     trustregion = True
+        #     mu = 0.01
+        #     delta = 2
+        #     INFINITY = 1e+100
+        #     improve_ratio_threshold_ = .25;
+        #     min_trust_box_size_ = 1e-4;
+        #     min_model_improve = 1e-4;
+        #     min_model_improve_frac = -INFINITY;
+        #     max_iter_ = 50;
+        #     trust_shrink_ratio_ = .1;
+        #     trust_expand_ratio_ = 1.5;
+        #     cnt_tolerance_ = 1e-4;
+        #     max_merit_coeff_increases_ = 100;
+        #     merit_coeff_increase_ratio_ = 10;
+        #     max_time_ = INFINITY;
+        #
+        #     merit_error_coeff_ = 10;
+        #     trust_box_size_ = 1e-1;
+        #     trustregionSize = 0.1
+        #     x = self.initialX
+        #     delta = 0.01
+        #     # print self.penaltyMax
+        #     # from qpsolvers import osqp_ as qp
+        #     # prob, x_new = qp.solve_with_cvxpy(self.P_model, self.q, self.C, self.lb, self.ub, self.lbC,
+        #     #                                   self.ubC, None, self.b,
+        #     #                                   initvals=x,
+        #     #                                   max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver, mu=mu,
+        #     #                                   delta=delta)
+        #     # model_obj_x = self.evaluate_objective(self.P_model, np.array(x))
+        #     # model_obj_xK = self.evaluate_objective(self.P_model, x_new)
+        #     # modelImprove = model_obj_x- model_obj_xK
+        #     # actual_obj_x = self.evaluate_objective(self.P, np.array(x))
+        #     # actual_obj_xk = self.evaluate_objective(self.P, np.array(x_new))
+        #     # trueImprove = actual_obj_x - actual_obj_xk
+        #     # rhoK = trueImprove / modelImprove
+        #     # print modelImprove, trueImprove, rhoK
+        #
+        #     # trustregion = False
+        #     # while mu <= self.penaltyMax - 400:
+        #     #     # while convexify:
+        #     #     # while trust_box_size_ >= min_trust_box_size_:
+        #     #     from qpsolvers import osqp_ as qp
+        #     #     # print trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5
+        #     #     prob, x_new = qp.solve_with_cvxpy(self.P, self.q, self.C, self.lb, self.ub, self.lbC,
+        #     #                                 self.ubC, None, self.b,
+        #     #                                 initvals=x,
+        #     #                                 max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver, mu= mu,
+        #     #                                 delta=delta)
+        #     #     # trustregion = False
+        #     #     # trust_box_size_ *= np.fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5);
+        #     #     trust_box_size_ = np.fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5);
+        #     #     # convexify = False
+        #     #     print "trust_box_size_", trust_box_size_
+        #     #     self.evaluate_objective(x_new)
+        #     #
+        #     #     x = x_new
+        #     #     mu = mu * 10
+        #     #     delta = delta * 10
+        #     #     # print mu
+        #     #
+        #     # print "x_new: ", x_new
+        #     # return x_new
+        #
+        #     merit_increases = 1
+        #     iterationCount = 0
+        #     # x_new = x
+        #     while merit_increases < max_merit_coeff_increases_:
+        #         merit_increases *= 10
+        #         iterationCount = 0
+        #
+        #         print "merit increases .. . .."
+        #         while iterationCount <= max_iter_:
+        #             while trust_box_size_ >= min_trust_box_size_:
+        #                 iterationCount += 1
+        #                 from qpsolvers import osqp_ as qp
+        #                 import cvxpy
+        #
+        #                 # print trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5
+        #                 prob, x_k = qp.solve_with_cvxpy(self.P_model, self.q, self.C, self.lb, self.ub, self.lbC,
+        #                                                   self.ubC, None, self.b,
+        #                                                   initvals=x,
+        #                                                   max_wsr=np.array([self.maxNoOfIteration]), solver=self.solver, mu= merit_increases,
+        #                                                   delta=trust_box_size_, verbose= False)
+        #
+        #                 if prob.status == cvxpy.INFEASIBLE or prob.status == cvxpy.INFEASIBLE_INACCURATE or prob.status == cvxpy.UNBOUNDED or prob.status == cvxpy.UNBOUNDED_INACCURATE:
+        #                     x_new = x
+        #                     print prob.status
+        #                     break
+        #
+        #                     # Todo: throw error when problem is not solved
+        #                 else:
+        #                     x_new = x_k
+        #                     model_obj_x = self.evaluate_objective(self.P_model, np.array(x))
+        #                     model_obj_xK = self.evaluate_objective(self.P_model, x_new)
+        #                     modelImprove = model_obj_x - model_obj_xK
+        #                     actual_obj_x = self.evaluate_objective(self.P, np.array(x))
+        #                     actual_obj_xk = self.evaluate_objective(self.P, np.array(x_new))
+        #                     trueImprove = actual_obj_x - actual_obj_xk
+        #                     rhoK = trueImprove / modelImprove
+        #                     # print modelImprove, trueImprove, rhoK
+        #                     print  rhoK, prob.status
+        #                     print "x_new",x_new
+        #
+        #
+        #                     if rhoK < 0.25:
+        #                         print "shrinking ....."
+        #                         trust_box_size_ = 0.25 * trust_box_size_
+        #                     else:
+        #                         if rhoK > 0.75:
+        #                             print "expanding... .. ... . .", iterationCount
+        #                             # delta = min(2 * delta, )
+        #                             trust_box_size_ = 2 * trust_box_size_
+        #                             # trust_box_size_ = np.fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5)
+        #
+        #                             x = x_new
+        #                     # if modelImprove < min_model_improve:
+        #                     #     print "les"
+        #                     #     break
+        #                     if iterationCount >= max_iter_:
+        #                         print "last print ",trust_box_size_, merit_increases
+        #                         break
+        #
+        #     print x
+        #     return prob
 

@@ -183,7 +183,7 @@ class TrajectoryPlanner:
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
         penalty.value = 1
-        x_0 = np.full((1, self.P.shape[0]), 1.0).flatten()
+        x_0 = np.full((1, self.P.shape[0]), 3.0).flatten()
         # x_0 = self.initial_guess
         p_0 = np.zeros(p.shape[0])
         trust_box_size = 1
@@ -213,7 +213,10 @@ class TrajectoryPlanner:
         min_actual_worse_redution = -100
         min_const_violation = 2.4
         con1_norm, con2_norm = self.get_constraints_norm(x_k)
+        same_trust_region_count = 0
+        old_trust_region = copy.copy(trust_box_size)
 
+        good_rho_k = 0.2
         while con1_norm + con2_norm >= 2 or penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             while iteration_count < max_iteration:
@@ -283,12 +286,14 @@ class TrajectoryPlanner:
                         # x_k = copy.copy(new_x_k)
                         break
                     else:
-                        # elif rho_k >= 0.75:
-                        trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
+                        if rho_k >= 0.75:
+                            trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
                         # print "expanding trust region", trust_box_size
-                        x_k += p_k
+                        # x_k += p_k
                         # new_x_k = copy.copy(x_k)
-                        break
+                            break
+                    if rho_k > good_rho_k:
+                        x_k += p_k
 
                     if trust_box_size < 0.01:
                         isAdjustPenalty = True

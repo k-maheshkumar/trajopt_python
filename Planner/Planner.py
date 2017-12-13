@@ -1,6 +1,8 @@
 import numpy as np
 from sqpproblem import ProblemBuilder as sqp
 from sqpproblem import SQPproblem
+from sqpproblem import SQPsolver
+
 import cvxpy
 
 '''
@@ -16,7 +18,7 @@ import cvxpy
 
 
 class TrajectoryOptimizationPlanner:
-    def __init__(self, problem, solver):
+    def __init__(self, problem, solver, temp):
 
         self.problem = problem
         self.samples = problem["samples"]
@@ -51,12 +53,21 @@ class TrajectoryOptimizationPlanner:
             self.P.append(self.sqp[i].P)
             self.q.append(self.sqp[i].q)
 
-            self.A.append(self.sqp[i].A)
-            self.b.append(self.sqp[i].b.tolist())
+            if temp == 1:
+                self.A.append(self.sqp[i].A)
+                self.b.append(self.sqp[i].b.tolist())
 
-            self.G.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
-            self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
-            self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
+                self.G.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
+                self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
+                self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
+            else:
+
+                self.A.append(np.vstack([self.sqp[i].A, self.sqp[i].A, self.sqp[i].A]))
+                self.b.append(np.hstack([self.sqp[i].b.tolist(), self.sqp[i].b.tolist(), self.sqp[i].b.tolist()]))
+
+                self.G.append(np.vstack([self.sqp[i].G, np.identity(self.samples)]))
+                self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].lb]))
+                self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].ub]))
 
             self.lb.append(self.sqp[i].lb.tolist())
             self.ub.append(self.sqp[i].ub.tolist())
@@ -120,9 +131,12 @@ class TrajectoryOptimizationPlanner:
             intermediate += stepSize
         return np.round(data, 3)
 
-    def get_trajectory(self, initial_guess= None):
+    def get_trajectory(self, initial_guess= None, equality= False):
         print "getting trajectory"
-        sp = SQPproblem.SQPProblem(self, cvxpy.ECOS)
+        if equality:
+            sp = SQPproblem.SQPProblem(self, self.solver)
+        else:
+            sp = SQPsolver.SQPsolver(self, self.solver)
         solver_status, trajectory = sp.solveSQP(initial_guess)
         return solver_status, trajectory
 

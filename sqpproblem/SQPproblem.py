@@ -17,7 +17,6 @@ import copy
 
 
 class SQPProblem:
-
     def __init__(self, problem, solver):
         self.P = problem.P
         self.q = problem.q
@@ -30,7 +29,6 @@ class SQPProblem:
         self.b = problem.b
         self.initial_guess = problem.initial_guess
         self.solver = solver
-
 
     def displayProblem(self):
         print ("P")
@@ -54,7 +52,6 @@ class SQPProblem:
 
         print ("maxNoOfIteration")
         print (self.max_no_of_Iteration)
-
 
     def interpolate(self, start, end, samples):
         data = []
@@ -100,7 +97,7 @@ class SQPProblem:
         x.value = copy.copy(x_k)
         objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
         objective += penalty * (
-        cvxpy.norm1(self.G * x - self.ubG.flatten()) + cvxpy.norm1(-self.G * x + self.lbG.flatten()))
+            cvxpy.norm1(self.G * x - self.ubG.flatten()) + cvxpy.norm1(-self.G * x + self.lbG.flatten()))
 
         return objective
 
@@ -108,7 +105,7 @@ class SQPProblem:
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         constraints = [cvxpy.norm(p, "inf") <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
-        result = problem.solve(solver= self.solver, warm_start= True, verbose= False)
+        result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
         return p.value, model_objective, actual_objective, problem.status
 
     def get_constraints_norm(self, x_k):
@@ -117,7 +114,7 @@ class SQPProblem:
         max_con2 = (np.linalg.norm(con2, np.inf))
         return max_con1, max_con2
 
-    def solveSQP(self, initial_guess = None):
+    def solveSQP(self, initial_guess=None):
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
@@ -165,7 +162,8 @@ class SQPProblem:
                 iteration_count += 1
                 # print "iteration_count", iteration_count
                 while trust_box_size >= min_trust_box_size:
-                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.sovle_problem(x_k, penalty, p,
+                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.sovle_problem(x_k,
+                                                                                                             penalty, p,
                                                                                                              trust_box_size)
 
                     actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty)
@@ -213,9 +211,10 @@ class SQPProblem:
                         is_converged = True
                         break
 
-
                     if actual_reduction <= min_actual_worse_redution:
-                        print ("infeasible intial guess, because actual reduction",  actual_reduction," is worser than ", min_actual_worse_redution)
+                        print (
+                            "infeasible intial guess, because actual reduction", actual_reduction, " is worser than ",
+                            min_actual_worse_redution)
                         is_converged = True  # to force loop exit
                         break
                     if predicted_reduction / model_objective_at_p_k.value < -float("inf"):
@@ -230,9 +229,9 @@ class SQPProblem:
                     else:
                         if rho_k >= 0.75:
                             trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
-                        # print "expanding trust region", trust_box_size
-                        # x_k += p_k
-                        # new_x_k = copy.copy(x_k)
+                            # print "expanding trust region", trust_box_size
+                            # x_k += p_k
+                            # new_x_k = copy.copy(x_k)
                             break
                     if rho_k > good_rho_k:
                         x_k += p_k

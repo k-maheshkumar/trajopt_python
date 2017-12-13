@@ -6,7 +6,7 @@ import numpy as np
 from Planner import Planner
 
 request = {
-    "samples" : 3,
+    "samples" : 50,
     "duration" : 6,
     "max_iteration" : 1000,
     "max_penalty": 500,
@@ -26,13 +26,14 @@ request = {
     ]
 }
 
-plan = Planner.TrajectoryOptimizationPlanner(request, cvxpy.ECOS)
+temp = 0
+plan = Planner.TrajectoryOptimizationPlanner(request, cvxpy.SCS, temp)
 start = time.time()
 # sp.displayProblem()
 # x_0 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
-x_0 = np.full((1, request["samples"] * len(request["joints"])), 3.0).flatten()
-plan.displayProblem()
-prob = plan.get_trajectory(x_0)
+x_0 = np.full((1, request["samples"] * len(request["joints"])), 1.0).flatten()
+# plan.displayProblem()
+prob = plan.get_trajectory(x_0, temp)
 end = time.time()
 print("cvxopt",end - start)
 

@@ -22,10 +22,10 @@ np.random.seed(1)
 #     constr = [x1[:,t+1] == A*x1[:,t] + B*u[:,t],
 #               norm(u[:,t], 'inf') <= 1]
 #     states.append( Problem(Minimize(cost), constr) )
-duration = 5
+duration = 6
 samples = 3
-joints = 2
-x = Variable((joints, duration+1))
+joints = 1
+x = Variable((joints, samples))
 pro = []
 cost = 0
 states = []
@@ -42,8 +42,9 @@ max_vel = 0.3
 #                    min_vel * duration / (samples - 1) <= x[i:, t + 1] - x[i:, t ]]
         # states.append( Problem(Minimize(cost)) )
 
-for t in range(duration):
-    for i in range(joints):
+for i in range(joints):
+    for t in range(samples-1):
+
 
         # cost.append(sum_squares(x[i,t+1] - x[i,t]))
         cost += sum_squares(x[i, t + 1] - x[i, t])
@@ -58,14 +59,21 @@ constraints += constr
 
 x_0 = np.array([[0.2]])
 x_1 = [[0.7]]
-
-constraints += [x[0:, duration] == x_1, x[0:, 0] == x_0,
-                # x[1:, duration] == 0.9, x[1:, 0] == 0.3
+constraints += [x[0:, 0] == x_0, x[0:, samples -1] == x_1,
+                # x[0:, 0] == x_0, x[0:, samples - 1] == x_1,
                 ]
-x.value = np.array([[0.2,         0.30000004,  0.39999965,  0.49999954,  0.59999994,  0.7],
-                    [0.2,         0.3,         0.39999993,  0.49999988 , 0.60000017 , 0.7]])
+# x.value = np.array([[0.2,         0.30000004,  0.39999965,  0.49999954,  0.59999994,  0.7],
+#                     [0.2,         0.3,         0.39999993,  0.49999988 , 0.60000017 , 0.7]])
 prob = Problem(Minimize(prob), constraints)
-prob.solve(solver= cvxpy.ECOS, verbose= True)
+prob.solve(solver= cvxpy.OSQP, verbose= False)
+print prob.get_problem_data("OSQP")[0]
+print prob.get_problem_data("OSQP")[0]['b']
+print prob.get_problem_data("OSQP")[0]['G']
+print prob.get_problem_data("OSQP")[0]['q']
+print prob.get_problem_data("OSQP")[0]['P'].todense()
+print prob.get_problem_data("OSQP")[0]['A'].todense()
+print prob.get_problem_data("OSQP")[0]['F'].todense()
+
 print x.value
 print prob.value
 

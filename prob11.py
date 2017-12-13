@@ -1,5 +1,5 @@
 import pybullet as p
-# import time
+import numpy as np
 import math
 import time
 from datetime import datetime
@@ -46,12 +46,15 @@ request = {"joints":[]}
 request1 = {"joints":[]}
 
 reduceJoints = 0
-samples = 10
+samples = 30
 duration = 10
-maxIteration = 100
-#
-request.update({'samples' : samples, 'duration' : duration, 'maxIteration': maxIteration})
-request1.update({'samples' : samples, 'duration' : duration, 'maxIteration': maxIteration})
+max_iteration = 100
+max_penalty = 1e6
+max_delta = 5
+request.update({'samples': samples, 'duration': duration, 'max_iteration': max_iteration, 'max_penalty': max_penalty,
+                "max_delta": max_delta})
+request1.update({'samples': samples, 'duration': duration, 'max_iteration': max_iteration, 'max_penalty': max_penalty,
+                 "max_delta": max_delta})
 
 # print request
     # print jointInfo[1], jointNameToId[jointInfo[1]]
@@ -138,13 +141,17 @@ def updatePoses():
 
     sp = trajPlanner.TrajectoryPlanner(request, "osqp")
     # sp.displayProblem()
-    result, jointPoses = sp.solveProblem()
+    result, jointPoses = sp.solveSQP(None)
     sp1 = trajPlanner.TrajectoryPlanner(request1, "osqp")
     # sp.displayProblem()
-    result1, jointPoses1 = sp1.solveProblem()#
+    result1, jointPoses1 = sp1.solveSQP(None)
     # print jointPoses
     # print jointPoses1
-    return jointPoses, jointPoses1
+
+    jointPoses23 = (np.split(jointPoses, nJoints))
+    jointPoses13 = (np.split(jointPoses1, nJoints))
+    # print jointPoses, jointPoses1
+    return jointPoses23, jointPoses13
 
 
 def updateJoints(startState = [0], endState = [0]):
@@ -168,7 +175,7 @@ def moveArm(jointPoses2=[0]):
                                     targetPosition=jointPoses2[i][j], targetVelocity=0, force=500, positionGain=0.03,
                                         velocityGain=.5)
         # time.sleep(samples/float(duration))
-
+        time.sleep(duration / float(samples))
 
 
 gotostart = 0
@@ -203,6 +210,7 @@ while 1:
             gotostart = 1
             gotoend = 0
             # print "gotostart"
+            # print jointPoses
 
 
         # time.sleep(2)
@@ -218,6 +226,7 @@ while 1:
             gotostart = 0
             gotoend = 1
             # print "gotoend"
+            # print jointPoses1
 
 
     # time.sleep(2)

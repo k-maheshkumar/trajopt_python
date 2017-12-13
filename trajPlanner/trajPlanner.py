@@ -178,13 +178,16 @@ class TrajectoryPlanner:
         max_con2 = (np.linalg.norm(con2, np.inf))
         return max_con1, max_con2
 
-    def solveSQP(self):
+    def solveSQP(self, initial_guess):
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
         penalty.value = 1
-        x_0 = np.full((1, self.P.shape[0]), 3.0).flatten()
-        # x_0 = self.initial_guess
+        # x_0 = np.full((1, self.P.shape[0]), 3.0).flatten()
+        if initial_guess is None:
+            x_0 = self.initial_guess
+        else:
+            x_0 = initial_guess
         p_0 = np.zeros(p.shape[0])
         trust_box_size = 1
         max_penalty = 1e4
@@ -246,10 +249,10 @@ class TrajectoryPlanner:
                         break
 
                     if abs(actual_reduction) <= min_actual_redution:
-                        if con1_norm + con2_norm >= min_const_violation:
-                            print ("infeasible intial guess and actual reduction is very small")
-                            is_converged = True  # to force loop exit
-                            break
+                        # if con1_norm + con2_norm >= min_const_violation:
+                        #     print ("infeasible intial guess and actual reduction is very small")
+                        #     is_converged = True  # to force loop exit
+                        #     break
                         print ("actual reduction is very small, so converged to optimal solution")
                         x_k += p_k
                         is_converged = True
@@ -323,4 +326,7 @@ class TrajectoryPlanner:
             iteration_count = 0
         print ("initial x_0", x_0)
         # print "final x_k", x_k, trust_box_size, penalty.value
-        print ("final x: ", (np.split(x_k, self.num_of_joints)))
+        # print ("final x: ", (np.split(x_k, self.num_of_joints)))
+        print ("final x: ", x_k)
+
+        return solver_status, x_k

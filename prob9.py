@@ -2,6 +2,7 @@ import pybullet as p
 # import time
 import math
 import time
+import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 
@@ -48,10 +49,11 @@ request1 = {"joints":[]}
 reduceJoints = 0
 samples = 10
 duration = 15
-maxIteration = 100
-#
-request.update({'samples' : samples, 'duration' : duration, 'maxIteration': maxIteration})
-request1.update({'samples' : samples, 'duration' : duration, 'maxIteration': maxIteration})
+max_iteration = 100
+max_penalty = 1e6
+max_delta = 5
+request.update({'samples' : samples, 'duration' : duration, 'max_iteration': max_iteration, 'max_penalty': max_penalty, "max_delta": max_delta})
+request1.update({'samples' : samples, 'duration' : duration, 'max_iteration': max_iteration, 'max_penalty': max_penalty,"max_delta": max_delta})
 
 # print request
     # print jointInfo[1], jointNameToId[jointInfo[1]]
@@ -133,12 +135,15 @@ p.resetJointState(kukaId, lbr_iiwa_joint_7, motordir[6] * halfpi)
 
 from trajPlanner import trajPlanner
 
-sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+sp = trajPlanner.TrajectoryPlanner(request, "SCS")
 # sp.displayProblem()
-result, jointPoses = sp.solveProblem()
-sp1 = trajPlanner.TrajectoryPlanner(request1, "osqp")
+result, jointPoses = sp.solveSQP(None)
+sp1 = trajPlanner.TrajectoryPlanner(request1, "SCS")
 # sp.displayProblem()
-result1, jointPoses1 = sp1.solveProblem()# print jointPoses
+result1, jointPoses1 = sp1.solveSQP(None)# print jointPoses
+
+jointPoses = (np.split(jointPoses, nJoints))
+jointPoses1 = (np.split(jointPoses1, nJoints))
 useSimulation = 1
 # goStart = p.addUserDebugParameter("go to start", 0.0, 1.0, 0.0)
 

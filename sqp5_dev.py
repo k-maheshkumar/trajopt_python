@@ -20,7 +20,7 @@ A = np.array([[-1., 1., 0.],
                        [0., 1., 0.],
                        [0., 0., 1.]])
 start = 0.1
-end = 0.8
+end = 0.5
 lbA = np.array([-0.3, -0.3, start, end, start, end, -0.3, -0.3, -0.3])
 ubA = np.array([0.3, 0.3, start, end, start, end, 1.1, 1.1, 1.1])
 

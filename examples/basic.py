@@ -1,7 +1,10 @@
-from sqpproblem import SQPproblem as sqp
-from trajPlanner import trajPlanner
 import time
+
 import cvxpy
+import numpy as np
+
+from Planner import Planner
+
 request = {
     "samples" : 3,
     "duration" : 6,
@@ -12,8 +15,8 @@ request = {
         # { "end": 0.7, 'initialGuess': 0.2, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1,
         #  "min_velocity": -0.1, "max_velocity": 0.1},
 
-        {"start": 0.2, "end": 0.7,  "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity" : 0.1},
-        {"start": 0.3, "end": 0.9,  "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
+        {"start": 0.2, "end": 0.7,  "lower_joint_limit": -0.4, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity" : 0.1},
+        {"start": 0.4, "end": 0.9,  "lower_joint_limit": -0.4, "upper_joint_limit": 1.1, "min_velocity": -0.1,  "max_velocity": 0.1},
         # {"start": 0.5, "end": 0.9, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity": 0.1},
         # {"start": 0.1, "end": 0.3, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity": 0.1},
         # {"start": 0.2, "end": 0.6, "lower_joint_limit": -0.3, "upper_joint_limit": 1.1, "min_velocity": -0.1, "max_velocity": 0.1},
@@ -23,10 +26,13 @@ request = {
     ]
 }
 
-sp = trajPlanner.TrajectoryPlanner(request, cvxpy.ECOS)
+plan = Planner.TrajectoryOptimizationPlanner(request, cvxpy.ECOS)
 start = time.time()
 # sp.displayProblem()
-prob = sp.solveSQP()
+# x_0 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+x_0 = np.full((1, request["samples"] * len(request["joints"])), 3.0).flatten()
+plan.displayProblem()
+prob = plan.get_trajectory(x_0)
 end = time.time()
 print("cvxopt",end - start)
 

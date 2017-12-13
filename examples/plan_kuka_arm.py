@@ -1,9 +1,8 @@
-import pybullet as p
-import numpy as np
 import math
+import pybullet as p
 import time
-from datetime import datetime
-import matplotlib.pyplot as plt
+
+import numpy as np
 
 # __all__ = [pybullet, math, datetime]
 
@@ -137,12 +136,12 @@ jointPoses1 = []
 # updateJoints()
 def updatePoses():
 
-    from trajPlanner import trajPlanner
+    from sqpproblem import SQPproblem
 
-    sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+    sp = SQPproblem.SQPProblem(request, "osqp")
     # sp.displayProblem()
     result, jointPoses = sp.solveSQP(None)
-    sp1 = trajPlanner.TrajectoryPlanner(request1, "osqp")
+    sp1 = SQPproblem.SQPProblem(request1, "osqp")
     # sp.displayProblem()
     result1, jointPoses1 = sp1.solveSQP(None)
     # print jointPoses

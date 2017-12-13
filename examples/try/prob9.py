@@ -1,10 +1,9 @@
-import pybullet as p
 # import time
 import math
+import pybullet as p
 import time
+
 import numpy as np
-from datetime import datetime
-import matplotlib.pyplot as plt
 
 # __all__ = [pybullet, math, datetime]
 
@@ -133,12 +132,12 @@ p.resetJointState(kukaId, lbr_iiwa_joint_5, motordir[4] * halfpi)
 p.resetJointState(kukaId, lbr_iiwa_joint_6, motordir[5] * halfpi)
 p.resetJointState(kukaId, lbr_iiwa_joint_7, motordir[6] * halfpi)
 
-from trajPlanner import trajPlanner
+from sqpproblem import SQPproblem
 
-sp = trajPlanner.TrajectoryPlanner(request, "SCS")
+sp = SQPproblem.SQPProblem(request, "SCS")
 # sp.displayProblem()
 result, jointPoses = sp.solveSQP(None)
-sp1 = trajPlanner.TrajectoryPlanner(request1, "SCS")
+sp1 = SQPproblem.SQPProblem(request1, "SCS")
 # sp.displayProblem()
 result1, jointPoses1 = sp1.solveSQP(None)# print jointPoses
 

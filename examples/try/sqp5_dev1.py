@@ -3,7 +3,7 @@ import cvxpy
 import warnings
 import copy
 
-class Problem:
+class SQPsolver:
     def __init__(self):
 
         self.P = np.array([[2., -4., 0.],
@@ -18,18 +18,30 @@ class Problem:
                       [1., 0., 0.],
                       [0., 1., 0.],
                       [0., 0., 1.]])
-        self.start = 0.1
-        self.end = 0.6
+        self.start = 0.2
+        self.end = 7.0
         self.lbA = np.array([-0.3, -0.3, -0.3, -0.3, -0.3])
         self.ubA = np.array([0.3, 0.3, 1.1, 1.1, 1.1])
 
         self.A = np.array([[1., 0., 0.],
                            [0., 0., 1.],
                            [1., 0., 0.],
-                           [0., 0., 1.]
+                           [0., 0., 1.],
+                           [1., 0., 0.],
+                           [0., 0., 1.],
+                           [1., 0., 0.],
+                           [0., 0., 1.],
+                           # [1., 0., 0.],
+                           # [0., 0., 1.],
+                           # [1., 0., 0.],
+                           # [0., 0., 1.]
                            ])
         self.b = np.array([self.start, self.end,
-                           self.start, self.end
+                           self.start, self.end,
+                           self.start, self.end,
+                           self.start, self.end,
+                           # self.start, self.end,
+                           # self.start, self.end
                            ])
 
 
@@ -108,14 +120,14 @@ class Problem:
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
         penalty.value = 1
-        x_0 = np.array([0.2, 0.6, 0.8])
+        # x_0 = np.array([0.2, 0.6, 0.8])
         # print self.initialX
         # x_0 = np.array([2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0])
-        # x_0 = np.full((1, 3), 2.0).flatten()
+        x_0 = np.full((1, 3), 5.0).flatten()
         # x_0 = self.initialGuess
         # x_0 = self.initialX
         p_0 = np.zeros(p.shape[0])
-        trust_box_size = 5
+        trust_box_size = 2
         max_penalty = 1e4
         min_trust_box_size = 1e-4
         x_k = copy.copy(x_0)
@@ -145,7 +157,9 @@ class Problem:
         con1_norm, con2_norm, con3_norm= self.get_constraints_norm(x_k)
         same_trust_region_count = 0
         old_trust_region = 0
-        while con1_norm + con2_norm + con3_norm>= 2 or penalty.value <= max_penalty:
+
+        min_equality_norm = 1e-3
+        while abs(con3_norm.all()) <= min_equality_norm or penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             while iteration_count < max_iteration:
                 iteration_count += 1
@@ -172,7 +186,7 @@ class Problem:
 
                     rho_k = actual_reduction / predicted_reduction
 
-                    # print "rho_k", rho_k, abs(actual_reduction)
+                    print "rho_k", rho_k, abs(actual_reduction)
                     print x_k
                     print "x_k + pk ", x_k + p_k, trust_box_size, penalty.value, abs(actual_reduction)
                     con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
@@ -184,13 +198,13 @@ class Problem:
                         # print problem.status
                         # Todo: throw error when problem is not solved
                         break
-
+                    # print con3_norm
                     if old_rho_k == rho_k:
                         # print "rho_k are same"
                         isAdjustPenalty = True
                         break
-
-                    if abs(actual_reduction) <= min_actual_redution:
+                    #
+                    if abs(actual_reduction) <= min_actual_redution and abs(con3_norm) <= min_equality_norm:
                         if con1_norm + con2_norm >= min_const_violation:
                             print "infeasible intial guess"
                             is_converged = True  # to force loop exit
@@ -200,14 +214,15 @@ class Problem:
                         is_converged = True
                         break
 
-                    if con1_norm + con2_norm <= min_const_violation and con3_norm <= 0.01:
+                    if con1_norm + con2_norm <= min_const_violation or abs(con3_norm) <= min_equality_norm:
                         print "constraint violations are satisfied, so converged to optimal solution"
                         x_k += p_k
                         is_converged = True
                         break
 
+
                     if abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= min_x_redution:
-                        if con1_norm + con2_norm >= min_const_violation:
+                        if con1_norm + con2_norm >= min_const_violation and abs(con3_norm) >= min_equality_norm:
                             print "infeasible intial guess"
                             is_converged = True  # to force loop exit
                             break
@@ -226,13 +241,13 @@ class Problem:
                         break
                     if rho_k <= 0.25:
                         trust_box_size *= trust_shrink_ratio
-                        print "shrinking trust region", trust_box_size
+                        # print "shrinking trust region", trust_box_size
                         break
                         x_k = copy.copy(new_x_k)
                     else:
                         # elif rho_k >= 0.75:
                         trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
-                        print "expanding trust region", trust_box_size
+                        # print "expanding trust region", trust_box_size
                         x_k += p_k
                         new_x_k = copy.copy(x_k)
                         break
@@ -272,7 +287,7 @@ class Problem:
         # print sovle_problem(x_0, penalty, p, trust_box_size)
         # print evaluate_constraints(x_0)
 
-prob = Problem()
+prob = SQPsolver()
 prob.solveSQP()
 # x_0 = np.array([0.2, 0.6, 0.8])
 # prob.get_actual_objective(x_0, 12)

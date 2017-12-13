@@ -1,6 +1,7 @@
 import numpy as np
 from sqpproblem import ProblemBuilder as sqp
 from sqpproblem import SQPproblem
+from sqpproblem import SQPsolver
 import cvxpy
 
 '''
@@ -51,12 +52,16 @@ class TrajectoryOptimizationPlanner:
             self.P.append(self.sqp[i].P)
             self.q.append(self.sqp[i].q)
 
-            self.A.append(self.sqp[i].A)
-            self.b.append(self.sqp[i].b.tolist())
+            self.A.append(np.vstack([self.sqp[i].A, self.sqp[i].A, self.sqp[i].A]))
+            self.b.append(np.hstack([self.sqp[i].b.tolist(), self.sqp[i].b.tolist(), self.sqp[i].b.tolist()]))
 
-            self.G.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
-            self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
-            self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
+            # self.G.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
+            # self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
+            # self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
+
+            self.G.append(np.vstack([self.sqp[i].G, np.identity(self.samples)]))
+            self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].lb]))
+            self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].ub]))
 
             self.lb.append(self.sqp[i].lb.tolist())
             self.ub.append(self.sqp[i].ub.tolist())
@@ -122,7 +127,9 @@ class TrajectoryOptimizationPlanner:
 
     def get_trajectory(self, initial_guess= None):
         print "getting trajectory"
+        # sp = SQPsolver.SQPsolver(self, cvxpy.ECOS)
         sp = SQPproblem.SQPProblem(self, cvxpy.ECOS)
+
         solver_status, trajectory = sp.solveSQP(initial_guess)
         return solver_status, trajectory
 

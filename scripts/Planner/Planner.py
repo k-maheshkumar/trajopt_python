@@ -1,9 +1,9 @@
 import numpy as np
-from sqpproblem import ProblemBuilder as sqp
-from sqpproblem import SQPproblem
-from sqpproblem import SQPsolver
+from scripts.sqpproblem import SQPproblem
+from scripts.sqpproblem import SQPsolver
 
-import cvxpy
+import Trajectory as traj
+from scripts.sqpproblem import ProblemBuilder as sqp
 
 '''
         minimize
@@ -18,7 +18,7 @@ import cvxpy
 
 
 class TrajectoryOptimizationPlanner:
-    def __init__(self, problem, solver, temp):
+    def __init__(self, problem, solver, temp= False):
 
         self.problem = problem
         self.samples = problem["samples"]
@@ -138,6 +138,9 @@ class TrajectoryOptimizationPlanner:
         else:
             sp = SQPsolver.SQPsolver(self, self.solver)
         solver_status, trajectory = sp.solveSQP(initial_guess)
-        return solver_status, trajectory
+        trajectory = np.array((np.split(trajectory, self.num_of_joints)))
+        trajectory = traj.Trajectory(trajectory)
+
+        return solver_status, trajectory.get_trajectory()
 
 

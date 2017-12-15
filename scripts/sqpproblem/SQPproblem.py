@@ -1,8 +1,7 @@
-import numpy as np
-from sqpproblem import ProblemBuilder as sqp
-from warnings import warn
-import cvxpy
 import copy
+import cvxpy
+import numpy as np
+from scripts.utils import yaml_paser as yaml
 
 '''
         minimize
@@ -16,7 +15,7 @@ import copy
 '''
 
 
-class SQPsolver:
+class SQPProblem:
     def __init__(self, problem, solver):
         self.P = problem.P
         self.q = problem.q
@@ -28,7 +27,17 @@ class SQPsolver:
         self.A = problem.A
         self.b = problem.b
         self.initial_guess = problem.initial_guess
-        self.solver = solver
+
+        file_path_prefix = '../../config/'
+        sqp_config_file = file_path_prefix + 'sqp_config.yaml'
+
+        sqp_yaml = yaml.ConfigParser(sqp_config_file)
+        self.solver_config = sqp_yaml.get_by_key("sqp")
+
+        if solver is not None:
+            self.solver = solver
+        else:
+            self.solver = self.solver_config["solver"]
 
     def displayProblem(self):
         print ("P")
@@ -65,14 +74,12 @@ class SQPsolver:
     def evaluate_constraints(self, x_k):
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
         cons2 = np.add(np.matmul(-self.G, x_k), self.lbG)
-        cons3 = np.subtract(np.matmul(self.A, x_k), self.b)
-        return cons1.flatten(), cons2.flatten(), cons3.flatten()
+        return cons1.flatten(), cons2.flatten()
 
     def get_constraints_gradients(self):
         cons1_grad = self.G
         cons2_grad = -self.G
-        cons3_grad = self.A
-        return cons1_grad, cons2_grad, cons3_grad
+        return cons1_grad, cons2_grad
 
     def get_objective_gradient_and_hessian(self, x_k):
         model_grad = 0.5 * np.matmul((self.P + self.P.T), x_k)
@@ -80,20 +87,17 @@ class SQPsolver:
         return model_grad, model_hess
 
     def get_model_objective(self, x_k, penalty, p):
-
-        cons1_at_xk, cons2_at_xk, cons3_at_xk = self.evaluate_constraints(x_k)
-
-        cons1_grad_at_xk, cons2_grad_at_xk, cons3_grad_at_xk = self.get_constraints_gradients()
+        cons1_at_xk, cons2_at_xk = self.evaluate_constraints(x_k)
+        cons1_grad_at_xk, cons2_grad_at_xk = self.get_constraints_gradients()
 
         cons1_model = cons1_at_xk + cons1_grad_at_xk * p
         cons2_model = cons2_at_xk + cons2_grad_at_xk * p
-        cons3_model = cons3_at_xk + cons3_grad_at_xk * p
 
         objective_grad_at_xk, objective_hess_at_xk = self.get_objective_gradient_and_hessian(x_k)
         objective_at_xk = self.get_actual_objective(x_k, penalty)
         model = objective_at_xk.value + objective_grad_at_xk * p + 0.5 * cvxpy.quad_form(p, objective_hess_at_xk)
 
-        model += penalty * (cvxpy.norm1(cons1_model) + cvxpy.norm1(cons2_model) + cvxpy.norm1(cons3_model))
+        model += penalty * (cvxpy.norm1(cons1_model) + cvxpy.norm1(cons2_model))
 
         return model, objective_at_xk
 
@@ -101,8 +105,8 @@ class SQPsolver:
         x = cvxpy.Variable(self.P.shape[0])
         x.value = copy.copy(x_k)
         objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
-        objective += penalty * (cvxpy.norm1(self.G * x - self.ubG.flatten()) + cvxpy.norm1(-self.G * x + self.lbG.flatten()) + cvxpy.norm1(
-            self.A * x + self.b.flatten()) )
+        objective += penalty * (
+            cvxpy.norm1(self.G * x - self.ubG.flatten()) + cvxpy.norm1(-self.G * x + self.lbG.flatten()))
 
         return objective
 
@@ -114,12 +118,10 @@ class SQPsolver:
         return p.value, model_objective, actual_objective, problem.status
 
     def get_constraints_norm(self, x_k):
-        con1, con2, con3 = self.evaluate_constraints(x_k)
+        con1, con2 = self.evaluate_constraints(x_k)
         max_con1 = (np.linalg.norm(con1, np.inf))
         max_con2 = (np.linalg.norm(con2, np.inf))
-        max_con3 = (np.linalg.norm(con3, np.inf))
-
-        return max_con1, max_con2, max_con3
+        return max_con1, max_con2
 
     def solveSQP(self, initial_guess=None):
         x = cvxpy.Variable(self.P.shape[0])
@@ -132,38 +134,40 @@ class SQPsolver:
         else:
             x_0 = initial_guess
         p_0 = np.zeros(p.shape[0])
-        trust_box_size = 2
-        max_penalty = 1e4
-        min_trust_box_size = 1e-4
+        trust_box_size = float(self.solver_config["trust_region_size"])
+        print "dfds", trust_box_size
+        max_penalty = float(self.solver_config["max_penalty"])
+        min_trust_box_size = float(self.solver_config["min_trust_box_size"])
         x_k = copy.copy(x_0)
-        max_trust_box_size = 5
+        max_trust_box_size = float(self.solver_config["max_trust_box_size"])
 
-        trust_shrink_ratio = 0.25
-        trust_expand_ratio = 2
+        trust_shrink_ratio = float(self.solver_config["trust_shrink_ratio"])
+        trust_expand_ratio = float(self.solver_config["trust_expand_ratio"])
 
-        trust_good_region_ratio = 0.75
-        max_iteration = 20
+        trust_good_region_ratio = float(self.solver_config["trust_good_region_ratio"])
+
+        max_iteration = float(self.solver_config["max_iteration"])
         iteration_count = 0
 
-        min_model_improve = 1e-4
-        improve_ratio_threshold = .25;
+        min_model_improve = float(self.solver_config["min_model_improve"])
+        improve_ratio_threshold = float(self.solver_config["improve_ratio_threshold"])
         min_approx_improve_frac = - float('inf')
         is_converged = False
         isAdjustPenalty = False
 
         old_rho_k = 0
         new_x_k = copy.copy(x_0)
-        min_actual_redution = 1e-1
-        min_x_redution = 1e-3
+        min_actual_redution = float(self.solver_config["min_actual_redution"])
+        min_x_redution = float(self.solver_config["min_x_redution"])
 
-        min_actual_worse_redution = -100
-        min_const_violation = 3
-        con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
+        min_actual_worse_redution = float(self.solver_config["min_actual_worse_redution"])
+        min_const_violation = float(self.solver_config["min_const_violation"])
+        con1_norm, con2_norm = self.get_constraints_norm(x_k)
         same_trust_region_count = 0
         old_trust_region = copy.copy(trust_box_size)
-        min_equality_norm = 1e-2
+
         good_rho_k = 0.2
-        while con3_norm.all() >= min_equality_norm or penalty.value <= max_penalty:
+        while con1_norm + con2_norm >= 2 or penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             while iteration_count < max_iteration:
                 iteration_count += 1
@@ -180,7 +184,7 @@ class SQPsolver:
                     predicted_reduction = model_objective_at_p_0.value - model_objective_at_p_k.value
 
                     rho_k = actual_reduction / predicted_reduction
-                    con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
+                    con1_norm, con2_norm = self.get_constraints_norm(x_k)
 
                     if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                         # print problem.status
@@ -197,13 +201,12 @@ class SQPsolver:
                             print ("infeasible intial guess and actual reduction is very small")
                             is_converged = True  # to force loop exit
                             break
-                        elif con3_norm.all() <= min_equality_norm:
-                            print ("actual reduction is very small, so converged to optimal solution")
-                            x_k += p_k
-                            is_converged = True
-                            break
+                        print ("actual reduction is very small, so converged to optimal solution")
+                        x_k += p_k
+                        is_converged = True
+                        break
 
-                    if con1_norm + con2_norm <= min_const_violation or abs(con3_norm) <= min_equality_norm:
+                    if con1_norm + con2_norm <= min_const_violation:
                         print ("constraint violations are satisfied, so converged to optimal solution")
                         x_k += p_k
                         is_converged = True
@@ -221,8 +224,8 @@ class SQPsolver:
 
                     if actual_reduction <= min_actual_worse_redution:
                         print (
-                        "infeasible intial guess, because actual reduction", actual_reduction, " is worser than ",
-                        min_actual_worse_redution)
+                            "infeasible intial guess, because actual reduction", actual_reduction, " is worser than ",
+                            min_actual_worse_redution)
                         is_converged = True  # to force loop exit
                         break
                     if predicted_reduction / model_objective_at_p_k.value < -float("inf"):
@@ -271,8 +274,7 @@ class SQPsolver:
             penalty.value *= 10
             iteration_count = 0
         print ("initial x_0", x_0)
-        # print "final x_k", x_k, trust_box_size, penalty.value
-        # print ("final x: ", (np.split(x_k, self.num_of_joints)))
         print ("final x: ", x_k)
+        print ("solver: ", self.solver)
 
         return solver_status, x_k

@@ -3,10 +3,10 @@ import time
 import cvxpy
 import numpy as np
 
-from Planner import Planner
+from scripts.Planner import Planner
 
 request = {
-    "samples" : 50,
+    "samples" : 5,
     "duration" : 6,
     "max_iteration" : 1000,
     "max_penalty": 500,
@@ -26,8 +26,8 @@ request = {
     ]
 }
 
-temp = 0
-plan = Planner.TrajectoryOptimizationPlanner(request, cvxpy.SCS, temp)
+temp = 1
+plan = Planner.TrajectoryOptimizationPlanner(request, None, temp)
 start = time.time()
 # sp.displayProblem()
 # x_0 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])

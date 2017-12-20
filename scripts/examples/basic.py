@@ -57,7 +57,7 @@ request = {
     ]
 }
 
-temp = 1
+temp = 0
 plan = Planner.TrajectoryOptimizationPlanner(problem=request, solver="SCS", temp=temp)
 start = time.time()
 # sp.displayProblem()
@@ -66,5 +66,5 @@ x_0 = np.full((1, request["samples"] * len(request["joints"])), 1.0).flatten()
 plan.displayProblem()
 prob = plan.get_trajectory()
 end = time.time()
-print("cvxopt",end - start)
+print("computation time: ",end - start)
 

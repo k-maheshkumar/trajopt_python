@@ -1,7 +1,7 @@
 from urdf_parser_py.urdf import Joint as urdf_joint
 from urdf_parser_py.urdf import URDF
 import Planner
-
+import time
 
 class Joint(urdf_joint):
     def __init__(self, joint, start, end):
@@ -25,7 +25,7 @@ class Joints:
             self.joints[joint.name] = Joint(joint, 1, 2)
 
     def update_states(self, states):
-        decimal_places = 2
+        decimal_places = 4
         for key, value in states.items():
             self.joints[key].start = round(value['start'], decimal_places)
             self.joints[key].end = round(value['end'], decimal_places)
@@ -41,7 +41,7 @@ class Joints:
                 joints.append(self.joints[joint_in_group])
         print len(joints)
         self.trajectory = Planner.TrajectoryOptimizationPlanner(joints=joints, samples=samples, duration=duration,
-                                                                solver="SCS", temp=1)
+                                                                solver="SCS", temp=0)
         self.trajectory.displayProblem()
 
     def get_trajectory(self):
@@ -80,7 +80,7 @@ endState = [-2.0417782994426674, 0.9444594031189716, -1.591006403858707, -1.9222
 
 states = {
     # 'lbr_iiwa_joint_1': {"start": -0.49, "end": -2.0},
-    'lbr_iiwa_joint_1': {"start": -0.49, "end": -2.04},
+    'lbr_iiwa_joint_1': {"start": -0.49197958189616936, "end": -2.0417782994426674},
     'lbr_iiwa_joint_2': {"start": 1.4223062659337982, "end": 0.9444594031189716},
     'lbr_iiwa_joint_3': {"start": -1.5688299779644697, "end": -1.591006403858707},
     'lbr_iiwa_joint_4': {"start": -1.3135004031364736, "end": -1.9222844444479184},
@@ -99,7 +99,11 @@ group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_
 duration = 6
 samples = 5
 # joints.plan_trajectory(group1, samples, duration)
-joints.plan_trajectory(group1_test, samples, duration)
+joints.plan_trajectory(group1 + group2 + group1 + group2, samples, duration)
+start = time.time()
 
 print joints.get_trajectory()
+end = time.time()
+print("computation time: ", end - start)
+
 # print robot.joints.get_trajectory()

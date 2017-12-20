@@ -1,7 +1,7 @@
 sqp:
     solver: ['ECOS_BB', 'SCS', 'ECOS']
     max_penalty: 1e4
-    max_iteration: 20
+    max_iteration: 10
 
     trust_region_size: 2
     min_trust_box_size: 1e-4
@@ -14,7 +14,7 @@ sqp:
     min_model_improve: 1e-4
     improve_ratio_threshold: 0.25
 
-    min_actual_redution: 1e-1
+    min_actual_redution: 1e-2
     min_x_redution: 1e-3
     min_improve_ratio: 0.001
     min_actual_worse_redution: -100

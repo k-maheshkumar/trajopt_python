@@ -182,9 +182,9 @@ class TrajectoryOptimizationPlanner:
         for i in range(samples):
             data.append(intermediate)
             intermediate += stepSize
-        # return np.round(data, 3)
-        print data
-        return data
+        return np.round(data, 3)
+        # print data
+        # return data
 
     def get_trajectory(self, initial_guess= None):
         print "getting trajectory"

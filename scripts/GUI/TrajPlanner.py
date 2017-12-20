@@ -4,6 +4,7 @@ import yaml
 import numpy as np
 from scripts.utils import yaml_paser as yaml
 import itertools
+import functools
 class PlannerGui(QtGui.QWidget):
     def __init__(self):
         super(PlannerGui, self).__init__()
@@ -19,8 +20,8 @@ class PlannerGui(QtGui.QWidget):
         self.initUI()
 
     def initUI(self):
-        hbox = QtGui.QHBoxLayout()
-        sqp_grid = QtGui.QGridLayout()
+        self.hbox = QtGui.QHBoxLayout()
+        self.sqp_grid = QtGui.QGridLayout()
         grid1 = QtGui.QGridLayout()
 
         # # Definition des Tracing Parameters widgets
@@ -36,28 +37,55 @@ class PlannerGui(QtGui.QWidget):
         # hbox.addLayout(grid1)
 
 
-        sqp_labels = []
-        sqp_spin_box = []
-        sqp_grid = QtGui.QGridLayout()
+        self.sqp_labels = {}
+        self.sqp_spin_box = {}
+        self.sqp_combo_box = {}
+        self.sqp_grid = QtGui.QGridLayout()
+
         min_ = 0.00001
-        max_ = 1
+        max_ = 100
         # Definition des Tracing Parameters widgets
         for key, value in self.sqp_config.iteritems():
-            sqp_labels.append({key :QtGui.QLabel(key)})
-            sqp_spin_box.append({key: QtGui.QDoubleSpinBox(self)})
+            self.sqp_labels[key] = QtGui.QLabel(key)
+            if not isinstance(value, list):
+                self.sqp_spin_box[key] = QtGui.QDoubleSpinBox(self)
 
-        sqp_spin_box = {k: v for d in sqp_spin_box for k, v in d.items()}
-        sqp_labels = {k: v for d in sqp_labels for k, v in d.items()}
+            else:
+                # self.sqp_combo_box.append({key: QtGui.QComboBox(self)})
+                self.sqp_combo_box[key] = QtGui.QComboBox(self)
 
         sqp_param_count = 0
-        hbox.addLayout(sqp_grid)
-        for key, value in sqp_labels.iteritems():
-            sqp_grid.addWidget(sqp_labels[key], sqp_param_count, 0)
-            sqp_grid.addWidget(sqp_spin_box[key], sqp_param_count, 1)
-            if self.sqp_config[key] is str:
-                sqp_spin_box[key].setValue(float(self.sqp_config[key]))
-            sqp_spin_box[key].setRange(min_, max_)
-            self.connect(sqp_spin_box[key], QtCore.SIGNAL('valueChanged(double)'), self.change_value1)
+        self.hbox.addLayout(self.sqp_grid)
+
+        for key, value in self.sqp_labels.iteritems():
+            self.sqp_grid.addWidget(self.sqp_labels[key], sqp_param_count, 0)
+
+            # if self.sqp_config[key] is str:
+
+            if not isinstance(self.sqp_config[key], list):
+                self.sqp_grid.addWidget(self.sqp_spin_box[key], sqp_param_count, 1)
+                self.sqp_spin_box[key].setValue(float(self.sqp_config[key]))
+                # self.sqp_spin_box[key].setRange(min_, max_)
+                self.sqp_spin_box[key].valueChanged.connect(functools.partial(self.on_spin_box_value_changed, key))
+
+                if abs(float(self.sqp_config[key])) < 1:
+                    self.sqp_spin_box[key].setSingleStep(0.01)
+                if float(self.sqp_config[key]) < 0:
+                    self.sqp_spin_box[key].setRange(-max_, max_)
+                if float(self.sqp_config[key]) > 100:
+                    print self.sqp_config[key]
+                    self.sqp_spin_box[key].setRange(-max_, max_ * 1e4)
+
+            else:
+                self.sqp_grid.addWidget(self.sqp_combo_box[key], sqp_param_count, 1)
+                self.sqp_combo_box[key].addItems(self.sqp_config[key])
+                self.sqp_combo_box[key].currentIndexChanged.connect(functools.partial(self.on_combo_box_value_changed, key))
+
+                # self.robot_combo_box.currentIndexChanged.connect(self.selectionchange)
+
+            # self.connect(sqp_spin_box[key], QtCore.SIGNAL('valueChanged(double)'), self.change_value1)
+            # sqp_spin_box[key].connect(QtCore.SIGNAL(self.test()), self.change_value1)
+
             sqp_param_count += 1
 
 
@@ -86,14 +114,14 @@ class PlannerGui(QtGui.QWidget):
                     self.robot_combo_box.addItem(value)
                     # robot_grid.append({value: QtGui.QGridLayout()})
 
-        hbox.addLayout(robot_grid)
+        self.hbox.addLayout(robot_grid)
         robot_grid.addWidget(robot_label, 2, 0)
         robot_grid.addWidget(self.robot_combo_box, 2, 1)
 
         self.robot_combo_box.currentIndexChanged.connect(self.selectionchange)
 
 
-        window.setLayout(hbox)
+        window.setLayout(self.hbox)
 
 
 
@@ -102,6 +130,11 @@ class PlannerGui(QtGui.QWidget):
 
         self.show()
 
+    def on_spin_box_value_changed(self, checked, message):
+        print checked, message
+
+    def   on_combo_box_value_changed(self, combo_box_key):
+        print combo_box_key, self.sqp_combo_box[combo_box_key].currentText()
     def change_value1(self, val):
        print val
     def selectionchange(self, i):

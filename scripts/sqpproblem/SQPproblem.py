@@ -8,7 +8,7 @@ from scripts.utils import yaml_paser as yaml
             (1/2) * x.T * P * x + q.T * x
 
         subject to
-            lbC <= C * x <= ubC
+            lbG <= G * x <= ubG
             # lb <= x <= ub
             # A * x == b
 
@@ -37,7 +37,7 @@ class SQPProblem:
         if solver is not None:
             self.solver = solver
         else:
-            self.solver = self.solver_config["solver"]
+            self.solver = self.solver_config["solver"][1]
 
     def displayProblem(self):
         print ("P")
@@ -135,7 +135,6 @@ class SQPProblem:
             x_0 = initial_guess
         p_0 = np.zeros(p.shape[0])
         trust_box_size = float(self.solver_config["trust_region_size"])
-        print "dfds", trust_box_size
         max_penalty = float(self.solver_config["max_penalty"])
         min_trust_box_size = float(self.solver_config["min_trust_box_size"])
         x_k = copy.copy(x_0)
@@ -167,8 +166,8 @@ class SQPProblem:
         old_trust_region = copy.copy(trust_box_size)
 
         good_rho_k = 0.2
-        while con1_norm + con2_norm >= 2 or penalty.value <= max_penalty:
-            # print "penalty ", penalty.value
+        while  penalty.value <= max_penalty:
+            print "penalty ", penalty.value
             while iteration_count < max_iteration:
                 iteration_count += 1
                 # print "iteration_count", iteration_count
@@ -185,7 +184,10 @@ class SQPProblem:
 
                     rho_k = actual_reduction / predicted_reduction
                     con1_norm, con2_norm = self.get_constraints_norm(x_k)
-
+                    # print "actual_reduction, predicted_reduction", actual_reduction, predicted_reduction
+                    print "rho_k", rho_k
+                    # # print "x_k", x_k
+                    # print "x_k + p_k", x_k + p_k
                     if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                         # print problem.status
                         # Todo: throw error when problem is not solved
@@ -197,10 +199,10 @@ class SQPProblem:
                         break
 
                     if abs(actual_reduction) <= min_actual_redution:
-                        if con1_norm + con2_norm >= min_const_violation:
-                            print ("infeasible intial guess and actual reduction is very small")
-                            is_converged = True  # to force loop exit
-                            break
+                        # if con1_norm + con2_norm >= min_const_violation:
+                        #     print ("infeasible intial guess and actual reduction is very small")
+                        #     is_converged = True  # to force loop exit
+                        #     break
                         print ("actual reduction is very small, so converged to optimal solution")
                         x_k += p_k
                         is_converged = True
@@ -213,10 +215,10 @@ class SQPProblem:
                         break
 
                     if abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= min_x_redution:
-                        if con1_norm + con2_norm >= min_const_violation:
-                            print ("infeasible intial guess and improvement in x is very small")
-                            is_converged = True  # to force loop exit
-                            break
+                        # if con1_norm + con2_norm >= min_const_violation:
+                        #     print ("infeasible intial guess and improvement in x is very small")
+                        #     is_converged = True  # to force loop exit
+                        #     break
                         print ("improvement in x is very small, so converged to optimal solution")
                         x_k += p_k
                         is_converged = True
@@ -276,5 +278,6 @@ class SQPProblem:
         print ("initial x_0", x_0)
         print ("final x: ", x_k)
         print ("solver: ", self.solver)
+        print ("sqp problem py")
 
         return solver_status, x_k

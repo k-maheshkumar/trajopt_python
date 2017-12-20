@@ -25,20 +25,31 @@ class ProblemBuilder:
 
 
     def getStartAndEnd(self):
-        self.start = self.joint["start"]
-        self.end = self.joint["end"]
+        if type(self.joint) is dict:
+            self.start = self.joint["start"]
+            self.end = self.joint["end"]
+        else:
+            self.start = self.joint.start
+            self.end = self.joint.end
+
 
     def fillbounds(self):
-
-        self.lb = np.full((1, self.P.shape[0]), self.joint["lower_joint_limit"])
-        self.ub = np.full((1, self.P.shape[0]), self.joint["upper_joint_limit"])
-
+        if type(self.joint) is dict:
+            self.lb = np.full((1, self.P.shape[0]), self.joint["lower_joint_limit"])
+            self.ub = np.full((1, self.P.shape[0]), self.joint["upper_joint_limit"])
+        else:
+            self.lb = np.full((1, self.P.shape[0]), self.joint.limit.lower)
+            self.ub = np.full((1, self.P.shape[0]), self.joint.limit.upper)
 
     def fillBoundsforG(self):
+        if type(self.joint) is dict:
+            max_vel = self.joint["max_velocity"]
 
-        max_vel = self.joint["max_velocity"]
+            min_vel = self.joint["min_velocity"]
+        else:
+            max_vel = self.joint.limit.velocity
 
-        min_vel = self.joint["min_velocity"]
+            min_vel = - self.joint.limit.velocity
 
         self.lbG = np.full((1, self.G.shape[0]), min_vel * self.duration / (self.samples - 1))
         self.ubG = np.full((1, self.G.shape[0]), max_vel * self.duration / (self.samples - 1))
@@ -47,9 +58,15 @@ class ProblemBuilder:
     def fillEqualityConstraintforA(self):
         self.b = np.zeros((1, 2))
 
-        self.b[0,0] = self.joint["start"]
+        if type(self.joint) is dict:
+            self.b[0,0] = self.joint["start"]
 
-        self.b[0,1] = self.joint["end"]
+            self.b[0,1] = self.joint["end"]
+        else:
+            self.b[0, 0] = self.joint.start
+
+            self.b[0, 1] = self.joint.end
+
 
     def fillP(self):
         self.P = np.zeros((self.samples, self.samples))

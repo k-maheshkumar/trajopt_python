@@ -27,6 +27,7 @@ class SQPsolver:
         self.A = problem.A
         self.b = problem.b
         self.initial_guess = problem.initial_guess
+        self.status = "-1"
 
         file_path_prefix = '../../config/'
         sqp_config_file = file_path_prefix + 'sqp_config.yaml'
@@ -318,6 +319,7 @@ class SQPsolver:
 
         min_actual_worse_redution = float(self.solver_config["min_actual_worse_redution"])
         min_const_violation = float(self.solver_config["min_const_violation"])
+        min_equality_norm = float(self.solver_config["min_equality_norm"])
 
         x_k = copy.copy(x_0)
 
@@ -332,16 +334,15 @@ class SQPsolver:
         con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
         same_trust_region_count = 0
         old_trust_region = copy.copy(trust_box_size)
-        min_equality_norm = 1e-2
         good_rho_k = 0.2
 
         while con3_norm.all() >= min_equality_norm or penalty.value <= max_penalty:
-            print "penalty ", penalty.value, trust_box_size
             if penalty.value >= 1000:
                 trust_box_size = 2
+                # print "penalty ", penalty.value, trust_box_size
             while iteration_count < max_iteration:
                 iteration_count += 1
-                print "iteration_count", iteration_count, trust_box_size
+                # print "iteration_count", iteration_count, trust_box_size
                 while trust_box_size >= min_trust_box_size:
                     p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.sovle_problem(x_k,
                                                                                                              penalty, p,
@@ -356,10 +357,9 @@ class SQPsolver:
                     rho_k = actual_reduction / predicted_reduction
                     con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
                     #
-                    # print "x_k", x_k
-                    # print "x_k + p_k", x_k + p_k
+                    print "x_k", x_k
+                    print "x_k + p_k", x_k + p_k
                     # print "rho_k", rho_k
-                    cons3_eval = self.evaluate_constraints(x_k + p_k)[2]
                     if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                         # print problem.status
                         # Todo: throw error when problem is not solved
@@ -370,41 +370,7 @@ class SQPsolver:
                         isAdjustPenalty = True
                         break
 
-                    if abs(actual_reduction) <= min_actual_redution:
-                        if con1_norm + con2_norm >= min_const_violation:
-                            print ("infeasible intial guess and actual reduction is very small")
-                            is_converged = True  # to force loop exit
-                            break
-                        elif con3_norm.all() <= min_equality_norm:
-                            print ("actual reduction is very small, so converged to optimal solution")
-                            x_k += p_k
-                            is_converged = True
-                            break
 
-                    # if con1_norm + con2_norm + con3_norm <= min_const_violation:
-                    # if con1_norm + con2_norm <= min_const_violation or (abs(con3_norm) <= min_equality_norm and iteration_count > 5):
-                    if con1_norm + con2_norm <= min_const_violation or (abs(cons3_eval.all()) <= min_equality_norm):
-                        print ("constraint violations are satisfied, so converged to optimal solution")
-                        x_k += p_k
-                        is_converged = True
-                        break
-
-                    if abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= min_x_redution:
-                        if con1_norm + con2_norm >= min_const_violation:
-                            print ("infeasible intial guess and improvement in x is very small")
-                            is_converged = True  # to force loop exit
-                            break
-                        print ("improvement in x is very small, so converged to optimal solution")
-                        x_k += p_k
-                        is_converged = True
-                        break
-
-                    if actual_reduction <= min_actual_worse_redution:
-                        print (
-                        "infeasible intial guess, because actual reduction", actual_reduction, " is worser than ",
-                        min_actual_worse_redution)
-                        is_converged = True  # to force loop exit
-                        break
                     if predicted_reduction / model_objective_at_p_k.value < -float("inf"):
                         # print "need to adjust penalty"
                         isAdjustPenalty = True
@@ -415,12 +381,12 @@ class SQPsolver:
                         # x_k = copy.copy(new_x_k)
                         break
                     else:
-                        if rho_k >= 0.75:
-                            trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
-                            # print "expanding trust region", trust_box_size
-                            # x_k += p_k
-                            # new_x_k = copy.copy(x_k)
-                            break
+                        # if rho_k >= 0.75:
+                        trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
+                        # print "expanding trust region", trust_box_size
+                        x_k += p_k
+                        # new_x_k = copy.copy(x_k)
+                        break
                     if rho_k > good_rho_k:
                         x_k += p_k
 
@@ -441,11 +407,54 @@ class SQPsolver:
                 if is_converged:
                     break
                 trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
-                # if con1_norm + con2_norm <= min_const_violation:
-                #     print "constraint violations are satisfied, so converged to optimal solution"
-                #     x_k += p_k
-                #     is_converged = True
-                #     break
+                if con1_norm + con2_norm <= min_const_violation and con3_norm > min_equality_norm:
+                    print "constraint violations are satisfied, so converged to optimal solution"
+                    x_k += p_k
+                    is_converged = True
+                    break
+
+            if abs(actual_reduction) <= min_actual_redution:
+                if con1_norm + con2_norm >= min_const_violation and con3_norm > min_equality_norm:
+                    print ("infeasible intial guess and actual reduction is very small")
+                    is_converged = True  # to force loop exit
+                    break
+                elif con3_norm.all() <= min_equality_norm:
+                    print ("actual reduction is very small, so converged to optimal solution")
+                    x_k += p_k
+                    is_converged = True
+                    break
+
+            # if con1_norm + con2_norm + con3_norm <= min_const_violation:
+            # if con1_norm + con2_norm <= min_const_violation or (abs(con3_norm) <= min_equality_norm and iteration_count > 5):
+            if con1_norm + con2_norm <= min_const_violation and (abs(con3_norm) <= min_equality_norm):
+                # if con1_norm + con2_norm <= min_const_violation or (abs(cons3_eval.all()) <= min_equality_norm):
+                print ("constraint violations are satisfied, so converged to optimal solution")
+                x_k += p_k
+                is_converged = True
+                break
+
+            if abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= min_x_redution:
+                if con1_norm + con2_norm >= min_const_violation and con3_norm > min_equality_norm:
+                    print ("infeasible intial guess and improvement in x is very small")
+                    is_converged = True  # to force loop exit
+                    break
+                if con3_norm <= min_equality_norm:
+                    print (
+                    "actual reduction is very small with equality constraints satisfied, so converged to optimal solution")
+                    x_k += p_k
+                    is_converged = True
+                    break
+                print ("improvement in x is very small, so probably converged to optimal solution")
+                x_k += p_k
+                is_converged = True
+                break
+
+            if actual_reduction <= min_actual_worse_redution:
+                print (
+                    "infeasible intial guess, because actual reduction", actual_reduction, " is worser than ",
+                    min_actual_worse_redution)
+                is_converged = True  # to force loop exit
+                break
             if is_converged or isAdjustPenalty:
                 break
             penalty.value *= 10
@@ -457,3 +466,193 @@ class SQPsolver:
         print ("final x: ", x_k)
 
         return solver_status, x_k
+
+    def solveSQP2(self, initial_guess=None):
+        x = cvxpy.Variable(self.P.shape[0])
+        p = cvxpy.Variable(x.shape[0])
+        penalty = cvxpy.Parameter(nonneg=True)
+        penalty.value = 1
+        # x_0 = np.full((1, self.P.shape[0]), 3.0).flatten()
+        if initial_guess is None:
+            x_0 = self.initial_guess
+        else:
+            x_0 = initial_guess
+        p_0 = np.zeros(p.shape[0])
+        print self.solver_config
+        trust_box_size = float(self.solver_config["trust_region_size"])
+        max_penalty = float(self.solver_config["max_penalty"])
+        min_trust_box_size = float(self.solver_config["min_trust_box_size"])
+        max_trust_box_size = float(self.solver_config["max_trust_box_size"])
+
+        trust_shrink_ratio = float(self.solver_config["trust_shrink_ratio"])
+        trust_expand_ratio = float(self.solver_config["trust_expand_ratio"])
+
+        trust_good_region_ratio = float(self.solver_config["trust_good_region_ratio"])
+        max_iteration = float(self.solver_config["max_iteration"])
+
+        min_model_improve = float(self.solver_config["min_model_improve"])
+        improve_ratio_threshold = float(self.solver_config["improve_ratio_threshold"])
+        min_approx_improve_frac = - float('inf')
+
+        min_actual_redution = float(self.solver_config["min_actual_redution"])
+        min_x_redution = float(self.solver_config["min_x_redution"])
+
+        min_actual_worse_redution = float(self.solver_config["min_actual_worse_redution"])
+        min_const_violation = float(self.solver_config["min_const_violation"])
+        min_equality_norm = float(self.solver_config["min_equality_norm"])
+
+        x_k = copy.copy(x_0)
+
+        iteration_count = 0
+        is_converged = False
+        isAdjustPenalty = False
+        old_rho_k = 0
+        new_x_k = copy.copy(x_0)
+
+        con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
+        same_trust_region_count = 0
+        old_trust_region = copy.copy(trust_box_size)
+        good_rho_k = 0.2
+
+        while con3_norm.all() >= min_equality_norm or penalty.value <= max_penalty:
+            # print "penalty ", penalty.value, trust_box_size
+            if penalty.value >= 1000:
+                trust_box_size = 2
+            while iteration_count < max_iteration:
+                iteration_count += 1
+                # print "iteration_count", iteration_count, trust_box_size
+                while trust_box_size >= min_trust_box_size:
+                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.sovle_problem(x_k,
+                                                                                                             penalty, p,
+                                                                                                             trust_box_size)
+
+                    actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty)
+                    model_objective_at_p_0 = self.get_actual_objective(p_0, penalty)
+
+                    actual_reduction = actual_objective_at_x_plus_p_k.value - actual_objective_at_x_k.value
+                    predicted_reduction = model_objective_at_p_0.value - model_objective_at_p_k.value
+
+                    rho_k = actual_reduction / predicted_reduction
+                    con1_norm, con2_norm, con3_norm = self.get_constraints_norm(x_k)
+
+                    # print "x_k", x_k
+                    # print "x_k + p_k", x_k + p_k
+                    # print "rho_k", rho_k
+                    if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
+                        # print problem.status
+                        # Todo: throw error when problem is not solved
+                        break
+
+                    if old_rho_k == rho_k:
+                        # print "rho_k are same"
+                        isAdjustPenalty = True
+                        break
+
+                    if predicted_reduction / model_objective_at_p_k.value < -float("inf"):
+                        # print "need to adjust penalty"
+                        isAdjustPenalty = True
+                        break
+                    if rho_k > good_rho_k:
+                        x_k += p_k
+
+                    if trust_box_size < min_trust_box_size:
+                        isAdjustPenalty = True
+                        trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
+                        break
+                    if iteration_count >= max_iteration:
+                        # print ("max iterations reached")
+                        isAdjustPenalty = True
+                        break
+
+                    if old_trust_region == trust_box_size:
+                        same_trust_region_count += 1
+                    if same_trust_region_count >= 5:
+                        # print "resetting trust region, since trust region size is same for last ", same_trust_region_count, " iterations"
+                        trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
+
+                    if rho_k <= 0.25:
+                        trust_box_size *= trust_shrink_ratio
+                        # print "shrinking trust region", trust_box_size
+                        # x_k = copy.copy(new_x_k)
+                        break
+                    else:
+                        # if rho_k >= 0.75:
+                        trust_box_size = min(trust_box_size * trust_expand_ratio, max_trust_box_size)
+                        # print "expanding trust region", trust_box_size
+                        x_k += p_k
+                        # new_x_k = copy.copy(x_k)
+                        break
+
+                    old_rho_k = rho_k
+                    old_trust_region = copy.copy(trust_box_size)
+                if is_converged:
+                    break
+                trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
+            # if con1_norm + con2_norm <= min_const_violation and con3_norm <= min_equality_norm:
+            #     self.status = "constraint violations are satisfied, so converged to optimal solution"
+            #     x_k += p_k
+            #     is_converged = True
+            #     break
+            print "x_k", x_k
+            print "x_k + p_k", x_k + p_k
+            con1_norm, con2_norm, con3_norm = self.evaluate_constraints(x_k + p_k)
+            print con1_norm
+            print con2_norm
+            print con3_norm
+            # if con1_norm + con2_norm <= min_const_violation and con3_norm <= min_equality_norm:
+            #     self.status = "constraint violations are satisfied, so converged to optimal solution"
+            #     x_k += p_k
+            #     is_converged = True
+            #     break
+            #
+            # if abs(actual_reduction) <= min_actual_redution:
+            #     if con1_norm + con2_norm >= min_const_violation and con3_norm > min_equality_norm:
+            #         self.status = "infeasible intial guess and actual reduction is very small"
+            #         is_converged = True  # to force loop exit
+            #         break
+            #     elif con3_norm.all() <= min_equality_norm:
+            #         self.status = "actual reduction is very small, so converged to optimal solution"
+            #         x_k += p_k
+            #         is_converged = True
+            #         break
+            #
+            # # if con1_norm + con2_norm + con3_norm <= min_const_violation:
+            # # if con1_norm + con2_norm <= min_const_violation or (abs(con3_norm) <= min_equality_norm and iteration_count > 5):
+            # if con1_norm + con2_norm <= min_const_violation and (abs(con3_norm) <= min_equality_norm):
+            #     # if con1_norm + con2_norm <= min_const_violation or (abs(cons3_eval.all()) <= min_equality_norm):
+            #     self.status = "constraint violations are satisfied, so converged to optimal solution"
+            #     x_k += p_k
+            #     is_converged = True
+            #     break
+            #
+            # if abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= min_x_redution:
+            #     if con1_norm + con2_norm >= min_const_violation and con3_norm > min_equality_norm:
+            #         self.status = "infeasible intial guess and improvement in x is very small"
+            #         is_converged = True  # to force loop exit
+            #         break
+            #     if con3_norm <= min_equality_norm:
+            #         self.status = "actual reduction is very small with equality constraints satisfied, so converged to optimal solution"
+            #         x_k += p_k
+            #         is_converged = True
+            #         break
+            #     self.status = "improvement in x is very small, so probably converged to optimal solution"
+            #     x_k += p_k
+            #     is_converged = True
+            #     break
+            #
+            # if actual_reduction <= min_actual_worse_redution:
+            #     self.status = "infeasible intial guess, because actual reduction " + str(actual_reduction) + " is worser than "+ \
+            #                   str(min_actual_worse_redution)
+            #     is_converged = True  # to force loop exit
+            #     break
+            if is_converged or isAdjustPenalty:
+                break
+            penalty.value *= 10
+            iteration_count = 0
+        print ("SQP Solver py")
+
+        print ("solver: ", self.solver)
+        print ("initial x_0", x_0)
+        print ("final x: ", x_k)
+
+        return self.status, x_k

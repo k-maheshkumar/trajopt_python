@@ -26,8 +26,8 @@ request = {
     # ],
     "joints" : [
         {   "name": "lbr_iiwa_joint_1",
-            # "start": -0.49197958189616936, "end": -2.0417782994426674,
-            "start": -0.49, "end": -2.04,
+            "states":{"start": -0.49197958189616936, "end": -2.0417782994426674},
+            # "start": -0.49, "end": -2.04,
             "lower_joint_limit": -2.96705972839, "upper_joint_limit": 2.96705972839,
             "min_velocity": -10.0, "max_velocity" : 10},
         # {"name": "lbr_iiwa_joint_2",
@@ -57,13 +57,13 @@ request = {
     ]
 }
 
-temp = 0
-plan = Planner.TrajectoryOptimizationPlanner(problem=request, solver="SCS", temp=temp)
+temp = 1
+plan = Planner.TrajectoryOptimizationPlanner(problem=request, solver="SCS", solver_class=temp)
 start = time.time()
 # sp.displayProblem()
 # x_0 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
 x_0 = np.full((1, request["samples"] * len(request["joints"])), 1.0).flatten()
-plan.displayProblem()
+# plan.displayProblem()
 prob = plan.get_trajectory()
 end = time.time()
 print("computation time: ",end - start)

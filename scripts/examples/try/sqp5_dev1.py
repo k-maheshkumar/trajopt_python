@@ -6,21 +6,27 @@ class Problem:
     def __init__(self):
 
         self.P = np.array([[2., -4., 0.],
-                               [0., 4., -4.],
-                               [0., 0., 2.]])
+                           [0., 4., -4.],
+                           [0., 0., 2.]])
         # Make symmetric and not indefinite
         self.P = .5 * (self.P + self.P.T) + 1e-08 * np.eye(3)
 
-        self.q = np.array([1., 1., 0.])
+        self.q = np.array([0., 0., 0.])
+
         self.G = np.array([[-1., 1., 0.],
-                      [0., -1., 1.],
-                      [1., 0., 0.],
-                      [0., 1., 0.],
-                      [0., 0., 1.]])
-        self.start = 0.1
-        self.end = 0.9
+                          [0., -1., 1.],
+                          [1., 0., 0.],
+                          [0., 1., 0.],
+                          [0., 0., 1.]])
+        # self.start = 0.1
+        # self.end = 0.9
         self.lbA = np.array([-0.3, -0.3, -0.3, -0.3, -0.3])
         self.ubA = np.array([0.3, 0.3, 1.1, 1.1, 1.1])
+
+        self.start = -0.49
+        self.end = -2.041
+        # self.lbA = np.array([-10, -10, -2.96, -2.96, -2.96])
+        # self.ubA = np.array([-10, 10, 2.96, 2.96, 2.96])
 
         self.A = np.array([[1., 0., 0.],
                            [0., 0., 1.],
@@ -39,8 +45,19 @@ class Problem:
                            self.start, self.end,
                            self.start, self.end
                            ])
+        self.initialGuess = self.interpolate(self.start, self.end, 3)
+        print self.initialGuess
 
-
+    def interpolate(self, start, end, samples):
+        data = []
+        stepSize = (end - start) / (samples - 1)
+        intermediate = start
+        # if start < 0 and end < 0:
+        #     stepSize *= -1
+        for i in range(samples):
+            data.append(intermediate)
+            intermediate += stepSize
+        return np.round(data, 3)
 
     def evaluate_constraints(self, x_k):
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubA)
@@ -119,8 +136,8 @@ class Problem:
         # x_0 = np.array([0.2, 0.6, 0.8])
         # print self.initialX
         # x_0 = np.array([2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0, 2, 2, 2.0])
-        x_0 = np.full((1, 3), 2.0).flatten()
-        # x_0 = self.initialGuess
+        # x_0 = np.full((1, 3), 2.0).flatten()
+        x_0 = self.initialGuess
         # x_0 = self.initialX
         p_0 = np.zeros(p.shape[0])
         trust_box_size = 2
@@ -199,7 +216,7 @@ class Problem:
                         break
 
                     if abs(actual_reduction) <= min_actual_redution:
-                        if con1_norm + con2_norm >= min_const_violation:
+                        if con1_norm + con2_norm >= min_const_violation and con3_norm > 0.01:
                             print "infeasible intial guess"
                             is_converged = True  # to force loop exit
                             break
@@ -282,6 +299,8 @@ class Problem:
 
 prob = Problem()
 prob.solveSQP()
+# print prob.interpolate(prob.start, prob.end, 3)
+# print prob.interpolate(-0.49, -2.04, 3)
 # x_0 = np.array([0.2, 0.6, 0.8])
 # prob.get_actual_objective(x_0, 12)
 # prob.evaluate_constraints(np.array([0.2, 0.4, 0.7]))

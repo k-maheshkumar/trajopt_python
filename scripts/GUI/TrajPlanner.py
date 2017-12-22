@@ -107,12 +107,16 @@ class PlannerGui(QtGui.QWidget):
         robot_label = QtGui.QLabel("Robot Planning Group")
 
         # Definition des Tracing Parameters widgets
-        for i in range(len(self.robot_config["groups"])):
-            for key, value in self.robot_config["groups"][i].iteritems():
-                if key == "name":
-                    # robot_labels.append({value: QtGui.QLabel(value)})
-                    self.robot_combo_box.addItem(value)
-                    # robot_grid.append({value: QtGui.QGridLayout()})
+        # for i in range(len(self.robot_config["groups"])):
+        #     for key, value in self.robot_config["groups"][i].iteritems():
+        #         if key == "name":
+        #             # robot_labels.append({value: QtGui.QLabel(value)})
+        #             self.robot_combo_box.addItem(value)
+        #             # robot_grid.append({value: QtGui.QGridLayout()})
+
+        for key, value in self.robot_config.iteritems():
+            for key1,value1 in self.robot_config[key].iteritems():
+                print self.robot_config[key][key1]
 
         self.hbox.addLayout(robot_grid)
         robot_grid.addWidget(robot_label, 2, 0)

@@ -29,9 +29,12 @@ class Joints:
         for key, value in states.items():
             self.joints[key].start = round(value['start'], decimal_places)
             self.joints[key].end = round(value['end'], decimal_places)
-            # print self.joints[key].name
-            # print self.joints[key].limit
-            # print self.joints[key].start, self.joints[key].end
+
+    def display_joints(self):
+        for key, joint in self.joints.iteritems():
+            print joint.name
+            print joint.limit
+            print joint.start, joint.end
 
     def plan_trajectory(self, group, samples, duration):
         joints = []
@@ -39,10 +42,9 @@ class Joints:
         for joint_in_group in group:
             if joint_in_group in self.joints:
                 joints.append(self.joints[joint_in_group])
-        print len(joints)
         self.trajectory = Planner.TrajectoryOptimizationPlanner(joints=joints, samples=samples, duration=duration,
-                                                                solver="SCS", temp=0)
-        self.trajectory.displayProblem()
+                                                                solver="SCS", solver_class=0, decimals_to_round=3)
+        # self.trajectory.displayProblem()
 
     def get_trajectory(self):
         return self.trajectory.get_trajectory()
@@ -98,10 +100,10 @@ group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
 duration = 6
 samples = 5
-# joints.plan_trajectory(group1, samples, duration)
-joints.plan_trajectory(group1 + group2 + group1 + group2, samples, duration)
+joints.plan_trajectory(group1_test, samples, duration)
+# joints.plan_trajectory(group1 , samples, duration)
 start = time.time()
-
+# joints.display_joints()
 print joints.get_trajectory()
 end = time.time()
 print("computation time: ", end - start)

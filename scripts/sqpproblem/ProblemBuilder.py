@@ -3,13 +3,14 @@ import numpy as np
 
 
 class ProblemBuilder:
-    def __init__(self, samples, duration, joint, max_iteration):
+    def __init__(self, samples, duration, joint, max_iteration, decimals_to_round=3):
         self.joint = joint
         self.samples = samples
 
         self.max_iteration = max_iteration
 
         self.duration = duration
+        self.decimals_to_round = decimals_to_round
         self.fillP()
         self.fillG()
         self.fillA()
@@ -29,8 +30,8 @@ class ProblemBuilder:
             self.start = self.joint["start"]
             self.end = self.joint["end"]
         else:
-            self.start = self.joint.start
-            self.end = self.joint.end
+            self.start = self.joint.states.start
+            self.end = self.joint.states.end
 
 
     def fillbounds(self):
@@ -38,8 +39,8 @@ class ProblemBuilder:
             self.lb = np.full((1, self.P.shape[0]), self.joint["lower_joint_limit"])
             self.ub = np.full((1, self.P.shape[0]), self.joint["upper_joint_limit"])
         else:
-            self.lb = np.full((1, self.P.shape[0]), self.joint.limit.lower)
-            self.ub = np.full((1, self.P.shape[0]), self.joint.limit.upper)
+            self.lb = np.full((1, self.P.shape[0]), self.joint.limits.lower)
+            self.ub = np.full((1, self.P.shape[0]), self.joint.limits.upper)
 
     def fillBoundsforG(self):
         if type(self.joint) is dict:
@@ -47,9 +48,9 @@ class ProblemBuilder:
 
             min_vel = self.joint["min_velocity"]
         else:
-            max_vel = self.joint.limit.velocity
+            max_vel = self.joint.limits.velocity
 
-            min_vel = - self.joint.limit.velocity
+            min_vel = - self.joint.limits.velocity
 
         self.lbG = np.full((1, self.G.shape[0]), min_vel * self.duration / (self.samples - 1))
         self.ubG = np.full((1, self.G.shape[0]), max_vel * self.duration / (self.samples - 1))
@@ -59,13 +60,13 @@ class ProblemBuilder:
         self.b = np.zeros((1, 2))
 
         if type(self.joint) is dict:
-            self.b[0,0] = self.joint["start"]
+            self.b[0,0] = np.round(self.joint["start"], self.decimals_to_round)
 
-            self.b[0,1] = self.joint["end"]
+            self.b[0,1] = np.round(self.joint["end"], self.decimals_to_round)
         else:
-            self.b[0, 0] = self.joint.start
+            self.b[0, 0] = np.round(self.joint.states.start, self.decimals_to_round)
 
-            self.b[0, 1] = self.joint.end
+            self.b[0, 1] = np.round(self.joint.states.end, self.decimals_to_round)
 
 
     def fillP(self):

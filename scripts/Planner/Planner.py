@@ -46,7 +46,7 @@ class TrajectoryOptimizationPlanner:
     #     self.initialise(temp)
 
     def __init__(self, *args, **kwargs):
-
+        print kwargs["solver_class"]
         self.sqp = []
         self.P = []
         self.G = []
@@ -101,13 +101,13 @@ class TrajectoryOptimizationPlanner:
             if "solver_class" in kwargs:
                 self.solver_class = kwargs["solver_class"]
                 self.initialise(self.solver_class)
-                # print self.num_of_joints
+
     def initialise(self, solver_class):
 
 
 
         for i in range(self.num_of_joints):
-            sp = sqp.ProblemBuilder(self.samples, self.duration, self.joints[i], self.max_no_of_Iteration, self.decimals_to_round)
+            sp = sqp.ProblemBuilder(self.samples, self.duration, self.joints[i], self.decimals_to_round)
 
             self.sqp.append(sp)
 
@@ -215,10 +215,12 @@ class TrajectoryOptimizationPlanner:
 
         else:
             sp = SQPsolver.SQPsolver(self, self.solver)
-            self.solver_status, self.trajectory = sp.solveSQP2(initial_guess)
+            self.solver_status, self.trajectory = sp.solveSQP3(initial_guess)
 
         self.trajectory = np.array((np.split(self.trajectory, self.num_of_joints)))
         self.trajectory = traj.Trajectory(self.trajectory)
+
+        print self.solver_status
 
 
 

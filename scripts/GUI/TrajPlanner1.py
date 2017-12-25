@@ -7,12 +7,12 @@ import sys
 class PlannerGui(QtGui.QWidget):
     def __init__(self, val):
         QtGui.QWidget.__init__(self)
-
+        self.setGeometry(200, 100, 1200, 500)
         file_path_prefix = '../../config/'
-        sqp_config_file = file_path_prefix + 'sqp_config.yaml'
+        self.sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
-        sqp_yaml = yaml.ConfigParser(sqp_config_file)
-        self.sqp_config = sqp_yaml.get_by_key("sqp")
+        self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
+        self.sqp_config = self.sqp_yaml.get_by_key("sqp")
         robot_config_file = file_path_prefix + 'robot_config.yaml'
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
@@ -134,8 +134,10 @@ class PlannerGui(QtGui.QWidget):
     def on_robot_action_button_clicked(self, key):
         print ("clicked button: ", key)
 
-    def on_spin_box_value_changed(self, checked, message):
-        print (checked, message)
+    def on_spin_box_value_changed(self, key, value):
+        print (key, value)
+        self.sqp_config[key] = value
+        self.sqp_yaml.save()
 
     def on_combo_box_value_changed(self, combo_box_key):
         print (combo_box_key, self.sqp_combo_box[combo_box_key].currentText())
@@ -151,6 +153,5 @@ if __name__ == '__main__':
 
     app = QtGui.QApplication(sys.argv)
     window = PlannerGui(25)
-    window.setGeometry(200, 100, 1200, 500)
     window.show()
     sys.exit(app.exec_())

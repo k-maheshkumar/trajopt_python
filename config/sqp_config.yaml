@@ -1,23 +1,22 @@
 sqp:
-    solver: ['ECOS_BB', 'SCS', 'ECOS']
-    max_penalty: 1e4
-    max_iteration: 20
-
-    trust_region_size: 5
-    min_trust_box_size: 1e-4
-    max_trust_box_size: 10
-    max_trust_region_size: 5
-    trust_shrink_ratio: 0.25
-    trust_expand_ratio: 1
-    trust_good_region_ratio: 0.75
-
-    min_model_improve: 1e-4
-    improve_ratio_threshold: 0.25
-
-    min_actual_redution: 1e-2
-    min_x_redution: 1e-3
-    min_equality_norm: 1e-2
-    min_improve_ratio: 0.001
-    min_actual_worse_redution: -100
-
-    min_const_violation: 3
+  const_violation_tolerance: 1e-2
+  improve_ratio_threshold: 0.25
+  max_iteration: 20
+  max_penalty: 1e4
+  max_trust_box_size: 10
+  max_trust_region_size: 15
+  min_actual_redution: 1e-2
+  min_actual_worse_redution: -100
+  min_equality_norm: 1e-2
+  min_improve_ratio: 0.001
+  min_model_improve: 1e-4
+  min_trust_box_size: 1e-4
+  min_x_redution: 1e-3
+  solver:
+  - ECOS_BB
+  - SCS
+  - ECOS
+  trust_expand_ratio: 2.0
+  trust_good_region_ratio: 0.75
+  trust_region_size: 5.0
+  trust_shrink_ratio: 0.25

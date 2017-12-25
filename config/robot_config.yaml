@@ -33,20 +33,45 @@ robot:
     joints_groups:
 #      joints:
       right_arm: &right_arm
-        ["joint0", "joint1", "joint2"]
+        ["lbr_iiwa_joint_1", "lbr_iiwa_joint_2", "lbr_iiwa_joint_3"]
       left_arm: &left_arm
-        ["joint3", "joint4", "joint5", "joint6"]
+        ["lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
       right_arm1: &right_arm1
-        ["joint01", "joint11", "joint12"]
-
+        ["lbr_iiwa_joint_1", "lbr_iiwa_joint_2", "lbr_iiwa_joint_3"]
       left_arm1: &left_arm1
-        ["joint31", "joint14", "joint51", "joint16"]
+        ["lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
       full_body: [*right_arm, *left_arm]
       full_body1: [*right_arm1, *left_arm1]
     joint_configurations:
       home:
-        joint1: 0.1
-        joint2: 0.2
-      goal:
-        joint1: 0.1
-        joint2: 0.2
+        lbr_iiwa_joint_1: -2.041
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
+        lbr_iiwa_joint_7: 1.571
+      initial:
+        lbr_iiwa_joint_1: -2.041
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
+        lbr_iiwa_joint_7: 1.571
+      pick:
+        lbr_iiwa_joint_1: -2.041
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
+        lbr_iiwa_joint_7: 1.571
+      place:
+        lbr_iiwa_joint_1: -2.041
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
+        lbr_iiwa_joint_7: 1.571

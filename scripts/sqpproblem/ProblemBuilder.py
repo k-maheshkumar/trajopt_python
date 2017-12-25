@@ -3,12 +3,9 @@ import numpy as np
 
 
 class ProblemBuilder:
-    def __init__(self, samples, duration, joint, max_iteration, decimals_to_round=3):
+    def __init__(self, samples, duration, joint, decimals_to_round=3):
         self.joint = joint
         self.samples = samples
-
-        self.max_iteration = max_iteration
-
         self.duration = duration
         self.decimals_to_round = decimals_to_round
         self.fillP()

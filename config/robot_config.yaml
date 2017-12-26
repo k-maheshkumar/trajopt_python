@@ -30,6 +30,9 @@
 
 
 robot:
+    config_params:
+      samples: 5
+      duration: 6
     joints_groups:
 #      joints:
       right_arm: &right_arm
@@ -44,7 +47,7 @@ robot:
       full_body1: [*right_arm1, *left_arm1]
     joint_configurations:
       home:
-        lbr_iiwa_joint_1: -2.041
+        lbr_iiwa_joint_1: -2.055
         lbr_iiwa_joint_2: 0.944
         lbr_iiwa_joint_3: -1.591
         lbr_iiwa_joint_4: -1.922

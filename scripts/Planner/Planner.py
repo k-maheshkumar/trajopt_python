@@ -4,17 +4,7 @@ from scripts.sqpproblem import SQPsolver
 
 import Trajectory as traj
 from scripts.sqpproblem import ProblemBuilder as sqp
-
-'''
-        minimize
-            (1/2) * x.T * P * x + q.T * x
-
-        subject to
-            lbC <= C * x <= ubC
-            # lb <= x <= ub
-            # A * x == b
-
-'''
+import logging
 
 
 class TrajectoryOptimizationPlanner:
@@ -78,6 +68,31 @@ class TrajectoryOptimizationPlanner:
                     self.max_penalty = self.problem["max_penalty"]
                 if "max_delta" in self.problem:
                     self.delta_max = self.problem["max_delta"]
+
+            if "verbose" in kwargs:
+                self.verbose = kwargs["verbose"]
+                self.logger = logging.getLogger("Trajectory Planner")
+                ch = logging.StreamHandler()
+                # create formatter
+                formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+                # add formatter to ch
+                ch.setFormatter(formatter)
+
+                if self.verbose == "WARN":
+                    self.logger.setLevel(logging.WARN)
+                    ch.setLevel(logging.WARN)
+
+                elif self.verbose == "INFO" or self.verbose is True:
+                    self.logger.setLevel(logging.INFO)
+                    ch.setLevel(logging.INFO)
+
+                elif self.verbose == "DEBUG":
+                    self.logger.setLevel(logging.DEBUG)
+                    ch.setLevel(logging.DEBUG)
+
+                # add ch to logger
+                self.logger.addHandler(ch)
+
             if "joints" in kwargs:
                 self.joints = kwargs["joints"]
                 self.num_of_joints = len(self.joints)
@@ -103,9 +118,6 @@ class TrajectoryOptimizationPlanner:
                 self.initialise(self.solver_class)
 
     def initialise(self, solver_class):
-
-
-
         for i in range(self.num_of_joints):
             sp = sqp.ProblemBuilder(self.samples, self.duration, self.joints[i], self.decimals_to_round)
 
@@ -208,21 +220,21 @@ class TrajectoryOptimizationPlanner:
         # return data
 
     def calculate_trajectory(self, initial_guess= None):
-        print "getting trajectory"
+        self.logger.info("getting trajectory")
         if self.solver_class:
-            sp = SQPproblem.SQPProblem(self, self.solver)
+            sp = SQPproblem.SQPProblem(self, self.solver, self.verbose)
             self.solver_status, self.trajectory = sp.solveSQP(initial_guess)
 
         else:
             sp = SQPsolver.SQPsolver(self, self.solver)
-            self.solver_status, self.trajectory = sp.solveSQP3(initial_guess)
+            self.solver_status, self.trajectory = sp.solveSQP(initial_guess)
 
         self.trajectory = np.array((np.split(self.trajectory, self.num_of_joints)))
         self.trajectory = traj.Trajectory(self.trajectory)
-
-        print self.solver_status
-
-
+        if self.solver_status == "Solved":
+            self.logger.info("Optimal Trajectory has been found")
+        else:
+            self.logger.info("Couldn't find the trajectory for the input problem")
 
     def get_trajectory(self):
         return self.trajectory

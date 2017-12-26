@@ -9,9 +9,11 @@ class Robot:
     def __init__(self, urdf_file):
 
         # location_prefix = '/home/mahesh/libraries/bullet3/data/'
-        location_prefix = '/home/mahe/masterThesis/bullet3/data/'
+        # location_prefix = '/home/mahe/masterThesis/bullet3/data/'
 
-        self.model = URDF.from_xml_file(location_prefix + "kuka_iiwa/model.urdf")
+        # self.model = URDF.from_xml_file(location_prefix + "kuka_iiwa/model.urdf")
+        print urdf_file
+        self.model = URDF.from_xml_file(urdf_file)
         # self.__replace_joints_in_model_with_map()
         self.state = self.init_state()
         self.planner = {}
@@ -81,7 +83,7 @@ class Robot:
                             "limits": joint.limit
                         }))
         self.planner = Planner.TrajectoryOptimizationPlanner(joints=joints, samples=samples, duration=duration,
-                                                             solver=solver, solver_class=0, decimals_to_round=decimals_to_round)
+                                                             solver=solver, solver_class=1, decimals_to_round=decimals_to_round, verbose=True)
         # self.planner.displayProblem()
         self.planner.calculate_trajectory()
 
@@ -95,63 +97,63 @@ class Robot:
         # print self.state
 
 
-if __name__ == "__main__":
-    robo = Robot(None)
-
-    goal_state = {
-        'lbr_iiwa_joint_1': -2.0417782994426674,
-        'lbr_iiwa_joint_2': 0.9444594031189716,
-        'lbr_iiwa_joint_3': -1.591006403858707,
-        'lbr_iiwa_joint_4': -1.9222844444479184,
-        'lbr_iiwa_joint_5': 1.572303282659756,
-        'lbr_iiwa_joint_6': 1.5741716208788483,
-        'lbr_iiwa_joint_7': 1.5716145442929421
-    }
-    current_state = {
-        'lbr_iiwa_joint_1': -0.49197958189616936,
-        'lbr_iiwa_joint_2': 1.4223062659337982,
-        'lbr_iiwa_joint_3': -1.5688299779644697,
-        'lbr_iiwa_joint_4':  -1.3135004031364736,
-        'lbr_iiwa_joint_5': 1.5696229411153653,
-        'lbr_iiwa_joint_6': 1.5749627479696093,
-        'lbr_iiwa_joint_7': 1.5708037563007493,
-    }
-    states = {
-        # 'lbr_iiwa_joint_1': {"start": -0.49, "end": -2.0},
-        'lbr_iiwa_joint_1': {"start": -0.49197958189616936, "end": -2.0417782994426674},
-        'lbr_iiwa_joint_2': {"start": 1.4223062659337982, "end": 0.9444594031189716},
-        'lbr_iiwa_joint_3': {"start": -1.5688299779644697, "end": -1.591006403858707},
-        'lbr_iiwa_joint_4': {"start": -1.3135004031364736, "end": -1.9222844444479184},
-        'lbr_iiwa_joint_5': {"start": 1.5696229411153653, "end": 1.572303282659756},
-        'lbr_iiwa_joint_6': {"start": 1.5749627479696093, "end": 1.5741716208788483},
-        'lbr_iiwa_joint_7': {"start": 1.5708037563007493, "end": 1.5716145442929421}
-    }
-
-    group1_test = ['lbr_iiwa_joint_1']
-
-    group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
-    group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
-    duration = 6
-    samples = 5
-    start = time.time()
-
-    # robo.update_robot_state(current_state)
-    # robo.plan_trajectory(group=group1_test, current_state=current_state, goal_state=goal_state,
-    #                      samples=samples, duration=duration)
-    # robo.plan_trajectory(group=group1_test, states=states, samples=samples, duration=duration)
-    # joints.plan_trajectory(group1 , samples, duration)
-    # print robo.model.joints["lbr_iiwa_joint_5"]
-    # print robo.get_robot_trajectory()
-
-    file_path_prefix = '../../config/'
-
-    robot_config_file = file_path_prefix + 'robot_config.yaml'
-    robot_yaml = yaml.ConfigParser(robot_config_file)
-    robot_config = robot_yaml.get_by_key("robot")
-    # print robot_config["joint_configurations"]
-    robo.plan_trajectory(group=group1 + group2 + group1 + group2 , current_state=current_state,
-                         goal_state=robot_config["joint_configurations"]["home"],
-                                              samples=samples, duration=duration)
-    end = time.time()
-    print("computation time: ", end - start)
+# if __name__ == "__main__":
+#     robo = Robot(None)
+#
+#     goal_state = {
+#         'lbr_iiwa_joint_1': -2.0417782994426674,
+#         'lbr_iiwa_joint_2': 0.9444594031189716,
+#         'lbr_iiwa_joint_3': -1.591006403858707,
+#         'lbr_iiwa_joint_4': -1.9222844444479184,
+#         'lbr_iiwa_joint_5': 1.572303282659756,
+#         'lbr_iiwa_joint_6': 1.5741716208788483,
+#         'lbr_iiwa_joint_7': 1.5716145442929421
+#     }
+#     current_state = {
+#         'lbr_iiwa_joint_1': -0.49197958189616936,
+#         'lbr_iiwa_joint_2': 1.4223062659337982,
+#         'lbr_iiwa_joint_3': -1.5688299779644697,
+#         'lbr_iiwa_joint_4':  -1.3135004031364736,
+#         'lbr_iiwa_joint_5': 1.5696229411153653,
+#         'lbr_iiwa_joint_6': 1.5749627479696093,
+#         'lbr_iiwa_joint_7': 1.5708037563007493,
+#     }
+#     states = {
+#         # 'lbr_iiwa_joint_1': {"start": -0.49, "end": -2.0},
+#         'lbr_iiwa_joint_1': {"start": -0.49197958189616936, "end": -2.0417782994426674},
+#         'lbr_iiwa_joint_2': {"start": 1.4223062659337982, "end": 0.9444594031189716},
+#         'lbr_iiwa_joint_3': {"start": -1.5688299779644697, "end": -1.591006403858707},
+#         'lbr_iiwa_joint_4': {"start": -1.3135004031364736, "end": -1.9222844444479184},
+#         'lbr_iiwa_joint_5': {"start": 1.5696229411153653, "end": 1.572303282659756},
+#         'lbr_iiwa_joint_6': {"start": 1.5749627479696093, "end": 1.5741716208788483},
+#         'lbr_iiwa_joint_7': {"start": 1.5708037563007493, "end": 1.5716145442929421}
+#     }
+#
+#     group1_test = ['lbr_iiwa_joint_1']
+#
+#     group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
+#     group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
+#     duration = 6
+#     samples = 15
+#     start = time.time()
+#
+#     # robo.update_robot_state(current_state)
+#     # robo.plan_trajectory(group=group1_test, current_state=current_state, goal_state=goal_state,
+#     #                      samples=samples, duration=duration)
+#     # robo.plan_trajectory(group=group1_test, states=states, samples=samples, duration=duration)
+#     # joints.plan_trajectory(group1 , samples, duration)
+#     # print robo.model.joints["lbr_iiwa_joint_5"]
+#     # print robo.get_robot_trajectory()
+#
+#     file_path_prefix = '../../config/'
+#
+#     robot_config_file = file_path_prefix + 'robot_config.yaml'
+#     robot_yaml = yaml.ConfigParser(robot_config_file)
+#     robot_config = robot_yaml.get_by_key("robot")
+#     # print robot_config["joint_configurations"]
+#     robo.plan_trajectory(group=group1 + group2 + group1 + group2 , current_state=current_state,
+#                          goal_state=robot_config["joint_configurations"]["home"],
+#                                               samples=samples, duration=duration)
+#     end = time.time()
+#     print("computation time: ", end - start)
 

@@ -2,10 +2,12 @@ from PyQt4 import QtGui
 from scripts.utils import yaml_paser as yaml
 import functools
 from scripts.simulation import SimulationWorld
+import numpy as np
 
-class PlannerGui(QtGui.QWidget):
+
+class PlannerGui(QtGui.QMainWindow):
     def __init__(self, val):
-        QtGui.QWidget.__init__(self)
+        QtGui.QMainWindow.__init__(self)
         self.setGeometry(200, 100, 1200, 500)
         file_path_prefix = '../../config/'
         self.sqp_config_file = file_path_prefix + 'sqp_config.yaml'
@@ -43,6 +45,8 @@ class PlannerGui(QtGui.QWidget):
         self.robot_action_button_group = QtGui.QButtonGroup(self)
         self.robot_action_buttons["execute"] = QtGui.QPushButton('Execute')
         self.robot_action_buttons["plan"] = QtGui.QPushButton('Plan')
+        self.robot_action_buttons["random_pose"] = QtGui.QPushButton('Random Pose')
+        self.robot_action_buttons["plan_and_execute"] = QtGui.QPushButton('Plan and Execute')
 
         self.robot_action_button_hbox = QtGui.QHBoxLayout()
 
@@ -55,21 +59,27 @@ class PlannerGui(QtGui.QWidget):
         self.selected_robot_combo_value = {}
         self.selected_robot_spin_value = {}
 
+        self.statusBar = QtGui.QStatusBar()
 
+        self.main_widget = QtGui.QWidget(self)
+        self.main_layout = QtGui.QVBoxLayout(self.main_widget)
+        self.main_hbox_layout = QtGui.QHBoxLayout()
+
+        self.last_status = "Last Status: "
         self.initUI(25)
 
     def initUI(self, val):
 
-        self.main_hbox_layout = QtGui.QHBoxLayout()
-        self.main_layout = QtGui.QVBoxLayout(self)
-
+        self.main_widget.setLayout(self.main_layout)
         self.main_layout.addLayout(self.main_hbox_layout)
         self.main_layout.addStretch(1)
+        self.setCentralWidget(self.main_widget)
+        self.setStatusBar(self.statusBar)
 
         min_sqp_config = 0.00001
         max_sqp_config = 100
         min_robot_config = 3
-        max_robot_config = 30
+        max_robot_config = 60
 
 
         for key, value in self.sqp_config.items():
@@ -156,7 +166,7 @@ class PlannerGui(QtGui.QWidget):
         self.main_hbox_layout.addWidget(self.simulation_scroll)
 
     def on_start_simulation_clicked(self):
-        self.sim_world.run_simulation()
+        # self.sim_world.run_simulation()
         self.is_simulation_started = True
 
     def on_robot_spin_box_value_changed(self, key, value):
@@ -171,16 +181,42 @@ class PlannerGui(QtGui.QWidget):
                 self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
         # print "self.selected_robot_combo_value", self.selected_robot_combo_value
         # print "self.selected_robot_spin_value", self.selected_robot_spin_value
-        if key == "plan":
-            if "samples" in self.selected_robot_spin_value:
-                samples = self.selected_robot_spin_value["samples"]
-            if "duration" in self.selected_robot_spin_value:
-                duration = self.selected_robot_spin_value["duration"]
-            if "joints_groups" in self.selected_robot_combo_value:
-                group = self.selected_robot_combo_value["joints_groups"]
-            if "joint_configurations" in self.selected_robot_combo_value:
-                goal_state = self.selected_robot_combo_value["joint_configurations"]
-            self.sim_world.plan_trajectory(group, goal_state, samples, duration)
+
+        samples = None
+        duration = None
+        group = None
+        goal_state = None
+        if "samples" in self.selected_robot_spin_value:
+            samples = self.selected_robot_spin_value["samples"]
+        if "duration" in self.selected_robot_spin_value:
+            duration = self.selected_robot_spin_value["duration"]
+        if "joints_groups" in self.selected_robot_combo_value:
+            group = self.selected_robot_combo_value["joints_groups"]
+        if "joint_configurations" in self.selected_robot_combo_value:
+            goal_state = self.selected_robot_combo_value["joint_configurations"]
+            if key == "plan":
+                if samples is not None and duration is not None \
+                        and group is not None and goal_state is not None and self.sqp_config is not None:
+                    status = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples, duration=duration,
+                                               solver_config=self.sqp_config)
+                    self.statusBar.showMessage(self.last_status + status)
+
+        if key == "random_pose":
+            if group is not None:
+                status = self.sim_world.reset_joint_states(group, motor_dir=np.random.rand(1, 7).flatten())
+                self.statusBar.showMessage(self.last_status + status)
+
+        if key == "execute":
+            status = self.sim_world.execute_trajectory()
+            self.statusBar.showMessage(self.last_status + status)
+        if key == "plan_and_execute":
+            if samples is not None and duration is not None \
+                    and group is not None and goal_state is not None and self.sqp_config is not None:
+                status = self.sim_world.plan_and_execute_trajectory(group=group, goal_state=goal_state, samples=samples,
+                                                        duration=duration,
+                                                        solver_config=self.sqp_config)
+                self.statusBar.showMessage(self.last_status + status)
+
     def on_sqp_spin_box_value_changed(self, key, value):
         # print (key, value)
         self.sqp_config[str(key)] = value

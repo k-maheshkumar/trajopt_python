@@ -1,5 +1,5 @@
 sqp:
-  const_violation_tolerance: 0.03
+  const_violation_tolerance: 0.01
   improve_ratio_threshold: 0.25
   max_iteration: 20
   max_penalty: 1e4
@@ -18,5 +18,5 @@ sqp:
   - ECOS
   trust_expand_ratio: 2.0
   trust_good_region_ratio: 0.75
-  trust_region_size: 4.0
+  trust_region_size: 0.0
   trust_shrink_ratio: 0.25

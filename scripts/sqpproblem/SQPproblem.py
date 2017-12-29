@@ -15,7 +15,7 @@ import logging
 
 
 class SQPProblem:
-    def __init__(self, problem, solver, verbose=False):
+    def __init__(self, problem, solver, solver_config, verbose=False):
         self.P = problem.P
         self.q = problem.q
         self.G = problem.G
@@ -29,16 +29,20 @@ class SQPProblem:
         self.status = "-1"
         self.norm_ = 1
 
-        file_path_prefix = '../../config/'
-        sqp_config_file = file_path_prefix + 'sqp_config.yaml'
+        if solver_config is not None:
+            self.solver_config = solver_config
+        else:
+            file_path_prefix = '../../config/'
+            sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
-        sqp_yaml = yaml.ConfigParser(sqp_config_file)
-        self.solver_config = sqp_yaml.get_by_key("sqp")
+            sqp_yaml = yaml.ConfigParser(sqp_config_file)
+            self.solver_config = sqp_yaml.get_by_key("sqp")
 
         if solver is not None:
             self.solver = solver
         else:
             self.solver = self.solver_config["solver"][1]
+
 
         self.logger = logging.getLogger("SQP Solver")
         ch = logging.StreamHandler()

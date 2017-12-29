@@ -31,7 +31,7 @@ class Robot:
         return self.state
 
     def get_trajectory(self):
-        return self.planner
+        return self.planner.trajectory
 
     def __replace_joints_in_model_with_map(self):
         joints = {}
@@ -42,7 +42,9 @@ class Robot:
 
     # def plan_trajectory(self, joint_group, states, samples, duration):
     def plan_trajectory(self, *args, **kwargs):
-        joints = []
+        joints = {}
+        status = "-1"
+
         if "group" in kwargs:
             joint_group = kwargs["group"]
         if "samples" in kwargs:
@@ -61,15 +63,17 @@ class Robot:
             solver = kwargs["solver"]
         else:
             solver = "SCS"
+        if "solver_config" in kwargs:
+            solver_config = kwargs["solver_config"]
         if "current_state" in kwargs:
             self.update_robot_state(kwargs["current_state"])
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
 
-        if "states" in kwargs:
-            states = kwargs["states"]
-
-        elif "current_state" in kwargs and "goal_state" in kwargs:
+        # if "states" in kwargs:
+        #     states = kwargs["states"]
+        # else:
+        if "current_state" in kwargs and "goal_state" in kwargs:
             states = {}
             for joint in self.model.joints:
                 for joint_in_group in joint_group:
@@ -77,22 +81,33 @@ class Robot:
                         states[joint_in_group] = {"start": self.state[joint_in_group]["current_value"], "end": goal_state[joint_in_group]}
 
                     if joint.name == joint_in_group:
-                        joints.append(munchify({
-                            "name": joint.name,
+                        # joints.append(munchify({
+                        #     "name": joint.name,
+                        #     "states": states[joint_in_group],
+                        #     "limits": joint.limit
+                        # }))
+                        joints[joint.name] = (munchify({
                             "states": states[joint_in_group],
                             "limits": joint.limit
                         }))
-        self.planner = Planner.TrajectoryOptimizationPlanner(joints=joints, samples=samples, duration=duration,
-                                                             solver=solver, solver_class=1, decimals_to_round=decimals_to_round, verbose=True)
-        # self.planner.displayProblem()
-        self.planner.calculate_trajectory()
+        if len(joints):
+            self.planner = Planner.TrajectoryOptimizationPlanner(joints=joints, samples=samples, duration=duration,
+                                                                 solver=solver, solver_config=solver_config, solver_class=0, decimals_to_round=decimals_to_round, verbose=True)
+            # self.planner.displayProblem()
+            status = self.planner.calculate_trajectory()
+        else:
+            status = "No trajectory has been found"
+            print "joints are empty"
 
-    def get_robot_trajectory(self):
-        return self.planner.trajectory.get_trajectory()
+        return status
+
+    # def get_robot_trajectory(self):
+    #     return self.planner.trajectory.get_trajectory()
 
     def update_robot_state(self, current_state):
         for key, value in self.state.items():
-            self.state[key]["current_value"] = current_state[key]
+            if key in current_state:
+                self.state[key]["current_value"] = current_state[key]
 
         # print self.state
 

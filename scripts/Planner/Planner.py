@@ -2,10 +2,10 @@ import numpy as np
 from scripts.sqpproblem import SQPproblem
 from scripts.sqpproblem import SQPsolver
 
-import Trajectory as traj
+import Trajectory
 from scripts.sqpproblem import ProblemBuilder as sqp
 import logging
-
+import time
 
 class TrajectoryOptimizationPlanner:
     # def __init__(self, problem, solver, temp= False):
@@ -36,8 +36,7 @@ class TrajectoryOptimizationPlanner:
     #     self.initialise(temp)
 
     def __init__(self, *args, **kwargs):
-        print kwargs["solver_class"]
-        self.sqp = []
+        self.sqp = {}
         self.P = []
         self.G = []
         self.A = []
@@ -50,13 +49,13 @@ class TrajectoryOptimizationPlanner:
 
         self.initial_guess = []
         self.solver_status = []
-        self.trajectory = []
-
+        self.trajectory = {}
+        self.joint_names = []
         if kwargs is not None:
             if "problem" in kwargs:
                 self.problem = kwargs["problem"]
                 if "samples" in self.problem:
-                    self.samples = self.problem["samples"]
+                    self.no_of_samples = self.problem["samples"]
                 if "duration" in self.problem:
                     self.duration = self.problem["duration"]
                 if "max_iteration" in self.problem:
@@ -103,7 +102,7 @@ class TrajectoryOptimizationPlanner:
             if "duration" in kwargs:
                 self.duration = kwargs["duration"]
             if "samples" in kwargs:
-                self.samples = kwargs["samples"]
+                self.no_of_samples = kwargs["samples"]
             if "max_iteration" in kwargs:
                 self.max_no_of_Iteration = kwargs["max_iteration"]
             else:
@@ -117,14 +116,17 @@ class TrajectoryOptimizationPlanner:
                 self.solver_class = kwargs["solver_class"]
                 self.initialise(self.solver_class)
 
-    def initialise(self, solver_class):
+            if "solver_config" in kwargs:
+                self.solver_config = kwargs["solver_config"]
+
+    def initialise1(self, solver_class):
         for i in range(self.num_of_joints):
-            sp = sqp.ProblemBuilder(self.samples, self.duration, self.joints[i], self.decimals_to_round)
+            sp = sqp.ProblemBuilder(self.no_of_samples, self.duration, self.joints[i], self.decimals_to_round)
 
             self.sqp.append(sp)
 
             # self.initial_guess.append(self.interpolate(sp.start, sp.end, self.samples))
-            self.initial_guess.append(self.interpolate(sp.start + 0.02, sp.end + 0.02, self.samples))
+            self.initial_guess.append(self.interpolate(sp.start + 0.02, sp.end + 0.02, self.no_of_samples))
 
             self.P.append(self.sqp[i].P)
             self.q.append(self.sqp[i].q)
@@ -133,7 +135,7 @@ class TrajectoryOptimizationPlanner:
                 self.A.append(self.sqp[i].A)
                 self.b.append(self.sqp[i].b.tolist())
 
-                self.G.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.samples)]))
+                self.G.append(np.vstack([self.sqp[i].G, self.sqp[i].A, self.sqp[i].A, np.identity(self.no_of_samples)]))
                 self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].lb]))
                 self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].b, self.sqp[i].b, self.sqp[i].ub]))
 
@@ -151,12 +153,70 @@ class TrajectoryOptimizationPlanner:
                 self.A.append(np.vstack([self.sqp[i].A, self.sqp[i].A, self.sqp[i].A]))
                 self.b.append(np.hstack([self.sqp[i].b.tolist(), self.sqp[i].b.tolist(), self.sqp[i].b.tolist()]))
 
-                self.G.append(np.vstack([self.sqp[i].G, np.identity(self.samples)]))
+                self.G.append(np.vstack([self.sqp[i].G, np.identity(self.no_of_samples)]))
                 self.lbG.append(np.hstack([self.sqp[i].lbG, self.sqp[i].lb]))
                 self.ubG.append(np.hstack([self.sqp[i].ubG, self.sqp[i].ub]))
 
             self.lb.append(self.sqp[i].lb.tolist())
             self.ub.append(self.sqp[i].ub.tolist())
+
+        self.initial_guess = np.hstack(self.initial_guess).flatten()
+        self.q = np.hstack(self.q)
+        self.lb = np.hstack(self.lb)
+        self.ub = np.hstack(self.ub)
+        self.lbG = np.hstack(self.lbG)
+        self.ubG = np.hstack(self.ubG)
+
+        self.P = self.diag_block_mat_slicing(self.P)
+        self.A = self.diag_block_mat_slicing(self.A)
+        self.G = self.diag_block_mat_slicing(self.G)
+
+        self.b = np.hstack(self.b)
+        # self.q = [item for sublist in self.q for item in sublist]
+        # self.q = np.asarray(self.q)
+
+        self.G = self.G.astype(float)
+
+        self.P = 2.0 * self.P + 1e-08 * np.eye(self.P.shape[1])
+    def initialise(self, solver_class):
+        for joint_name in self.joints:
+            self.joint_names.append(joint_name)
+            self.sqp[joint_name] = sqp.ProblemBuilder(self.no_of_samples, self.duration, self.joints[joint_name], self.decimals_to_round)
+            self.trajectory[joint_name] = -1
+            # self.initial_guess.append(self.interpolate(sp.start, sp.end, self.samples))
+            self.initial_guess.append(self.interpolate(self.sqp[joint_name].start + 0.02, self.sqp[joint_name].end + 0.02, self.no_of_samples))
+
+            self.P.append(self.sqp[joint_name].P)
+            self.q.append(self.sqp[joint_name].q)
+
+            if solver_class:
+                self.A.append(self.sqp[joint_name].A)
+                self.b.append(self.sqp[joint_name].b.tolist())
+
+                self.G.append(np.vstack([self.sqp[joint_name].G, self.sqp[joint_name].A, self.sqp[joint_name].A, np.identity(self.no_of_samples)]))
+                self.lbG.append(np.hstack([self.sqp[joint_name].lbG, self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].lb]))
+                self.ubG.append(np.hstack([self.sqp[joint_name].ubG, self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].ub]))
+
+                # self.G.append(np.vstack([self.sqp[joint_name].G, self.sqp[joint_name].G,
+                #                          self.sqp[joint_name].A, self.sqp[joint_name].A, self.sqp[joint_name].A, self.sqp[joint_name].A, self.sqp[joint_name].A,
+                #                          np.identity(self.samples), np.identity(self.samples)]))
+                # self.lbG.append(np.hstack([self.sqp[joint_name].lbG, self.sqp[joint_name].lbG,
+                #                            self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].b,
+                #                            self.sqp[joint_name].lb, self.sqp[joint_name].lb]))
+                # self.ubG.append(np.hstack([self.sqp[joint_name].ubG, self.sqp[joint_name].ubG,
+                #                            self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].b, self.sqp[joint_name].b,
+                #                            self.sqp[joint_name].ub, self.sqp[joint_name].ub]))
+            else:
+
+                self.A.append(np.vstack([self.sqp[joint_name].A, self.sqp[joint_name].A, self.sqp[joint_name].A]))
+                self.b.append(np.hstack([self.sqp[joint_name].b.tolist(), self.sqp[joint_name].b.tolist(), self.sqp[joint_name].b.tolist()]))
+
+                self.G.append(np.vstack([self.sqp[joint_name].G, np.identity(self.no_of_samples)]))
+                self.lbG.append(np.hstack([self.sqp[joint_name].lbG, self.sqp[joint_name].lb]))
+                self.ubG.append(np.hstack([self.sqp[joint_name].ubG, self.sqp[joint_name].ub]))
+
+            self.lb.append(self.sqp[joint_name].lb.tolist())
+            self.ub.append(self.sqp[joint_name].ub.tolist())
 
         self.initial_guess = np.hstack(self.initial_guess).flatten()
         self.q = np.hstack(self.q)
@@ -222,20 +282,29 @@ class TrajectoryOptimizationPlanner:
     def calculate_trajectory(self, initial_guess= None):
         self.logger.info("getting trajectory")
         if self.solver_class:
-            sp = SQPproblem.SQPProblem(self, self.solver, self.verbose)
+            sp = SQPproblem.SQPProblem(self, self.solver, self.solver_config, self.verbose)
+            start = time.time()
             self.solver_status, self.trajectory = sp.solveSQP(initial_guess)
+            end = time.time()
 
         else:
-            sp = SQPsolver.SQPsolver(self, self.solver)
-            self.solver_status, self.trajectory = sp.solveSQP(initial_guess)
+            sp = SQPsolver.SQPsolver(self, self.solver, self.solver_config, self.verbose)
+            start = time.time()
+            self.solver_status, trajectory = sp.solveSQP(initial_guess)
+            end = time.time()
 
-        self.trajectory = np.array((np.split(self.trajectory, self.num_of_joints)))
-        self.trajectory = traj.Trajectory(self.trajectory)
+        trajectory = np.array((np.split(trajectory, self.num_of_joints)))
+
+        self.trajectory = dict(zip(self.joint_names, trajectory))
+        self.trajectory = Trajectory.Trajectory(self.trajectory, self.no_of_samples, self.duration)
+        status = "-1"
         if self.solver_status == "Solved":
-            self.logger.info("Optimal Trajectory has been found")
+            status = "Optimal Trajectory has been found in " + str(end - start)
+            self.logger.info(status)
         else:
-            self.logger.info("Couldn't find the trajectory for the input problem")
+            status = "Couldn't find the trajectory for the input problem"
+            self.logger.info(status)
+        return status
 
     def get_trajectory(self):
         return self.trajectory
-

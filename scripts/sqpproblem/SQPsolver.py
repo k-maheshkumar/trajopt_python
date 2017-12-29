@@ -17,7 +17,7 @@ import logging
 
 
 class SQPsolver:
-    def __init__(self, problem, solver, decimals_to_round=None, verbose="DEBUG"):
+    def __init__(self, problem, solver, solver_config, decimals_to_round=None, verbose="DEBUG"):
         self.P = problem.P
         self.q = problem.q
         self.G = problem.G
@@ -30,11 +30,14 @@ class SQPsolver:
         self.initial_guess = problem.initial_guess
         self.status = "-1"
 
-        file_path_prefix = '../../config/'
-        sqp_config_file = file_path_prefix + 'sqp_config.yaml'
+        if solver_config is not None:
+            self.solver_config = solver_config
+        else:
+            file_path_prefix = '../../config/'
+            sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
-        sqp_yaml = yaml.ConfigParser(sqp_config_file)
-        self.solver_config = sqp_yaml.get_by_key("sqp")
+            sqp_yaml = yaml.ConfigParser(sqp_config_file)
+            self.solver_config = sqp_yaml.get_by_key("sqp")
         if solver is not None:
             self.solver = solver
         else:
@@ -200,6 +203,13 @@ class SQPsolver:
         same_trust_region_count = 0
         old_trust_region = copy.copy(trust_box_size)
 
+        actual_objective_at_x_plus_p_k = 0
+        model_objective_at_p_0 = 0
+
+        actual_reduction = 1000
+        predicted_reduction = 0
+
+        rho_k = 0
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value, trust_box_size
             self.logger.debug("penalty " + str(penalty.value))
@@ -223,8 +233,8 @@ class SQPsolver:
                     rho_k = actual_reduction / predicted_reduction
                     x_k += p_k
 
-                    self.logger.debug("x_k " + str(x_k))
-                    self.logger.debug("rho_k " + str(rho_k))
+                    self.logger.debug("\n x_k " + str(x_k))
+                    self.logger.debug("\n rho_k " + str(rho_k))
 
                     if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                         self.logger.warn("Infeasible problem cannot be solved")
@@ -283,14 +293,14 @@ class SQPsolver:
                     #     break
                     # is_converged = True
                     inter_status = "actual reduction is very small"
-                    self.logger.info(inter_status + ", so problem has probably converged")
+                    self.logger.info(inter_status)
 
                     self.status = "Solved"
                     break
                 if abs((np.linalg.norm(new_x_k - x_k, np.inf))) <= min_x_redution:
                     # is_converged = True
                     inter_status = "reduction in x is very small"
-                    self.logger.info(inter_status + ", so problem has probably converged")
+                    self.logger.info(inter_status)
                     self.status = "Solved"
                     break
                 new_x_k = copy.copy(x_k)
@@ -307,10 +317,8 @@ class SQPsolver:
                 break
             penalty.value *= 10
             iteration_count = 0
-
-        print ("solver: ", self.solver)
-        print ("initial x_0", x_0)
-        print ("final x: ", x_k)
-        print ("SQP Solver 3")
+        self.logger.debug("\n initial x_0 " + str(x_0))
+        self.logger.debug("\n final x_k " + str(x_k))
+        self.logger.debug("solver status: " + self.status)
 
         return self.status, x_k

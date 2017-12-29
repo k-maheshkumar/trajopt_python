@@ -1,155 +1,235 @@
-import sys
-from PyQt4 import QtGui, QtCore
-import yaml
-import numpy as np
+from PyQt4 import QtGui
 from scripts.utils import yaml_paser as yaml
-import itertools
 import functools
-class PlannerGui(QtGui.QWidget):
-    def __init__(self):
-        super(PlannerGui, self).__init__()
+from scripts.simulation import SimulationWorld
+import numpy as np
 
+
+class PlannerGui(QtGui.QMainWindow):
+    def __init__(self, val):
+        QtGui.QMainWindow.__init__(self)
+        self.setGeometry(200, 100, 1200, 500)
         file_path_prefix = '../../config/'
-        sqp_config_file = file_path_prefix + 'sqp_config.yaml'
+        self.sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
-        sqp_yaml = yaml.ConfigParser(sqp_config_file)
-        self.sqp_config = sqp_yaml.get_by_key("sqp")
+        self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
+        self.sqp_config = self.sqp_yaml.get_by_key("sqp")
         robot_config_file = file_path_prefix + 'robot_config.yaml'
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
-        self.initUI()
-
-    def initUI(self):
-        self.hbox = QtGui.QHBoxLayout()
-        self.sqp_grid = QtGui.QGridLayout()
-        grid1 = QtGui.QGridLayout()
-
-        # # Definition des Tracing Parameters widgets
-        # trust_box_size_label = QtGui.QLabel("Trust region size")
-        # max_trust_region_label = QtGui.QLabel("Max trust region size")
-        # trust_box_size = QtGui.QSpinBox(self)
-        # trust_box_size.setValue(self.sqp_config["trust_region_size"])
-        # max_trust_region = QtGui.QSpinBox(self)
-        # max_trust_region.setValue(self.sqp_config["max_trust_region_size"])
-        # window = QtGui.QGroupBox(self)
-        # window.setTitle("SQP solver Parameters")
-        # hbox.addLayout(sqp_grid)
-        # hbox.addLayout(grid1)
-
+        self.start_simulation_button = QtGui.QPushButton('Start Simulation')
 
         self.sqp_labels = {}
         self.sqp_spin_box = {}
         self.sqp_combo_box = {}
-        self.sqp_grid = QtGui.QGridLayout()
 
-        min_ = 0.00001
-        max_ = 100
-        # Definition des Tracing Parameters widgets
-        for key, value in self.sqp_config.iteritems():
+        self.sqp_config_group_box = QtGui.QGroupBox('SQP solver Parameters')
+        self.sqp_config_form = QtGui.QFormLayout()
+
+        self.sqp_config_scroll = QtGui.QScrollArea()
+
+        self.robot_config_params = {}
+        self.robot_config_labels = {}
+        self.robot_config_spin_box = {}
+        self.robot_config_combo_box = {}
+        self.robot_config_params_spin_box = {}
+        self.robot_config_group_box = QtGui.QGroupBox('Robot Actions')
+
+        self.robot_config_hbox = QtGui.QVBoxLayout()
+
+        self.robot_config_vbox_layout = QtGui.QVBoxLayout()
+
+        self.robot_config_form = QtGui.QFormLayout()
+
+        self.robot_action_buttons = {}
+        self.robot_action_button_group = QtGui.QButtonGroup(self)
+        self.robot_action_buttons["execute"] = QtGui.QPushButton('Execute')
+        self.robot_action_buttons["plan"] = QtGui.QPushButton('Plan')
+        self.robot_action_buttons["random_pose"] = QtGui.QPushButton('Random Pose')
+        self.robot_action_buttons["plan_and_execute"] = QtGui.QPushButton('Plan and Execute')
+
+        self.robot_action_button_hbox = QtGui.QHBoxLayout()
+
+        self.robot_config_scroll = QtGui.QScrollArea()
+
+        self.simulation_scroll = QtGui.QScrollArea()
+
+        self.sim_world = SimulationWorld.SimulationWorld()
+
+        self.selected_robot_combo_value = {}
+        self.selected_robot_spin_value = {}
+
+        self.statusBar = QtGui.QStatusBar()
+
+        self.main_widget = QtGui.QWidget(self)
+        self.main_layout = QtGui.QVBoxLayout(self.main_widget)
+        self.main_hbox_layout = QtGui.QHBoxLayout()
+
+        self.last_status = "Last Status: "
+        self.initUI(25)
+
+    def initUI(self, val):
+
+        self.main_widget.setLayout(self.main_layout)
+        self.main_layout.addLayout(self.main_hbox_layout)
+        self.main_layout.addStretch(1)
+        self.setCentralWidget(self.main_widget)
+        self.setStatusBar(self.statusBar)
+
+        min_sqp_config = 0.00001
+        max_sqp_config = 100
+        min_robot_config = 3
+        max_robot_config = 60
+
+
+        for key, value in self.sqp_config.items():
             self.sqp_labels[key] = QtGui.QLabel(key)
             if not isinstance(value, list):
                 self.sqp_spin_box[key] = QtGui.QDoubleSpinBox(self)
 
             else:
-                # self.sqp_combo_box.append({key: QtGui.QComboBox(self)})
                 self.sqp_combo_box[key] = QtGui.QComboBox(self)
 
-        sqp_param_count = 0
-        self.hbox.addLayout(self.sqp_grid)
-
-        for key, value in self.sqp_labels.iteritems():
-            self.sqp_grid.addWidget(self.sqp_labels[key], sqp_param_count, 0)
-
-            # if self.sqp_config[key] is str:
-
+        for key in self.sqp_labels:
             if not isinstance(self.sqp_config[key], list):
-                self.sqp_grid.addWidget(self.sqp_spin_box[key], sqp_param_count, 1)
+                self.sqp_config_form.addRow(self.sqp_labels[key], self.sqp_spin_box[key])
                 self.sqp_spin_box[key].setValue(float(self.sqp_config[key]))
-                # self.sqp_spin_box[key].setRange(min_, max_)
-                self.sqp_spin_box[key].valueChanged.connect(functools.partial(self.on_spin_box_value_changed, key))
-
+                self.sqp_spin_box[key].valueChanged.connect(functools.partial(self.on_sqp_spin_box_value_changed, key))
                 if abs(float(self.sqp_config[key])) < 1:
                     self.sqp_spin_box[key].setSingleStep(0.01)
                 if float(self.sqp_config[key]) < 0:
-                    self.sqp_spin_box[key].setRange(-max_, max_)
+                    self.sqp_spin_box[key].setRange(-max_sqp_config, max_sqp_config)
                 if float(self.sqp_config[key]) > 100:
-                    print self.sqp_config[key]
-                    self.sqp_spin_box[key].setRange(-max_, max_ * 1e4)
+                    self.sqp_spin_box[key].setRange(-max_sqp_config, max_sqp_config * 1e4)
+            else:
+                self.sqp_config_form.addRow(self.sqp_labels[key], self.sqp_combo_box[key])
+                self.sqp_combo_box[key].addItems(self.sqp_config[key])
+                self.sqp_combo_box[key].currentIndexChanged.connect(
+                    functools.partial(self.on_sqp_combo_box_value_changed, key))
+
+                self.sqp_config_group_box.setLayout(self.sqp_config_form)
+
+        self.sqp_config_scroll.setWidget(self.sqp_config_group_box)
+        self.sqp_config_scroll.setWidgetResizable(True)
+        self.sqp_config_scroll.setFixedHeight(400)
+        self.main_hbox_layout.addWidget(self.sqp_config_scroll)
+
+        self.robot_config_hbox.addItem(self.robot_config_form)
+        self.robot_config_hbox.addStretch(1)
+        self.robot_config_vbox_layout.addItem(self.robot_config_hbox)
+
+        for key in self.robot_config:
+            # print key, value
+            if key != "config_params":
+                self.robot_config_combo_box[key] = QtGui.QComboBox(self)
+                self.robot_config_combo_box[key].addItem("Select")
+                self.robot_config_form.addRow(key, self.robot_config_combo_box[key])
+                self.robot_config_combo_box[key].currentIndexChanged.connect(
+                    functools.partial(self.on_robot_config_combo_box_value_changed, key))
+                for key1, value1 in self.robot_config[key].items():
+                    self.robot_config_combo_box[key].addItem(key1)
+                    # self.selected_robot_combo_value[key] = value1
+                    # print " key1, value1",  key1, value1
 
             else:
-                self.sqp_grid.addWidget(self.sqp_combo_box[key], sqp_param_count, 1)
-                self.sqp_combo_box[key].addItems(self.sqp_config[key])
-                self.sqp_combo_box[key].currentIndexChanged.connect(functools.partial(self.on_combo_box_value_changed, key))
+                for key1, value1 in self.robot_config[key].items():
+                    # print " key1, value1",  key1, value1
+                    self.robot_config_params_spin_box[key1] = QtGui.QDoubleSpinBox(self)
+                    self.robot_config_form.addRow(key1, self.robot_config_params_spin_box[key1])
+                    self.robot_config_params_spin_box[key1].setValue(float(value1))
+                    self.robot_config_params_spin_box[key1].valueChanged.connect(functools.partial(self.on_robot_spin_box_value_changed, key1))
+                    self.robot_config_params_spin_box[key1].setRange(min_robot_config, max_robot_config)
+                    # self.selected_robot_spin_value[key] = value1
 
-                # self.robot_combo_box.currentIndexChanged.connect(self.selectionchange)
+        self.robot_action_button_hbox.addStretch(1)
 
-            # self.connect(sqp_spin_box[key], QtCore.SIGNAL('valueChanged(double)'), self.change_value1)
-            # sqp_spin_box[key].connect(QtCore.SIGNAL(self.test()), self.change_value1)
+        for key in self.robot_action_buttons:
+            if key != "config_params":
+                self.robot_action_button_hbox.addWidget(self.robot_action_buttons[key])
+                self.robot_action_buttons[key].clicked.connect(
+                    functools.partial(self.on_robot_action_button_clicked, key))
+                self.robot_action_buttons[key].setMaximumWidth(220)
 
-            sqp_param_count += 1
+        self.robot_config_vbox_layout.addItem(self.robot_action_button_hbox)
 
+        self.robot_config_vbox_layout.addStretch(1)
 
-        # trust_box_size_label = QtGui.QLabel("Trust region size")
-        # max_trust_region_label = QtGui.QLabel("Max trust region size")
-        # trust_box_size = QtGui.QSpinBox(self)
-        # trust_box_size.setValue(self.sqp_config["trust_region_size"])
-        # max_trust_region = QtGui.QSpinBox(self)
-        # max_trust_region.setValue(self.sqp_config["max_trust_region_size"])
-        # hbox.addLayout(sqp_grid)
-        # hbox.addLayout(grid1)
-        window = QtGui.QGroupBox(self)
-        window.setTitle("SQP solver Parameters")
+        self.robot_config_group_box.setLayout(self.robot_config_vbox_layout)
+        self.robot_config_scroll.setWidget(self.robot_config_group_box)
+        self.robot_config_scroll.setWidgetResizable(True)
+        self.robot_config_scroll.setFixedHeight(400)
+        self.main_hbox_layout.addWidget(self.robot_config_scroll)
+        self.simulation_scroll.setWidget(self.start_simulation_button)
+        self.start_simulation_button.clicked.connect(self.on_start_simulation_clicked)
+        self.simulation_scroll.setWidgetResizable(True)
+        self.simulation_scroll.setFixedHeight(400)
+        self.main_hbox_layout.addWidget(self.simulation_scroll)
 
-        robot_labels = []
-        # robot_combo_box = []
-        robot_grid = QtGui.QGridLayout()
-        self.robot_combo_box =QtGui.QComboBox(self)
-        robot_label = QtGui.QLabel("Robot Planning Group")
+    def on_start_simulation_clicked(self):
+        # self.sim_world.run_simulation()
+        self.is_simulation_started = True
 
-        # Definition des Tracing Parameters widgets
-        # for i in range(len(self.robot_config["groups"])):
-        #     for key, value in self.robot_config["groups"][i].iteritems():
-        #         if key == "name":
-        #             # robot_labels.append({value: QtGui.QLabel(value)})
-        #             self.robot_combo_box.addItem(value)
-        #             # robot_grid.append({value: QtGui.QGridLayout()})
+    def on_robot_spin_box_value_changed(self, key, value):
+        # print(key, value)
+        # self.selected_robot_spin_value.clear()
+        self.selected_robot_spin_value[str(key)] = value
+        # print self.selected_robot_spin_value[key]
 
-        for key, value in self.robot_config.iteritems():
-            for key1,value1 in self.robot_config[key].iteritems():
-                print self.robot_config[key][key1]
+    def on_robot_action_button_clicked(self, key):
+        if not self.selected_robot_spin_value:
+            for spin_box_key in self.robot_config_params_spin_box:
+                self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
+        # print "self.selected_robot_combo_value", self.selected_robot_combo_value
+        # print "self.selected_robot_spin_value", self.selected_robot_spin_value
 
-        self.hbox.addLayout(robot_grid)
-        robot_grid.addWidget(robot_label, 2, 0)
-        robot_grid.addWidget(self.robot_combo_box, 2, 1)
+        samples = None
+        duration = None
+        group = None
+        goal_state = None
+        if "samples" in self.selected_robot_spin_value:
+            samples = self.selected_robot_spin_value["samples"]
+        if "duration" in self.selected_robot_spin_value:
+            duration = self.selected_robot_spin_value["duration"]
+        if "joints_groups" in self.selected_robot_combo_value:
+            group = self.selected_robot_combo_value["joints_groups"]
+        if "joint_configurations" in self.selected_robot_combo_value:
+            goal_state = self.selected_robot_combo_value["joint_configurations"]
+            if key == "plan":
+                if samples is not None and duration is not None \
+                        and group is not None and goal_state is not None and self.sqp_config is not None:
+                    status = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples, duration=duration,
+                                               solver_config=self.sqp_config)
+                    self.statusBar.showMessage(self.last_status + status)
 
-        self.robot_combo_box.currentIndexChanged.connect(self.selectionchange)
+        if key == "random_pose":
+            if group is not None:
+                status = self.sim_world.reset_joint_states(group, motor_dir=np.random.rand(1, 7).flatten())
+                self.statusBar.showMessage(self.last_status + status)
 
+        if key == "execute":
+            status = self.sim_world.execute_trajectory()
+            self.statusBar.showMessage(self.last_status + status)
+        if key == "plan_and_execute":
+            if samples is not None and duration is not None \
+                    and group is not None and goal_state is not None and self.sqp_config is not None:
+                status = self.sim_world.plan_and_execute_trajectory(group=group, goal_state=goal_state, samples=samples,
+                                                        duration=duration,
+                                                        solver_config=self.sqp_config)
+                self.statusBar.showMessage(self.last_status + status)
 
-        window.setLayout(self.hbox)
+    def on_sqp_spin_box_value_changed(self, key, value):
+        # print (key, value)
+        self.sqp_config[str(key)] = value
+        self.sqp_yaml.save()
 
+    def on_sqp_combo_box_value_changed(self, combo_box_key):
+        print (combo_box_key, self.sqp_combo_box[combo_box_key].currentText())
 
-
-        self.setGeometry(300, 300, 850, 300)
-        self.setWindowTitle('Trajectory Planner')
-
-        self.show()
-
-    def on_spin_box_value_changed(self, checked, message):
-        print checked, message
-
-    def   on_combo_box_value_changed(self, combo_box_key):
-        print combo_box_key, self.sqp_combo_box[combo_box_key].currentText()
-    def change_value1(self, val):
-       print val
-    def selectionchange(self, i):
-
-        print "Current index", i, "selection changed ", self.robot_combo_box.currentText()
-
-def main():
-    app = QtGui.QApplication(sys.argv)
-    ex = PlannerGui()
-    sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
+    def on_robot_config_combo_box_value_changed(self, combo_box_key):
+        # self.selected_robot_combo_value.clear()
+        # print (combo_box_key, self.robot_config_combo_box[combo_box_key].currentText())
+        key = self.robot_config_combo_box[combo_box_key].currentText()
+        if key != "Select":
+            # print self.robot_config_combo_box[combo_box_key][self.robot_config_combo_box[combo_box_key].currentText()]
+            self.selected_robot_combo_value[str(combo_box_key)] = self.robot_config[combo_box_key][str(key)]
+        # print self.selected_robot_combo_value

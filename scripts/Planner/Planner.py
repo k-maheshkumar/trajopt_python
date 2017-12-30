@@ -49,48 +49,76 @@ class TrajectoryOptimizationPlanner:
 
         self.initial_guess = []
         self.solver_status = []
-        self.trajectory = {}
         self.joint_names = []
+        self.problem = {}
+        self.max_penalty = -1
+        self.delta_max = -1
+        self.joints = -1
+        self.num_of_joints = -1
+        self.solver = -1
+        self.solver =  -1
+        self.duration = -1
+        self.no_of_samples = -1
+        self.max_no_of_Iteration = -1
+        self.max_no_of_Iteration = -1
+        self.decimals_to_round = -1
+        self.decimals_to_round = 3
+        self.solver_class = -1
+
+        self.solver_config = {}
+        self.trajectory = Trajectory.Trajectory()
+        self.sqp_solver = SQPproblem.SQPProblem()
+        self.sqp_solver1 = SQPsolver.SQPsolver()
+
+        self.verbose = False
+        self.logger = logging.getLogger("Trajectory_Planner."+__name__)
+
+    def __clear_all_data(self):
+        self.sqp = {}
+        self.P = []
+        self.G = []
+        self.A = []
+        self.q = []
+        self.lb = []
+        self.ub = []
+        self.lbG = []
+        self.ubG = []
+        self.b = []
+
+        self.initial_guess = []
+        self.solver_status = []
+        self.joint_names = []
+
+    def init(self, **kwargs):
+        self.__clear_all_data()
         if kwargs is not None:
             if "problem" in kwargs:
                 self.problem = kwargs["problem"]
                 if "samples" in self.problem:
                     self.no_of_samples = self.problem["samples"]
+                else:
+                    self.logger.critical("attribute: number of samples is missing")
                 if "duration" in self.problem:
                     self.duration = self.problem["duration"]
+                else:
+                    self.logger.critical("attribute: duration is missing")
                 if "max_iteration" in self.problem:
                     self.max_no_of_Iteration = self.problem["max_iteration"]
+                else:
+                    self.max_no_of_Iteration = 10
                 if "joints" in self.problem:
                     self.joints = self.problem["joints"]
                     self.num_of_joints = len(self.problem["joints"])
+                else:
+                    self.logger.critical("attribute: joints is missing")
                 if "max_penalty" in self.problem:
                     self.max_penalty = self.problem["max_penalty"]
+                else:
+                    self.max_penalty = 1e4
                 if "max_delta" in self.problem:
                     self.delta_max = self.problem["max_delta"]
-
-            if "verbose" in kwargs:
-                self.verbose = kwargs["verbose"]
-                self.logger = logging.getLogger("Trajectory Planner")
-                ch = logging.StreamHandler()
-                # create formatter
-                formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-                # add formatter to ch
-                ch.setFormatter(formatter)
-
-                if self.verbose == "WARN":
-                    self.logger.setLevel(logging.WARN)
-                    ch.setLevel(logging.WARN)
-
-                elif self.verbose == "INFO" or self.verbose is True:
-                    self.logger.setLevel(logging.INFO)
-                    ch.setLevel(logging.INFO)
-
-                elif self.verbose == "DEBUG":
-                    self.logger.setLevel(logging.DEBUG)
-                    ch.setLevel(logging.DEBUG)
-
-                # add ch to logger
-                self.logger.addHandler(ch)
+                else:
+                    self.delta_max = 5
 
             if "joints" in kwargs:
                 self.joints = kwargs["joints"]
@@ -167,9 +195,9 @@ class TrajectoryOptimizationPlanner:
         self.lbG = np.hstack(self.lbG)
         self.ubG = np.hstack(self.ubG)
 
-        self.P = self.diag_block_mat_slicing(self.P)
-        self.A = self.diag_block_mat_slicing(self.A)
-        self.G = self.diag_block_mat_slicing(self.G)
+        self.P = self.__diagonal_block_mat_slicing(self.P)
+        self.A = self.__diagonal_block_mat_slicing(self.A)
+        self.G = self.__diagonal_block_mat_slicing(self.G)
 
         self.b = np.hstack(self.b)
         # self.q = [item for sublist in self.q for item in sublist]
@@ -182,7 +210,7 @@ class TrajectoryOptimizationPlanner:
         for joint_name in self.joints:
             self.joint_names.append(joint_name)
             self.sqp[joint_name] = sqp.ProblemBuilder(self.no_of_samples, self.duration, self.joints[joint_name], self.decimals_to_round)
-            self.trajectory[joint_name] = -1
+            # self.trajectory[joint_name] = -1
             # self.initial_guess.append(self.interpolate(sp.start, sp.end, self.samples))
             self.initial_guess.append(self.interpolate(self.sqp[joint_name].start + 0.02, self.sqp[joint_name].end + 0.02, self.no_of_samples))
 
@@ -225,9 +253,9 @@ class TrajectoryOptimizationPlanner:
         self.lbG = np.hstack(self.lbG)
         self.ubG = np.hstack(self.ubG)
 
-        self.P = self.diag_block_mat_slicing(self.P)
-        self.A = self.diag_block_mat_slicing(self.A)
-        self.G = self.diag_block_mat_slicing(self.G)
+        self.P = self.__diagonal_block_mat_slicing(self.P)
+        self.A = self.__diagonal_block_mat_slicing(self.A)
+        self.G = self.__diagonal_block_mat_slicing(self.G)
 
         self.b = np.hstack(self.b)
         # self.q = [item for sublist in self.q for item in sublist]
@@ -237,74 +265,72 @@ class TrajectoryOptimizationPlanner:
 
         self.P = 2.0 * self.P + 1e-08 * np.eye(self.P.shape[1])
 
-    def diag_block_mat_slicing(self, L):
-        shp = L[0].shape
-        N = len(L)
-        r = range(N)
-        out = np.zeros((N, shp[0], N, shp[1]), dtype=int)
-        out[r, :, r, :] = L
-        return out.reshape(np.asarray(shp) * N)
+    # noinspection PyMethodMayBeStatic
+    def __diagonal_block_mat_slicing(self, matrix):
+        shape = matrix[0].shape
+        length = len(matrix)
+        length_range = range(length)
+        out = np.zeros((length, shape[0], length, shape[1]), dtype=int)
+        out[length_range, :, length_range, :] = matrix
+        return out.reshape(np.asarray(shape) * length)
 
-    def displayProblem(self):
+    def display_problem(self):
         print ("P")
         print (self.P)
         print ("q")
         print (self.q)
         print ("G")
         print (self.G)
-        print ("lb")
-        print (self.lb)
-        print ("ub")
-        print (self.ub)
         print ("lbG")
         print (self.lbG)
         print ("ubG")
         print (self.ubG)
+        print (self.A)
         print ("b")
         print (self.b)
+        print ("lb")
+        print (self.lb)
+        print ("ub")
+        print (self.ub)
         print ("A")
-        print (self.A)
-
-        print ("maxNoOfIteration")
-        print (self.max_no_of_Iteration)
 
     def interpolate(self, start, end, samples):
         data = []
-        stepSize = (end - start) / (samples - 1)
+        step_size = (end - start) / (samples - 1)
         intermediate = start
         for i in range(samples):
             data.append(intermediate)
-            intermediate += stepSize
+            intermediate += step_size
         return np.round(data, self.decimals_to_round)
-        # print data
-        # return data
 
     def calculate_trajectory(self, initial_guess= None):
+        can_execute_trajectory = False
         self.logger.info("getting trajectory")
         if self.solver_class:
-            sp = SQPproblem.SQPProblem(self, self.solver, self.solver_config, self.verbose)
+            self.sqp_solver.init(self, self.solver, self.solver_config, self.verbose)
             start = time.time()
-            self.solver_status, self.trajectory = sp.solveSQP(initial_guess)
+            self.solver_status, self.trajectory = self.sqp_solver.solveSQP(initial_guess)
             end = time.time()
 
         else:
-            sp = SQPsolver.SQPsolver(self, self.solver, self.solver_config, self.verbose)
+            self.sqp_solver1.init(self, self.solver, self.solver_config, self.verbose)
             start = time.time()
-            self.solver_status, trajectory = sp.solveSQP(initial_guess)
+            self.solver_status, trajectory = self.sqp_solver1.solveSQP(initial_guess)
             end = time.time()
 
         trajectory = np.array((np.split(trajectory, self.num_of_joints)))
 
-        self.trajectory = dict(zip(self.joint_names, trajectory))
-        self.trajectory = Trajectory.Trajectory(self.trajectory, self.no_of_samples, self.duration)
+        trajectory = dict(zip(self.joint_names, trajectory))
+        self.trajectory.update(trajectory, self.no_of_samples, self.duration)
         status = "-1"
         if self.solver_status == "Solved":
-            status = "Optimal Trajectory has been found in " + str(end - start)
+            can_execute_trajectory = True
+            status = "Optimal Trajectory has been found in " + str(end - start) + " secs"
             self.logger.info(status)
         else:
             status = "Couldn't find the trajectory for the input problem"
             self.logger.info(status)
-        return status
+        return status, can_execute_trajectory
 
     def get_trajectory(self):
         return self.trajectory

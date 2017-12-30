@@ -2,24 +2,17 @@ from PyQt4 import QtGui
 from scripts.utils import yaml_paser as yaml
 import functools
 from scripts.simulation import SimulationWorld
-import numpy as np
-import logging
 
-
-class PlannerGui(QtGui.QMainWindow):
-    def __init__(self, verbose=False, file_log=False):
-        QtGui.QMainWindow.__init__(self)
-        self.setGeometry(200, 100, 1200, 400)
-
+class PlannerGui(QtGui.QWidget):
+    def __init__(self, val):
+        QtGui.QWidget.__init__(self)
+        self.setGeometry(200, 100, 1200, 500)
         file_path_prefix = '../../config/'
-        self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
-        self.config = self.default_config.get_by_key("config")
-
-        self.sqp_config_file = file_path_prefix + self.config["solver"]
+        self.sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
         self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
         self.sqp_config = self.sqp_yaml.get_by_key("sqp")
-        robot_config_file = file_path_prefix + self.config["robot"]
+        robot_config_file = file_path_prefix + 'robot_config_kukka_arm.yaml'
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
         self.start_simulation_button = QtGui.QPushButton('Start Simulation')
@@ -50,8 +43,6 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_action_button_group = QtGui.QButtonGroup(self)
         self.robot_action_buttons["execute"] = QtGui.QPushButton('Execute')
         self.robot_action_buttons["plan"] = QtGui.QPushButton('Plan')
-        self.robot_action_buttons["random_pose"] = QtGui.QPushButton('Random Pose')
-        self.robot_action_buttons["plan_and_execute"] = QtGui.QPushButton('Plan and Execute')
 
         self.robot_action_button_hbox = QtGui.QHBoxLayout()
 
@@ -59,68 +50,27 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.simulation_scroll = QtGui.QScrollArea()
 
+        self.sim_world = SimulationWorld.SimulationWorld()
+
         self.selected_robot_combo_value = {}
         self.selected_robot_spin_value = {}
 
-        self.statusBar = QtGui.QStatusBar()
 
-        self.main_widget = QtGui.QWidget(self)
-        self.main_layout = QtGui.QVBoxLayout(self.main_widget)
+        self.initUI(25)
+
+    def initUI(self, val):
+
         self.main_hbox_layout = QtGui.QHBoxLayout()
+        self.main_layout = QtGui.QVBoxLayout(self)
 
-        self.last_status = "Last Status: "
-        self.init_ui(25)
-        self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
-        self.can_execute_trajectory = False
-        main_logger_name = "Trajectory_Planner"
-        self.logger = logging.getLogger(main_logger_name)
-        self.setup_logger(main_logger_name, verbose, file_log)
-
-    def setup_logger(self, main_logger_name, verbose=False, log_file=False):
-
-        # creating a formatter
-        formatter = logging.Formatter('-%(asctime)s - %(name)s - %(levelname)-8s: %(message)s')
-
-        # create console handler with a debug log level
-        log_console_handler = logging.StreamHandler()
-        if log_file:
-            # create file handler which logs info messages
-            logger_file_handler = logging.FileHandler(main_logger_name + '.log', 'w', 'utf-8')
-            logger_file_handler.setLevel(logging.INFO)
-            # setting handler format
-            logger_file_handler.setFormatter(formatter)
-            # add the file logging handlers to the logger
-            self.logger.addHandler(logger_file_handler)
-
-        if verbose == "WARN":
-            self.logger.setLevel(logging.WARN)
-            log_console_handler.setLevel(logging.WARN)
-
-        elif verbose == "INFO" or verbose is True:
-            self.logger.setLevel(logging.INFO)
-            log_console_handler.setLevel(logging.INFO)
-
-        elif verbose == "DEBUG":
-            self.logger.setLevel(logging.DEBUG)
-            log_console_handler.setLevel(logging.DEBUG)
-
-        # setting console handler format
-        log_console_handler.setFormatter(formatter)
-        # add the handlers to the logger
-        self.logger.addHandler(log_console_handler)
-
-    def init_ui(self, val):
-
-        self.main_widget.setLayout(self.main_layout)
         self.main_layout.addLayout(self.main_hbox_layout)
         self.main_layout.addStretch(1)
-        self.setCentralWidget(self.main_widget)
-        self.setStatusBar(self.statusBar)
 
         min_sqp_config = 0.00001
         max_sqp_config = 100
         min_robot_config = 3
-        max_robot_config = 60
+        max_robot_config = 30
+
 
         for key, value in self.sqp_config.items():
             self.sqp_labels[key] = QtGui.QLabel(key)
@@ -160,7 +110,7 @@ class PlannerGui(QtGui.QMainWindow):
 
         for key in self.robot_config:
             # print key, value
-            if key != "config_params" and key!= "urdf":
+            if key != "config_params":
                 self.robot_config_combo_box[key] = QtGui.QComboBox(self)
                 self.robot_config_combo_box[key].addItem("Select")
                 self.robot_config_form.addRow(key, self.robot_config_combo_box[key])
@@ -171,7 +121,7 @@ class PlannerGui(QtGui.QMainWindow):
                     # self.selected_robot_combo_value[key] = value1
                     # print " key1, value1",  key1, value1
 
-            elif key!= "urdf":
+            else:
                 for key1, value1 in self.robot_config[key].items():
                     # print " key1, value1",  key1, value1
                     self.robot_config_params_spin_box[key1] = QtGui.QDoubleSpinBox(self)
@@ -206,7 +156,7 @@ class PlannerGui(QtGui.QMainWindow):
         self.main_hbox_layout.addWidget(self.simulation_scroll)
 
     def on_start_simulation_clicked(self):
-        # self.sim_world.run_simulation()
+        self.sim_world.run_simulation()
         self.is_simulation_started = True
 
     def on_robot_spin_box_value_changed(self, key, value):
@@ -221,71 +171,16 @@ class PlannerGui(QtGui.QMainWindow):
                 self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
         # print "self.selected_robot_combo_value", self.selected_robot_combo_value
         # print "self.selected_robot_spin_value", self.selected_robot_spin_value
-
-        samples = None
-        duration = None
-        group = None
-        goal_state = None
-        if "samples" in self.selected_robot_spin_value:
-            samples = self.selected_robot_spin_value["samples"]
-        if "duration" in self.selected_robot_spin_value:
-            duration = self.selected_robot_spin_value["duration"]
-        if "joints_groups" in self.selected_robot_combo_value:
-            group = self.selected_robot_combo_value["joints_groups"]
-        if "joint_configurations" in self.selected_robot_combo_value:
-            goal_state = self.selected_robot_combo_value["joint_configurations"]
-
-        if group is not None and goal_state is not None:
-                if samples is not None and duration is not None and self.sqp_config is not None:
-                    if key == "plan" or key == "plan_and_execute":
-                        self.statusBar.clearMessage()
-                        status = "Please wait, trajectory is being planned... Then trajectory will be executed.."
-                        self.statusBar.showMessage(self.last_status + status)
-                        status = self.initiate_plan_trajectory(group, goal_state, samples, duration)
-                        self.statusBar.clearMessage()
-                        self.statusBar.showMessage(self.last_status + status)
-                    if key == "plan_and_execute" or key == "execute":
-                        if self.can_execute_trajectory:
-                            self.statusBar.clearMessage()
-                            status = "Please wait, trajectory is being executed.."
-                            self.statusBar.showMessage(self.last_status + status)
-                            status = self.sim_world.execute_trajectory()
-                            self.statusBar.clearMessage()
-                            self.statusBar.showMessage(self.last_status + status)
-                        else:
-                            self.statusBar.clearMessage()
-                            status = "First plan the trajectory to execute.."
-                            self.statusBar.showMessage(self.last_status + status)
-        else:
-            self.statusBar.clearMessage()
-            status = "Please select the planning group and joint configuration.."
-            self.statusBar.showMessage(self.last_status + status)
-
-        if key == "random_pose":
-            self.statusBar.clearMessage()
-            status = "Please wait, random pose for the joints are being set.."
-            self.statusBar.showMessage(self.last_status + status)
-            if group is not None:
-                status = self.sim_world.reset_joint_states(group, motor_dir=np.random.rand(1, len(group)).flatten())
-                self.statusBar.showMessage(self.last_status + status)
-            else:
-                self.statusBar.clearMessage()
-                status = "Please select the planning group.."
-                self.statusBar.showMessage(self.last_status + status)
-
-
-    def initiate_plan_trajectory(self, group, goal_state, samples, duration):
-        can_execute_trajectory = False
-        if samples is not None and duration is not None \
-                and group is not None and goal_state is not None and self.sqp_config is not None:
-            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples,
-                                                                duration=duration,
-                                                                solver_config=self.sqp_config)
-        else:
-            status = "Please select the planning group and joint configuration.."
-
-        return status
-
+        if key == "plan":
+            if "samples" in self.selected_robot_spin_value:
+                samples = self.selected_robot_spin_value["samples"]
+            if "duration" in self.selected_robot_spin_value:
+                duration = self.selected_robot_spin_value["duration"]
+            if "joints_groups" in self.selected_robot_combo_value:
+                group = self.selected_robot_combo_value["joints_groups"]
+            if "joint_configurations" in self.selected_robot_combo_value:
+                goal_state = self.selected_robot_combo_value["joint_configurations"]
+            self.sim_world.plan_trajectory(group, goal_state, samples, duration)
     def on_sqp_spin_box_value_changed(self, key, value):
         # print (key, value)
         self.sqp_config[str(key)] = value

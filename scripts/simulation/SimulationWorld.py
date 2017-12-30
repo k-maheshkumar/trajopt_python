@@ -2,31 +2,40 @@ import pybullet as sim
 from scripts.Planner import Robot
 from scripts.interfaces.ISimulationWorldBase import ISimulationWorldBase
 import time
+import numpy as np
+import logging
 
 
 class SimulationWorld():
-    def __init__(self, file_path=None):
+    def __init__(self, urdf_file=None):
         location_prefix = '/home/mahe/masterThesis/bullet3/data/'
         # location_prefix = '/home/mahesh/libraries/bullet3/data/'
-        urdf_file = "kuka_iiwa/model.urdf"
-        self.robot = Robot.Robot(location_prefix + urdf_file)
+        # if urdf_file is None:
+        #     urdf_file = location_prefix + "kuka_iiwa/model.urdf"
+        self.robot = Robot.Robot(urdf_file)
         self.robot_id = -1
         self.joint_name_to_id = {}
-        self.gui = sim.connect(sim.GUI)
-        # self.gui = sim.connect(sim.DIRECT)
+        # self.gui = sim.connect(sim.GUI)
+        self.gui = sim.connect(sim.DIRECT)
         self.no_of_joints = -1
+        self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
         self.set_up_world(location_prefix, urdf_file)
         kukaEndEffectorIndex = 6
         useRealTimeSimulation = 1
+        fixedTimeStep = 0.001
         if useRealTimeSimulation:
             sim.setRealTimeSimulation(useRealTimeSimulation)
+        else:
+            sim.setTimeStep(fixedTimeStep)
+
     def set_up_world(self, file_path, urdf_file):
         sim.loadURDF(file_path + "plane.urdf", [0, 0, -0.3], useFixedBase=True)
-        sim.loadURDF(file_path + "table/table.urdf", [0, 0, -0.3], useFixedBase=True)
+        # sim.loadURDF(file_path + "table/table.urdf", [0, 0, -0.3], useFixedBase=True)
 
-        self.robot_id = sim.loadURDF(file_path + urdf_file, [0, 0, 0], useFixedBase=True)
-        sim.resetBasePositionAndOrientation(self.robot_id, [0, 0.25, 0.4], [0, 0, 0, 1])
+        self.robot_id = sim.loadURDF(urdf_file, [0, 0, 0], useFixedBase=True)
+        sim.resetBasePositionAndOrientation(self.robot_id, [0, 0.0, 0.0], [0, 0, 0, 1])
+        # sim.resetBasePositionAndOrientation(self.robot_id, [0, 0.25, 0.4], [0, 0, 0, 1])
 
         sim.setGravity(0, 0, -10)
         self.no_of_joints = sim.getNumJoints(self.robot_id)
@@ -63,10 +72,11 @@ class SimulationWorld():
         # self.reset_joint_states(group)
         # current_state = self.get_current_states_for_given_joints(group)
         # print "current_state", current_state
-        status = self.robot.plan_trajectory(group=group, current_state=self.get_current_states_for_given_joints(group),
+        can_execute_trajectory = False
+        status, can_execute_trajectory = self.robot.plan_trajectory(group=group, current_state=self.get_current_states_for_given_joints(group),
                                    goal_state=goal_state, samples=int(samples), duration=int(duration),
                                    solver_config=solver_config)
-        return status
+        return status, can_execute_trajectory
 
     def get_current_states_for_given_joints(self, joints):
         current_state = {}
@@ -81,22 +91,27 @@ class SimulationWorld():
             for joint_name, corresponding_trajectory in trajectories.trajectory.items():
                 sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[joint_name],
                                           controlMode=sim.POSITION_CONTROL,
-                                          targetPosition=corresponding_trajectory[i], targetVelocity=.1, force=500,
+                                          targetPosition=corresponding_trajectory[i], targetVelocity=.1,
+                                          force=self.robot.model.joint_by_name[joint_name].limit.effort,
                                           positionGain=0.03,
-                                          velocityGain=.5)
-                # break
-            # time.sleep(samples / float(duration))
+                                          velocityGain=.5,
+                                          # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
+                                          )
+            # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
             time.sleep(trajectories.duration / float(trajectories.no_of_samples))
-        return "Trajectory execution has finished"
+            # sim.stepSimulation()
+
+            status = "Trajectory execution has finished"
+            self.logger.info(status)
+            return status
 
     def plan_and_execute_trajectory(self, group, goal_state, samples, duration, solver_config=None):
         status = "-1"
-        status = self.plan_trajectory(group, goal_state, samples, duration, solver_config=None)
+        status, can_execute_trajectory = self.plan_trajectory(group, goal_state, samples, duration, solver_config=None)
         status += " and "
         status += self.execute_trajectory()
 
-        return status
-
+        return status, can_execute_trajectory
 
     def setup_jointId_to_jointName(self):
         for i in range(self.no_of_joints):
@@ -105,16 +120,17 @@ class SimulationWorld():
             self.joint_name_to_id[jointInfo[1].decode('UTF-8')] = jointInfo[0]
         # print "joint_id_to_name", self.joint_id_to_name
 
-    def reset_joint_states(self, joints, motor_dir=None, half_pi=None):
+    def reset_joint_states(self, joints, motor_dir=None):
         if motor_dir is None:
-            motor_dir = [-1, -1, -1, 1, 1, 1, 1]
-        if half_pi is None:
-            half_pi = 1.57079632679
+            # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
+            motor_dir = np.random.uniform(-1, 1, size=len(joints))
+        half_pi = 1.57079632679
         for joint in joints:
-            for j in range(self.no_of_joints):
+            for j in range(len(joints)):
                 sim.resetJointState(self.robot_id, self.joint_name_to_id[joint], motor_dir[j] * half_pi)
-
-        return "Reset joints to random pose is complete"
+        status = "Reset joints to random pose is complete"
+        self.logger.info(status)
+        return status
 
 #
 # if __name__ == "__main__":

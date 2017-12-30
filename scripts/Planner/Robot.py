@@ -3,7 +3,7 @@ import Planner
 import time
 from munch import *
 from scripts.utils import yaml_paser as yaml
-
+import logging
 
 class Robot:
     def __init__(self, urdf_file):
@@ -12,11 +12,13 @@ class Robot:
         # location_prefix = '/home/mahe/masterThesis/bullet3/data/'
 
         # self.model = URDF.from_xml_file(location_prefix + "kuka_iiwa/model.urdf")
-        print urdf_file
+        # print urdf_file
         self.model = URDF.from_xml_file(urdf_file)
         # self.__replace_joints_in_model_with_map()
+        self.__setup_get_joint_by_name()
         self.state = self.init_state()
-        self.planner = {}
+        self.planner = Planner.TrajectoryOptimizationPlanner()
+        self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
     def init_state(self):
         state = {}
@@ -39,6 +41,13 @@ class Robot:
             joints[joint.name] = joint
         del self.model.joints[:]
         self.model.joints = joints
+
+    def __setup_get_joint_by_name(self):
+        joints = {}
+        for joint in self.model.joints:
+            joints[joint.name] = joint
+        self.model.joint_by_name = joints
+
 
     # def plan_trajectory(self, joint_group, states, samples, duration):
     def plan_trajectory(self, *args, **kwargs):
@@ -79,27 +88,22 @@ class Robot:
                 for joint_in_group in joint_group:
                     if joint_in_group in self.state and joint_in_group in goal_state:
                         states[joint_in_group] = {"start": self.state[joint_in_group]["current_value"], "end": goal_state[joint_in_group]}
-
-                    if joint.name == joint_in_group:
-                        # joints.append(munchify({
-                        #     "name": joint.name,
-                        #     "states": states[joint_in_group],
-                        #     "limits": joint.limit
-                        # }))
+                    if joint.name == joint_in_group and joint.limit is not None:
                         joints[joint.name] = (munchify({
                             "states": states[joint_in_group],
                             "limits": joint.limit
                         }))
         if len(joints):
-            self.planner = Planner.TrajectoryOptimizationPlanner(joints=joints, samples=samples, duration=duration,
+            self.planner.init(joints=joints, samples=samples, duration=duration,
                                                                  solver=solver, solver_config=solver_config, solver_class=0, decimals_to_round=decimals_to_round, verbose=True)
             # self.planner.displayProblem()
-            status = self.planner.calculate_trajectory()
+            status, can_execute_trajectory = self.planner.calculate_trajectory()
+
         else:
             status = "No trajectory has been found"
-            print "joints are empty"
+            self.logger.warning("Joints are empty, so trajectory can't be found")
 
-        return status
+        return status, can_execute_trajectory
 
     # def get_robot_trajectory(self):
     #     return self.planner.trajectory.get_trajectory()
@@ -162,7 +166,7 @@ class Robot:
 #
 #     file_path_prefix = '../../config/'
 #
-#     robot_config_file = file_path_prefix + 'robot_config.yaml'
+#     robot_config_file = file_path_prefix + 'robot_config_kukka_arm.yaml'
 #     robot_yaml = yaml.ConfigParser(robot_config_file)
 #     robot_config = robot_yaml.get_by_key("robot")
 #     # print robot_config["joint_configurations"]

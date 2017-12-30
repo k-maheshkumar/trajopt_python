@@ -30,6 +30,7 @@
 
 
 robot:
+    urdf: "/home/mahe/masterThesis/bullet3/data/kuka_iiwa/model.urdf"
     config_params:
       samples: 5
       duration: 6

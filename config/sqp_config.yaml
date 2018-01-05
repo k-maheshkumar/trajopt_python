@@ -1,5 +1,6 @@
 sqp:
   const_violation_tolerance: 0.1
+  decimals_to_round: 3.0
   improve_ratio_threshold: 0.25
   max_iteration: 10.0
   max_penalty: 1e4

@@ -171,14 +171,16 @@ class PlannerGui(QtGui.QMainWindow):
                     # self.selected_robot_combo_value[key] = value1
                     # print " key1, value1",  key1, value1
 
-            elif key!= "urdf":
+            if key == "config_params":
                 for key1, value1 in self.robot_config[key].items():
-                    # print " key1, value1",  key1, value1
+                    print " key1, value1",  key1, value1
                     self.robot_config_params_spin_box[key1] = QtGui.QDoubleSpinBox(self)
                     self.robot_config_form.addRow(key1, self.robot_config_params_spin_box[key1])
-                    self.robot_config_params_spin_box[key1].setValue(float(value1))
+                    self.robot_config_params_spin_box[key1].setValue(float(value1["value"]))
                     self.robot_config_params_spin_box[key1].valueChanged.connect(functools.partial(self.on_robot_spin_box_value_changed, key1))
-                    self.robot_config_params_spin_box[key1].setRange(min_robot_config, max_robot_config)
+                    self.robot_config_params_spin_box[key1].setRange(value1["min"], value1["max"])
+                    self.robot_config_params_spin_box[key1].setSingleStep(value1["step"])
+
                     # self.selected_robot_spin_value[key] = value1
 
         self.robot_action_button_hbox.addStretch(1)

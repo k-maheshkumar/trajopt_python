@@ -136,7 +136,7 @@ class TrajectoryOptimizationPlanner:
             else:
                 self.max_no_of_Iteration = 20
             if "decimals_to_round" in kwargs:
-                self.decimals_to_round = kwargs["decimals_to_round"]
+                self.decimals_to_round = int(kwargs["decimals_to_round"])
             else:
                 self.decimals_to_round = 3
 

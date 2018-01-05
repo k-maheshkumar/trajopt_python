@@ -64,16 +64,13 @@ class Robot:
             solver = kwargs["solver"]
         else:
             solver = "SCS"
-        if "decimals_to_round" in kwargs:
-            decimals_to_round = kwargs["decimals_to_round"]
-        else:
-            decimals_to_round = 3
-        if "solver" in kwargs:
-            solver = kwargs["solver"]
-        else:
-            solver = "SCS"
         if "solver_config" in kwargs:
             solver_config = kwargs["solver_config"]
+            if "decimals_to_round" in solver_config:
+                decimals_to_round = int(solver_config["decimals_to_round"])
+        else:
+            decimals_to_round = 3
+
         if "current_state" in kwargs:
             self.update_robot_state(kwargs["current_state"])
         if "goal_state" in kwargs:

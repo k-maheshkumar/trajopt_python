@@ -206,6 +206,7 @@ class TrajectoryOptimizationPlanner:
         self.G = self.G.astype(float)
 
         self.P = 2.0 * self.P + 1e-08 * np.eye(self.P.shape[1])
+
     def initialise(self, solver_class):
         for joint_name in self.joints:
             self.joint_names.append(joint_name)
@@ -238,10 +239,17 @@ class TrajectoryOptimizationPlanner:
 
                 self.A.append(np.vstack([self.sqp[joint_name].A, self.sqp[joint_name].A, self.sqp[joint_name].A]))
                 self.b.append(np.hstack([self.sqp[joint_name].b.tolist(), self.sqp[joint_name].b.tolist(), self.sqp[joint_name].b.tolist()]))
-
-                self.G.append(np.vstack([self.sqp[joint_name].G, np.identity(self.no_of_samples)]))
-                self.lbG.append(np.hstack([self.sqp[joint_name].lbG, self.sqp[joint_name].lb]))
-                self.ubG.append(np.hstack([self.sqp[joint_name].ubG, self.sqp[joint_name].ub]))
+                if self.sqp[joint_name].collision_matrix is None:
+                    self.G.append(np.vstack([self.sqp[joint_name].G, np.identity(self.no_of_samples)]))
+                    self.lbG.append(np.hstack([self.sqp[joint_name].lbG, self.sqp[joint_name].lb]))
+                    self.ubG.append(np.hstack([self.sqp[joint_name].ubG, self.sqp[joint_name].ub]))
+                else:
+                    self.G.append(np.vstack([self.sqp[joint_name].G, np.identity(self.no_of_samples),
+                                             self.sqp[joint_name].collision_matrix]))
+                    self.lbG.append(np.hstack([self.sqp[joint_name].lbG, self.sqp[joint_name].lb,
+                                               self.sqp[joint_name].lower_collision_limit]))
+                    self.ubG.append(np.hstack([self.sqp[joint_name].ubG, self.sqp[joint_name].ub,
+                                               self.sqp[joint_name].upper_collision_limit]))
 
             self.lb.append(self.sqp[joint_name].lb.tolist())
             self.ub.append(self.sqp[joint_name].ub.tolist())
@@ -292,7 +300,6 @@ class TrajectoryOptimizationPlanner:
         print (self.lb)
         print ("ub")
         print (self.ub)
-        print ("A")
 
     def interpolate(self, start, end, samples):
         data = []

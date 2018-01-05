@@ -8,6 +8,7 @@ class ProblemBuilder:
         self.samples = samples
         self.duration = duration
         self.decimals_to_round = decimals_to_round
+
         self.fillP()
         self.fillG()
         self.fillA()
@@ -20,6 +21,14 @@ class ProblemBuilder:
         self.fillbounds()
         self.fillBoundsforG()
         self.fillEqualityConstraintforA()
+
+        if "collision_constraints" in self.joint:
+            self.collision_constraints = self.joint["collision_constraints"]
+            if self.collision_constraints is not None:
+                self.fill_collision_matrix()
+                self.fill_bounds_for_collision_matrix()
+        else:
+            self.collision_constraints = None
 
 
     def getStartAndEnd(self):
@@ -83,7 +92,7 @@ class ProblemBuilder:
 
 
     def fillG(self):
-        self.G = np.zeros((self.samples , self.samples))
+        self.G = np.zeros((self.samples, self.samples))
 
         self.aShape = self.G.shape
         self.G[np.arange(self.aShape[0] - 1), np.arange(self.aShape[0] - 1)] = -1
@@ -92,6 +101,51 @@ class ProblemBuilder:
         # to slice zero last row
         self.G.resize(self.samples - 1, self.samples)
 
+    def fill_collision_matrix(self):
+        self.collision_matrix = np.zeros((self.samples, self.samples))
+
+        self.aShape = self.collision_matrix.shape
+        self.collision_matrix[np.arange(self.aShape[0] - 1), np.arange(self.aShape[0] - 1)] = -1
+
+        self.collision_matrix[np.arange(self.aShape[0] - 1), np.arange(self.aShape[0] - 1) + 1] = 1
+        # to slice zero last row
+        self.collision_matrix.resize(self.samples - 1, self.samples)
+
+    def fill_bounds_for_collision_matrix(self):
+
+        if type(self.joint) is dict:
+            lower_limit = self.collision_constraints["limits"]["lower"] - \
+                          self.collision_constraints["initial_signed_distance"]
+            upper_limit = self.collision_constraints["limits"]["upper"]
+            normal = self.collision_constraints["normal"]
+            jacobian = self.collision_constraints["jacobian"]
+            max_vel = self.joint["max_velocity"]
+
+
+        else:
+            lower_limit = self.collision_constraints.limits.lower - \
+                          self.collision_constraints.initial_signed_distance
+            upper_limit = self.collision_constraints.limits.upper
+            normal = self.collision_constraints.normal
+            jacobian = self.collision_constraints.jacobian
+            max_vel = self.joint.limits.velocity
+
+        self.lower_collision_limit = np.full((1, self.collision_matrix.shape[0]), lower_limit *
+                                             self.duration / (self.samples - 1))
+        self.upper_collision_limit = np.full((1, self.collision_matrix.shape[0]), upper_limit *
+                                             self.duration / (self.samples - 1))
+        # self.upper_collision_limit = np.full((1, self.collision_matrix.shape[0]), max_vel *
+        #                                      self.duration / (self.samples - 1))
+
+
+        jacobian_times_normal = np.matmul(normal.T, jacobian)
+
+        # print "self.collision_matrix before", self.collision_matrix
+        self.collision_matrix = jacobian_times_normal * self.collision_matrix
+        # print "self.collision_matrix after", self.collision_matrix
+        # print "lower_limit", self.lower_collision_limit, lower_limit
+        # print "upper_limit", self.upper_collision_limit, upper_limit
+        # print "jacobian_times_normal", jacobian_times_normal
 
     def display(self):
         # print "Problem ", self.problem

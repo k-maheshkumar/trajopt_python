@@ -155,7 +155,7 @@ class SQPsolver:
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
-        penalty.value = 1
+        penalty.value = 100
         # x_0 = np.full((1, self.P.shape[0]), 8.0).flatten()
         if initial_guess is None:
             x_0 = self.initial_guess
@@ -285,14 +285,14 @@ class SQPsolver:
                     #     self.status = "infeasible initial guess"
                     #     is_converged = True
                     #     break
-                    # is_converged = True
+                    is_converged = True
                     inter_status = "actual reduction is very small"
                     self.logger.info(inter_status)
 
                     self.status = "Solved"
                     break
                 if abs((np.linalg.norm(new_x_k - x_k, np.inf))) <= min_x_redution:
-                    # is_converged = True
+                    is_converged = True
                     inter_status = "reduction in x is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"

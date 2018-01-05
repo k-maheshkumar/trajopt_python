@@ -76,6 +76,13 @@ class Robot:
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
 
+        if "collision_constraints" in kwargs:
+            collision_constraints = kwargs["collision_constraints"]
+        else:
+            collision_constraints = None
+            lower_d_safe = None
+            upper_d_safe = None
+
         # if "states" in kwargs:
         #     states = kwargs["states"]
         # else:
@@ -88,11 +95,13 @@ class Robot:
                     if joint.name == joint_in_group and joint.limit is not None:
                         joints[joint.name] = (munchify({
                             "states": states[joint_in_group],
-                            "limits": joint.limit
+                            "limits": joint.limit,
+                            "collision_constraints": collision_constraints
                         }))
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
-                                                                 solver=solver, solver_config=solver_config, solver_class=0, decimals_to_round=decimals_to_round, verbose=True)
+                              solver=solver, solver_config=solver_config, solver_class=0,
+                              decimals_to_round=decimals_to_round, verbose=True)
             # self.planner.displayProblem()
             status, can_execute_trajectory = self.planner.calculate_trajectory()
 

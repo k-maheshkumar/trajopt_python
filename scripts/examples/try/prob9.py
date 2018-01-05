@@ -8,7 +8,8 @@ import numpy as np
 # __all__ = [pybullet, math, datetime]
 
 # clid = p.connect(p.SHARED_MEMORY)
-location_prefix = '/home/mahesh/libraries/bullet3/data/'
+# location_prefix = '/home/mahesh/libraries/bullet3/data/'
+location_prefix = '/home/mahe/masterThesis/bullet3/data/'
 p.connect(p.GUI)
 p.loadURDF(location_prefix + "plane.urdf", [0, 0, -0.3], useFixedBase=True)
 p.loadURDF(location_prefix + "table/table.urdf", [0, 0, -0.3], useFixedBase=True)
@@ -42,8 +43,8 @@ for i in range(numJoints):
 nJoints = p.getNumJoints(kukaId)
 
 jointNameToId = {}
-request = {"joints":[]}
-request1 = {"joints":[]}
+request = {"joints":{}}
+request1 = {"joints":{}}
 
 reduceJoints = 0
 samples = 10
@@ -73,9 +74,10 @@ end = p.addUserDebugParameter("end", 0.0, 1.0, 0.0)
 # endState = [-0.43397739069763064, 1.4723163745550858, -1.5581591136925037,
 #             -1.0268873087087633, 1.567033026684058, 1.5814537807610403, 1.571342501955761]
 
-startState = [-0.49197958189616936, 1.4223062659337982, -1.5688299779644697, -1.3135004031364736, 1.5696229411153653, 1.5749627479696093, 1.5708037563007493]
-endState = [-2.0417782994426674, 0.9444594031189716, -1.591006403858707, -1.9222844444479184, 1.572303282659756, 1.5741716208788483, 1.5716145442929421]
-
+# startState = [-0.49197958189616936, 1.4223062659337982, -1.5688299779644697, -1.3135004031364736, 1.5696229411153653, 1.5749627479696093, 1.5708037563007493]
+# endState = [-2.0417782994426674, 0.9444594031189716, -1.591006403858707, -1.9222844444479184, 1.572303282659756, 1.5741716208788483, 1.5716145442929421]
+startState = {}
+endState = {}
 wroteStartState = False
 wroteEndState = False
 
@@ -88,6 +90,21 @@ for i in range(numJoints):
     jointInfo = p.getJointInfo(kukaId, i)
     # print jointInfo
     jointNameToId[jointInfo[1].decode('UTF-8')] = jointInfo[0]
+    joint_name = str(jointInfo[1].decode('UTF-8'))
+    joint = {}
+    # joint["name"] = jointInfo[1].decode('UTF-8')
+    joint["id"] = jointInfo[0]
+    joint["lower_joint_limit"] = jointInfo[8]
+    joint["upper_joint_limit"] = jointInfo[9]
+
+    joint["min_velocity"] = -jointInfo[11]
+    joint["max_velocity"] = jointInfo[11]
+    # joint["start"] = startState[i]
+    # joint["end"] = endState[i]
+
+    # request["joints"].append(joint)
+    request["joints"][joint_name] = joint
+
     joint = {}
     joint["id"] = jointInfo[0]
     joint["lower_joint_limit"] = jointInfo[8]
@@ -95,22 +112,11 @@ for i in range(numJoints):
 
     joint["min_velocity"] = -jointInfo[11]
     joint["max_velocity"] = jointInfo[11]
-    joint["start"] = startState[i]
-    joint["end"] = endState[i]
+    # joint["end"] = startState[i]
+    # joint["start"] = endState[i]
 
-    request["joints"].append(joint)
-
-    joint = {}
-    joint["id"] = jointInfo[0]
-    joint["lower_joint_limit"] = jointInfo[8]
-    joint["upper_joint_limit"] = jointInfo[9]
-
-    joint["min_velocity"] = -jointInfo[11]
-    joint["max_velocity"] = jointInfo[11]
-    joint["end"] = startState[i]
-    joint["start"] = endState[i]
-
-    request1["joints"].append(joint)
+    # request1["joints"].append(joint)
+    request1["joints"][joint_name] = joint
 
 # print "request:", request
 # print "request1:", request1
@@ -132,19 +138,19 @@ p.resetJointState(kukaId, lbr_iiwa_joint_5, motordir[4] * halfpi)
 p.resetJointState(kukaId, lbr_iiwa_joint_6, motordir[5] * halfpi)
 p.resetJointState(kukaId, lbr_iiwa_joint_7, motordir[6] * halfpi)
 
-from scripts.sqpproblem import SQPproblem
-
-sp = SQPproblem.SQPProblem(request, "SCS")
-# sp.displayProblem()
-result, jointPoses = sp.solveSQP(None)
-sp1 = SQPproblem.SQPProblem(request1, "SCS")
-# sp.displayProblem()
-result1, jointPoses1 = sp1.solveSQP(None)# print jointPoses
-
-jointPoses = (np.split(jointPoses, nJoints))
-jointPoses1 = (np.split(jointPoses1, nJoints))
-useSimulation = 1
-# goStart = p.addUserDebugParameter("go to start", 0.0, 1.0, 0.0)
+# from scripts.sqpproblem import SQPproblem
+#
+# sp = SQPproblem.SQPProblem(request, "SCS")
+# # sp.displayProblem()
+# result, jointPoses = sp.solveSQP(None)
+# sp1 = SQPproblem.SQPProblem(request1, "SCS")
+# # sp.displayProblem()
+# result1, jointPoses1 = sp1.solveSQP(None)# print jointPoses
+#
+# jointPoses = (np.split(jointPoses, nJoints))
+# jointPoses1 = (np.split(jointPoses1, nJoints))
+# useSimulation = 1
+# # goStart = p.addUserDebugParameter("go to start", 0.0, 1.0, 0.0)
 
 def moveArm(jointPoses2):
     for i in range(numJoints):
@@ -174,55 +180,59 @@ gotoend = 1
 while 1:
 #     pass
 
-    if gotoend:
-        # for i in range(numJoints):
-        #
-        #     request["joints"][i].update(
-        #         {"start": startState[i], "end": endState[i]})
-        # sp = trajPlanner.TrajectoryPlanner(request, "osqp")
-        # # sp.displayProblem()
-        # result, jointPoses = sp.solveProblem()
-        moveArm(jointPoses)
-        gotostart = 1
-        gotoend = 0
-        # print "gotostart"
+    # if gotoend:
+    #     # for i in range(numJoints):
+    #     #
+    #     #     request["joints"][i].update(
+    #     #         {"start": startState[i], "end": endState[i]})
+    #     # sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+    #     # # sp.displayProblem()
+    #     # result, jointPoses = sp.solveProblem()
+    #     moveArm(jointPoses)
+    #     gotostart = 1
+    #     gotoend = 0
+    #     # print "gotostart"
+    #
+    #
+    # time.sleep(2)
+    # if gotostart:
+    #     # for i in range(numJoints):
+    #     #     request1["joints"][i].update(
+    #     #         {"start": endState[i], "end": startState[i]})
+    #     #
+    #     # sp = trajPlanner.TrajectoryPlanner(request, "osqp")
+    #     # # sp.displayProblem()
+    #     # result, jointPoses1 = sp.solveProblem()
+    #     moveArm(jointPoses1)
+    #     gotostart = 0
+    #     gotoend = 1
+    #     # print "gotoend"
+    #
+    #
+    # time.sleep(2)
 
 
-    time.sleep(2)
-    if gotostart:
-        # for i in range(numJoints):
-        #     request1["joints"][i].update(
-        #         {"start": endState[i], "end": startState[i]})
-        #
-        # sp = trajPlanner.TrajectoryPlanner(request, "osqp")
-        # # sp.displayProblem()
-        # result, jointPoses1 = sp.solveProblem()
-        moveArm(jointPoses1)
-        gotostart = 0
-        gotoend = 1
-        # print "gotoend"
 
-
-    time.sleep(2)
-
-
-
-    # if not wroteStartState:
-    #     if p.readUserDebugParameter(start):
-    #         for i in range(numJoints):
-    #             startState.append(p.getJointState(kukaId, request["joints"][i]["id"])[0])
-    #         file = open('jointStateStart.txt', 'w')
-    #         file.write(str(startState))
-    #         file.close()
-    #         wroteStartState = True
-    # if not wroteEndState:
-    #     if p.readUserDebugParameter(end):
-    #         for i in range(numJoints):
-    #             endState.append(p.getJointState(kukaId, request["joints"][i]["id"])[0])
-    #         file = open('jointStateEnd.txt', 'w')
-    #         file.write(str(endState))
-    #         file.close()
-    #         wroteEndState = True
+    if not wroteStartState:
+        if p.readUserDebugParameter(start):
+            # for i in range(numJoints):
+                # startState.append(p.getJointState(kukaId, request["joints"][i]["id"])[0])
+            for joint_name, joint in request["joints"].items():
+                startState[joint_name] = p.getJointState(kukaId, joint["id"])[0]
+            file = open('jointStateStart.txt', 'w')
+            file.write(str(startState))
+            file.close()
+            wroteStartState = True
+    if not wroteEndState:
+        if p.readUserDebugParameter(end):
+            # for i in range(numJoints):
+                # endState.append(p.getJointState(kukaId, request["joints"][i]["id"])[0])
+            for joint_name, joint in request["joints"].items():
+                endState[joint_name] = p.getJointState(kukaId, joint["id"])[0]
+            file = open('jointStateEnd.txt', 'w')
+            file.write(str(endState))
+            file.close()
+            wroteEndState = True
 
 
     # move = p.readUserDebugParameter(goStart)

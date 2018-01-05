@@ -218,15 +218,17 @@ class PlannerGui(QtGui.QMainWindow):
         # print self.selected_robot_spin_value[key]
 
     def on_robot_action_button_clicked(self, key):
-        if not self.selected_robot_spin_value:
-            for spin_box_key in self.robot_config_params_spin_box:
-                self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
+        # if not self.selected_robot_spin_value:
+        for spin_box_key in self.robot_config_params_spin_box:
+            self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
         # print "self.selected_robot_combo_value", self.selected_robot_combo_value
         # print "self.selected_robot_spin_value", self.selected_robot_spin_value
 
         samples = None
         duration = None
         group = None
+        lower_collision_limit = None
+        upper_collision_limit = None
         goal_state = None
         if "samples" in self.selected_robot_spin_value:
             samples = self.selected_robot_spin_value["samples"]
@@ -236,14 +238,19 @@ class PlannerGui(QtGui.QMainWindow):
             group = self.selected_robot_combo_value["joints_groups"]
         if "joint_configurations" in self.selected_robot_combo_value:
             goal_state = self.selected_robot_combo_value["joint_configurations"]
+        if "lower_collision_limit" in self.selected_robot_spin_value:
+            lower_collision_limit = self.selected_robot_spin_value["lower_collision_limit"]
+        if "upper_collision_limit" in self.selected_robot_spin_value:
+            upper_collision_limit = self.selected_robot_spin_value["upper_collision_limit"]
 
         if group is not None and goal_state is not None:
-                if samples is not None and duration is not None and self.sqp_config is not None:
+                if samples is not None and duration is not None and self.sqp_config is not None and \
+                                lower_collision_limit is not None and upper_collision_limit is not None:
                     if key == "plan" or key == "plan_and_execute":
                         self.statusBar.clearMessage()
                         status = "Please wait, trajectory is being planned... Then trajectory will be executed.."
                         self.statusBar.showMessage(self.last_status + status)
-                        status = self.initiate_plan_trajectory(group, goal_state, samples, duration)
+                        status = self.initiate_plan_trajectory(group, goal_state, samples, duration, lower_collision_limit, upper_collision_limit)
                         self.statusBar.clearMessage()
                         self.statusBar.showMessage(self.last_status + status)
                     if key == "plan_and_execute" or key == "execute":
@@ -276,13 +283,15 @@ class PlannerGui(QtGui.QMainWindow):
                 self.statusBar.showMessage(self.last_status + status)
 
 
-    def initiate_plan_trajectory(self, group, goal_state, samples, duration):
+    def initiate_plan_trajectory(self, group, goal_state, samples, duration, lower_collision_limit, upper_collision_limit):
         can_execute_trajectory = False
         if samples is not None and duration is not None \
                 and group is not None and goal_state is not None and self.sqp_config is not None:
             status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples,
-                                                                duration=duration,
-                                                                solver_config=self.sqp_config)
+                                                                                 duration=duration,
+                                                                                 lower_collision_limit=lower_collision_limit,
+                                                                                 upper_collision_limit=upper_collision_limit,
+                                                                                 solver_config=self.sqp_config,)
         else:
             status = "Please select the planning group and joint configuration.."
 

@@ -45,8 +45,8 @@ class SimulationWorld():
         self.no_of_joints = sim.getNumJoints(self.robot_id)
         self.setup_joint_id_to_joint_name()
 
-        self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.1, radius=0.1,
-                                                  position=[-0.2, 0.0, 0.9], mass=1)
+        self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.23, radius=0.1,
+                                                  position=[-0.25, -0.28, 0.9], mass=1)
         self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.1, 0.23],
                                              position=[0.23, -0.28, 0.9], mass=100)
         self.collision_constraints = None
@@ -187,7 +187,7 @@ class SimulationWorld():
                 import sys
                 sys.exit()
 
-    def get_collision_infos(self, group, distance=2):
+    def get_collision_infos(self, group, lower_d_safe_limit, upper_d_safe_limit, distance=2):
 
         can_execute_trajectory = False
         pos = self.get_joint_states(group)[0]
@@ -208,33 +208,40 @@ class SimulationWorld():
         # print jac_t[0]
         for joint_name in group:
             # jacobian_by_joint_name[joint_name] = jac_t[:, self.joint_name_to_id[joint_name]]
-            contact_points = sim.getClosestPoints(self.robot_id, self.box_id,
+            contact_points = sim.getClosestPoints(self.robot_id, self.cylinder_id,
                                                   linkIndexA=self.joint_name_to_id[joint_name],  distance=distance)
             self.collision_constraints[joint_name] = (munchify({
                 "jacobian": np.asarray(jac_t[:, self.joint_name_to_id[joint_name]]).reshape(3,1),
                 "normal": np.asarray(contact_points[0][7]).reshape(3,1),
-                "initial_signed_distance": contact_points[0][8]
+                "initial_signed_distance": contact_points[0][8],
+                "limits": {"lower": lower_d_safe_limit, "upper": upper_d_safe_limit}
             }))
             # print "self.collision_constraints[joint_name]", self.collision_constraints[joint_name].jacobian.shape
         # print self.collision_constraints
 
-    def plan_trajectory(self, group, goal_state, samples, duration, lower_d_safe=None, upper_d_safe=None, solver_config=None):
-        if lower_d_safe is not None or lower_d_safe != 0 and upper_d_safe is not None or upper_d_safe != 0:
+    def plan_trajectory(self, group, goal_state, samples, duration, lower_collision_limit=None, upper_collision_limit=None, solver_config=None):
+        if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
             self.collision_constraints = {}
-            self.get_collision_infos(group)
+            self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
 
         # print self.collision_constraints
             # print joint_name, jac_t
             # print self.jacobian_by_joint_name
             # print np.asarray(self.jacobian_by_joint_name).shape
-        status, can_execute_trajectory = self.robot.plan_trajectory(group=group,
+            status, can_execute_trajectory = self.robot.plan_trajectory(group=group,
                                                                     current_state=self.get_current_states_for_given_joints(group),
                                                                     goal_state=goal_state, samples=int(samples),
                                                                     duration=int(duration),
                                                                     collision_constraints=self.collision_constraints,
                                                                     solver_config=solver_config,
-                                                                    lower_d_safe=lower_d_safe,
-                                                                    upper_d_safe=upper_d_safe)
+                                                                    lower_d_safe=lower_collision_limit,
+                                                                    upper_d_safe=upper_collision_limit)
+        else:
+            status, can_execute_trajectory = self.robot.plan_trajectory(group=group,
+                                                                        current_state=self.get_current_states_for_given_joints(group),
+                                                                        goal_state=goal_state, samples=int(samples),
+                                                                        duration=int(duration),
+                                                                        solver_config=solver_config)
         return status, can_execute_trajectory
 
     def get_current_states_for_given_joints(self, joints):

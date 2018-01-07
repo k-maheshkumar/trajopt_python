@@ -121,7 +121,6 @@ class ProblemBuilder:
             jacobian = self.collision_constraints["jacobian"]
             max_vel = self.joint["max_velocity"]
 
-
         else:
             lower_limit = self.collision_constraints.limits.lower - \
                           self.collision_constraints.initial_signed_distance
@@ -130,12 +129,11 @@ class ProblemBuilder:
             jacobian = self.collision_constraints.jacobian
             max_vel = self.joint.limits.velocity
 
-        self.lower_collision_limit = np.full((1, self.collision_matrix.shape[0]), lower_limit *
-                                             self.duration / (self.samples - 1))
-        self.upper_collision_limit = np.full((1, self.collision_matrix.shape[0]), upper_limit *
-                                             self.duration / (self.samples - 1))
-        # self.upper_collision_limit = np.full((1, self.collision_matrix.shape[0]), max_vel *
+        self.lower_collision_limit = np.full((1, self.collision_matrix.shape[0]), lower_limit)
+        # self.upper_collision_limit = np.full((1, self.collision_matrix.shape[0]), upper_limit *
         #                                      self.duration / (self.samples - 1))
+        self.upper_collision_limit = np.full((1, self.collision_matrix.shape[0]), max_vel *
+                                             self.duration / (self.samples - 1))
 
 
         jacobian_times_normal = np.matmul(normal.T, jacobian)

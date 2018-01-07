@@ -94,8 +94,11 @@ class SQPsolver:
         cons1_cond = np.matmul(self.G, x_k) <= self.ubG
         cons2_cond = np.matmul(-self.G, x_k) >= self.lbG
         cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
+        # print cons1_cond
+        # print cons2_cond
+        # print cons3_cond
 
-        return cons1_cond.all() and cons2_cond.all() and cons3_cond.all()
+        return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
 
     def get_constraints_gradients(self):
         cons1_grad = self.G
@@ -155,13 +158,14 @@ class SQPsolver:
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
-        penalty.value = 100
         # x_0 = np.full((1, self.P.shape[0]), 8.0).flatten()
         if initial_guess is None:
             x_0 = self.initial_guess
         else:
             x_0 = initial_guess
         p_0 = np.zeros(p.shape[0])
+
+        penalty.value = float(self.solver_config["initial_penalty"])
         trust_box_size = float(self.solver_config["trust_region_size"])
         max_penalty = float(self.solver_config["max_penalty"])
         min_trust_box_size = float(self.solver_config["min_trust_box_size"])

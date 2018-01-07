@@ -10,6 +10,15 @@ BOX = sim.GEOM_BOX
 
 class SimulationWorld():
     def __init__(self, urdf_file=None):
+
+        if urdf_file is None:
+            main_logger_name = "Trajectory_Planner"
+            verbose = "DEBUG"
+            self.logger = logging.getLogger(main_logger_name)
+            self.setup_logger(main_logger_name, verbose)
+        else:
+            self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+
         self.gui = sim.connect(sim.GUI)
         # self.gui = sim.connect(sim.DIRECT)
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 0)
@@ -45,20 +54,13 @@ class SimulationWorld():
         self.no_of_joints = sim.getNumJoints(self.robot_id)
         self.setup_joint_id_to_joint_name()
 
-        self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.23, radius=0.1,
-                                                  position=[-0.25, -0.28, 0.9], mass=1)
+        self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.28, radius=0.1,
+                                                  position=[-0.17, -0.27, 0.9], mass=1)
         self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.1, 0.23],
                                              position=[0.23, -0.28, 0.9], mass=100)
         self.collision_constraints = None
 
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
-
-        # self.logger = logging.getLogger("Trajectory_Planner." + __name__)
-
-        main_logger_name = "Trajectory_Planner"
-        verbose = "DEBUG"
-        self.logger = logging.getLogger(main_logger_name)
-        self.setup_logger(main_logger_name, verbose)
 
         if urdf_file is not None:
             # start_state = {
@@ -174,7 +176,7 @@ class SimulationWorld():
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
                 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
                 duration = 6
-                samples = 5
+                samples = 20
                 full_arm = group1 + group2
                 # full_arm = group1_test
                 lower_d_safe = 2
@@ -182,10 +184,10 @@ class SimulationWorld():
                 self.reset_joint_states(start_state)
 
                 self.plan_trajectory(full_arm, goal_state, samples, duration, lower_d_safe, upper_d_safe)
-                # self.execute_trajectory()
+                self.execute_trajectory()
 
-                import sys
-                sys.exit()
+                # import sys
+                # sys.exit()
 
     def get_collision_infos(self, group, lower_d_safe_limit, upper_d_safe_limit, distance=2):
 
@@ -210,37 +212,34 @@ class SimulationWorld():
             # jacobian_by_joint_name[joint_name] = jac_t[:, self.joint_name_to_id[joint_name]]
             contact_points = sim.getClosestPoints(self.robot_id, self.cylinder_id,
                                                   linkIndexA=self.joint_name_to_id[joint_name],  distance=distance)
-            self.collision_constraints[joint_name] = (munchify({
+            # print "normal", contact_points[0][7]
+            self.collision_constraints[joint_name] = munchify({
                 "jacobian": np.asarray(jac_t[:, self.joint_name_to_id[joint_name]]).reshape(3,1),
                 "normal": np.asarray(contact_points[0][7]).reshape(3,1),
                 "initial_signed_distance": contact_points[0][8],
                 "limits": {"lower": lower_d_safe_limit, "upper": upper_d_safe_limit}
-            }))
+            })
+
             # print "self.collision_constraints[joint_name]", self.collision_constraints[joint_name].jacobian.shape
         # print self.collision_constraints
 
     def plan_trajectory(self, group, goal_state, samples, duration, lower_collision_limit=None, upper_collision_limit=None, solver_config=None):
         if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
             self.collision_constraints = {}
-            self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
+            self.get_collision_infos(group, lower_collision_limit, upper_collision_limit, distance=lower_collision_limit + 2)
 
         # print self.collision_constraints
             # print joint_name, jac_t
             # print self.jacobian_by_joint_name
             # print np.asarray(self.jacobian_by_joint_name).shape
-            status, can_execute_trajectory = self.robot.plan_trajectory(group=group,
-                                                                    current_state=self.get_current_states_for_given_joints(group),
-                                                                    goal_state=goal_state, samples=int(samples),
-                                                                    duration=int(duration),
-                                                                    collision_constraints=self.collision_constraints,
-                                                                    solver_config=solver_config,
-                                                                    lower_d_safe=lower_collision_limit,
-                                                                    upper_d_safe=upper_collision_limit)
         else:
-            status, can_execute_trajectory = self.robot.plan_trajectory(group=group,
+            self.collision_constraints = None
+
+        status, can_execute_trajectory = self.robot.plan_trajectory(group=group,
                                                                         current_state=self.get_current_states_for_given_joints(group),
                                                                         goal_state=goal_state, samples=int(samples),
                                                                         duration=int(duration),
+                                                                        collision_constraints=self.collision_constraints,
                                                                         solver_config=solver_config)
         return status, can_execute_trajectory
 
@@ -292,7 +291,7 @@ class SimulationWorld():
         for joint in joints:
             for j in range(len(joints)):
                 sim.resetJointState(self.robot_id, self.joint_name_to_id[joint], joints[joint])
-        status = "Reset joints to random pose is complete"
+        status = "Reset joints to start pose is complete"
         self.logger.info(status)
         return status
 

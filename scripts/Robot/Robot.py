@@ -1,5 +1,6 @@
 from urdf_parser_py.urdf import URDF
-from scripts.Planner import Planner
+# from scripts.Planner import Planner as planner
+from scripts.Planner import Planner1 as planner
 import time
 from munch import *
 from scripts.utils import yaml_paser as yaml
@@ -17,7 +18,7 @@ class Robot:
         # self.__replace_joints_in_model_with_map()
         self.__setup_get_joint_by_name()
         self.state = self.init_state()
-        self.planner = Planner.TrajectoryOptimizationPlanner()
+        self.planner = planner.TrajectoryOptimizationPlanner()
         self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
     def init_state(self):
@@ -92,16 +93,18 @@ class Robot:
                     if joint_in_group in self.state and joint_in_group in goal_state:
                         states[joint_in_group] = {"start": self.state[joint_in_group]["current_value"], "end": goal_state[joint_in_group]}
                     if joint.name == joint_in_group and joint.limit is not None:
+                        # collision_constraints = collision_constraints[joint.name]
+                        collision_constraint = collision_constraints.get(joint.name)
                         joints[joint.name] = munchify({
                             "states": states[joint_in_group],
-                            "limits": joint.limit,
-                            "collision_constraints": collision_constraints[joint.name]
+                            "limit": joint.limit,
+                            "collision_constraints": collision_constraint
                         })
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               solver=solver, solver_config=solver_config, solver_class=0,
                               decimals_to_round=decimals_to_round, verbose=True)
-            # self.planner.displayProblem()
+            # self.planner.display_problem()
             status, can_execute_trajectory = self.planner.calculate_trajectory()
 
         else:

@@ -327,7 +327,7 @@ class TrajectoryOptimizationPlanner:
         else:
             self.sqp_solver1.init(self, self.solver, self.solver_config, self.verbose)
             start = time.time()
-            self.solver_status, trajectory = self.sqp_solver1.solveSQP(initial_guess)
+            self.solver_status, trajectory = self.sqp_solver1.solve(initial_guess)
             end = time.time()
 
         trajectory = np.array((np.split(trajectory, self.num_of_joints)))

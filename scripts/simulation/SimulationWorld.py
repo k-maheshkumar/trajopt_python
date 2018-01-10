@@ -33,7 +33,6 @@ class SimulationWorld():
         self.no_of_joints = -1
         self.start_state_for_traj_planning = {}
         self.end_state_for_traj_planning = {}
-
         pland_id = self.place_items_from_urdf(urdf_file=location_prefix + "plane.urdf",
                                               position=[0, 0, 0.0])
 
@@ -54,10 +53,10 @@ class SimulationWorld():
         self.no_of_joints = sim.getNumJoints(self.robot_id)
         self.setup_joint_id_to_joint_name()
 
-        self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.28, radius=0.1,
-                                                  position=[-0.17, -0.27, 0.9], mass=1)
-        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.1, 0.23],
-                                             position=[0.23, -0.28, 0.9], mass=100)
+        # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.28, radius=0.1,
+        #                                           position=[-0.17, -0.22, 0.9], mass=1)
+        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.05, 0.18],
+                                             position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints = None
 
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
@@ -134,7 +133,6 @@ class SimulationWorld():
         else:
             urdf_id = sim.loadURDF(urdf_file, basePosition=position,
                                    baseOrientation=orientation, useFixedBase=use_fixed_base)
-
         return urdf_id
 
     def run_simulation(self):
@@ -176,11 +174,11 @@ class SimulationWorld():
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
                 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
                 duration = 6
-                samples = 20
+                samples = 5
                 full_arm = group1 + group2
                 # full_arm = group1_test
                 lower_d_safe = 2
-                upper_d_safe = 3
+                upper_d_safe = 8
                 self.reset_joint_states(start_state)
 
                 self.plan_trajectory(full_arm, goal_state, samples, duration, lower_d_safe, upper_d_safe)
@@ -196,44 +194,80 @@ class SimulationWorld():
         zero_vec = [0.0] * len(pos)
         jacobian_by_joint_name = {}
         # for joint_name in group:
-        # result = sim.getLinkState(self.robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
+        # # result = sim.getLinkState(self.robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
+        # #                           computeForwardKinematics=1)
+        # result = sim.getLinkState(self.robot_id, self.end_effector_index, computeLinkVelocity=1,
         #                           computeForwardKinematics=1)
-        result = sim.getLinkState(self.robot_id, self.end_effector_index, computeLinkVelocity=1,
-                                  computeForwardKinematics=1)
-        com_trn = result[2]
-
-        # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.joint_name_to_id[joint_name], com_trn, pos, zero_vec, zero_vec)
-        jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, com_trn, pos, zero_vec, zero_vec)
-        jac_t = np.asarray(jac_t)
+        # com_trn = result[2]
+        #
+        # # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.joint_name_to_id[joint_name], com_trn, pos, zero_vec, zero_vec)
+        # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, com_trn, pos, zero_vec, zero_vec)
+        # jac_t = np.asarray(jac_t)
         # print jac_t
         # print "gfda ", jac_t[:, 2]
         # print jac_t[0]
         for joint_name in group:
+            # print joint_name
+            jacobian = []
+            normal = []
+            normal_times_jacobian = []
+            initial_signed_distance = []
+
+            result = sim.getLinkState(self.robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
+                                      computeForwardKinematics=1)
+
+            com_trn = result[2]
+
+            jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.joint_name_to_id[joint_name], com_trn, pos, zero_vec, zero_vec)
+
+            jac_t = np.asarray(jac_t)
             # jacobian_by_joint_name[joint_name] = jac_t[:, self.joint_name_to_id[joint_name]]
-            contact_points = sim.getClosestPoints(self.robot_id, self.cylinder_id,
+            contact_points = sim.getClosestPoints(self.robot_id, self.box_id,
                                                   linkIndexA=self.joint_name_to_id[joint_name],  distance=distance)
+            # print jac_t
+            # print contact_points
+
+            if len(contact_points) > 0:
+                jacobian.append(np.asarray(jac_t[:, self.joint_name_to_id[joint_name]]).reshape(3, 1))
+                normal.append(np.asarray(contact_points[0][7]).reshape(3, 1))
+                initial_signed_distance.append(contact_points[0][8])
+                # normal_times_jacobian.append(np.matmul(np.asarray(contact_points[0][7]).reshape(3, 1).T,
+                #                                        np.asarray(jac_t)))
+
             # print "normal", contact_points[0][7]
+            # jaco = np.asarray(jac_t[:, self.joint_name_to_id[joint_name]]).reshape(3,1)
+            # jaco = np.asarray(jac_t).T
+            # self.collision_constraints[joint_name] = munchify({
+            #     "jacobian": jaco[self.joint_name_to_id[joint_name]],
+            #     "normal": np.asarray(contact_points[0][7]).reshape(3,1),
+            #     "initial_signed_distance": contact_points[0][8],
+            #     "limits": {"lower": lower_d_safe_limit, "upper": upper_d_safe_limit}
+            # })
+            # print normal_times_jacobian, initial_signed_distance
             self.collision_constraints[joint_name] = munchify({
-                "jacobian": np.asarray(jac_t[:, self.joint_name_to_id[joint_name]]).reshape(3,1),
-                "normal": np.asarray(contact_points[0][7]).reshape(3,1),
-                "initial_signed_distance": contact_points[0][8],
+                "jacobian": jacobian,
+                "normal": normal,
+                # "normal_times_jacobian": np.asarray(normal_times_jacobian).T[self.joint_name_to_id[joint_name]],
+                "initial_signed_distance": initial_signed_distance,
                 "limits": {"lower": lower_d_safe_limit, "upper": upper_d_safe_limit}
             })
 
-            # print "self.collision_constraints[joint_name]", self.collision_constraints[joint_name].jacobian.shape
+            # print joint_name, self.collision_constraints[joint_name]
+            # print "self.collision_constraints[lbr_iiwa_joint_1]", self.collision_constraints["lbr_iiwa_joint_1"]
         # print self.collision_constraints
 
     def plan_trajectory(self, group, goal_state, samples, duration, lower_collision_limit=None, upper_collision_limit=None, solver_config=None):
-        if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
-            self.collision_constraints = {}
-            self.get_collision_infos(group, lower_collision_limit, upper_collision_limit, distance=lower_collision_limit + 2)
+        self.collision_constraints = {}
 
-        # print self.collision_constraints
+        if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
+            self.get_collision_infos(group, lower_collision_limit, upper_collision_limit, distance=lower_collision_limit + 4)
+
+            # print self.collision_constraints
             # print joint_name, jac_t
             # print self.jacobian_by_joint_name
             # print np.asarray(self.jacobian_by_joint_name).shape
         else:
-            self.collision_constraints = None
+            self.logger.debug("ignoring collision constraints . . . . ")
 
         status, can_execute_trajectory = self.robot.plan_trajectory(group=group,
                                                                         current_state=self.get_current_states_for_given_joints(group),
@@ -252,7 +286,7 @@ class SimulationWorld():
     def execute_trajectory(self):
         trajectories = self.robot.get_trajectory()
         for i in range(int(trajectories.no_of_samples)):
-            for joint_name, corresponding_trajectory in trajectories.trajectory.items():
+            for joint_name, corresponding_trajectory in trajectories.trajectory_by_name.items():
                 sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[joint_name],
                                           controlMode=sim.POSITION_CONTROL,
                                           targetPosition=corresponding_trajectory[i], targetVelocity=0,

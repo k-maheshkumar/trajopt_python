@@ -1,24 +1,24 @@
 sqp:
-  const_violation_tolerance: 0.1
-  decimals_to_round: 5.0
+  const_violation_tolerance: 1e-2
+  decimals_to_round: 4
   improve_ratio_threshold: 0.25
-  max_iteration: 10.0
-  max_penalty: 1e6
-  initial_penalty: 150
+  initial_penalty: 1
+  max_iteration: 10
+  max_penalty: 1e4
   max_trust_box_size: 10
   max_trust_region_size: 15
-  min_actual_redution: 1e-2
+  min_actual_redution: 1e-4
   min_actual_worse_redution: -100
   min_equality_norm: 1e-2
   min_improve_ratio: 0.001
   min_model_improve: 1e-4
   min_trust_box_size: 1e-4
-  min_x_redution: 0.01
+  min_x_redution: 1e-4
   solver:
   - ECOS_BB
   - SCS
   - ECOS
   trust_expand_ratio: 2.0
   trust_good_region_ratio: 0.75
-  trust_region_size: 1.0
+  trust_region_size: 4.0
   trust_shrink_ratio: 0.25

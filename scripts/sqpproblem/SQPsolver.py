@@ -38,18 +38,45 @@ class SQPsolver:
 
         self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
-    def init(self, problem, solver, solver_config, decimals_to_round=None, verbose="DEBUG"):
-        self.P = problem.P
-        self.q = problem.q
-        self.G = problem.G
-        self.lb = problem.lb
-        self.ub = problem.ub
-        self.lbG = problem.lbG
-        self.ubG = problem.ubG
-        self.A = problem.A
-        self.b = problem.b
-        self.initial_guess = problem.initial_guess
-        self.status = "-1"
+    def init(self, **kwargs):
+        if "P" in kwargs:
+            self.P = kwargs["P"]
+        if "q" in kwargs:
+            self.q = kwargs["q"]
+        if "G" in kwargs:
+            self.G = kwargs["G"]
+        if "lbG" in kwargs:
+            self.lbG = kwargs["lbG"]
+        if "ubG" in kwargs:
+            self.ubG = kwargs["ubG"]
+        if "A" in kwargs:
+            self.A = kwargs["A"]
+        if "b" in kwargs:
+            self.b = kwargs["b"]
+        if "initial_guess" in kwargs:
+            self.initial_guess = kwargs["initial_guess"]
+        if "solver_config" in kwargs:
+            solver_config = kwargs["solver_config"]
+        else:
+            solver_config = None
+        if "solver" in kwargs:
+            solver = kwargs["solver"]
+        else:
+            solver = None
+
+        if solver_config is not None:
+            self.solver_config = solver_config
+        else:
+            # file_path_prefix = '../../../config/'
+            file_path_prefix = '../../config/'
+            sqp_config_file = file_path_prefix + 'sqp_config.yaml'
+
+            sqp_yaml = yaml.ConfigParser(sqp_config_file)
+            self.solver_config = sqp_yaml.get_by_key("sqp")
+        if solver is not None:
+            self.solver = solver
+        else:
+            self.solver = self.solver_config["solver"][0]
 
         if solver_config is not None:
             self.solver_config = solver_config
@@ -75,6 +102,7 @@ class SQPsolver:
         print (self.lbG)
         print ("ubG")
         print (self.ubG)
+        print ("A")
         print (self.A)
         print ("b")
         print (self.b)
@@ -82,7 +110,6 @@ class SQPsolver:
         print (self.lb)
         print ("ub")
         print (self.ub)
-        print ("A")
 
     def evaluate_constraints(self, x_k):
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
@@ -94,11 +121,8 @@ class SQPsolver:
         cons1_cond = np.matmul(self.G, x_k) <= self.ubG
         cons2_cond = np.matmul(-self.G, x_k) >= self.lbG
         cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
-        # print cons1_cond
-        # print cons2_cond
-        # print cons3_cond
-
-        return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
+        # return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
+        return cons2_cond.all() and cons3_cond.all() and cons1_cond.all()
 
     def get_constraints_gradients(self):
         cons1_grad = self.G
@@ -153,7 +177,7 @@ class SQPsolver:
 
         return max_con1, max_con2, max_con3
 
-    def solveSQP(self, initial_guess=None):
+    def solve(self, initial_guess=None):
         self.logger.info("Starting SQP solver . . . . . . .")
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
@@ -289,14 +313,14 @@ class SQPsolver:
                     #     self.status = "infeasible initial guess"
                     #     is_converged = True
                     #     break
-                    is_converged = True
+                    # is_converged = True
                     inter_status = "actual reduction is very small"
                     self.logger.info(inter_status)
 
                     self.status = "Solved"
                     break
                 if abs((np.linalg.norm(new_x_k - x_k, np.inf))) <= min_x_redution:
-                    is_converged = True
+                    # is_converged = True
                     inter_status = "reduction in x is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"

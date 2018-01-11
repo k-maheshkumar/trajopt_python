@@ -14,6 +14,7 @@ class SimulationWorld():
         if urdf_file is None:
             main_logger_name = "Trajectory_Planner"
             verbose = "DEBUG"
+            # verbose = False
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
@@ -22,8 +23,8 @@ class SimulationWorld():
         self.gui = sim.connect(sim.GUI)
         # self.gui = sim.connect(sim.DIRECT)
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 0)
-        location_prefix = '/home/mahe/masterThesis/bullet3/data/'
-        # location_prefix = '/home/mahesh/libraries/bullet3/data/'
+        # location_prefix = '/home/mahe/masterThesis/bullet3/data/'
+        location_prefix = '/home/mahesh/libraries/bullet3/data/'
         if urdf_file is None:
             urdf_file = location_prefix + "kuka_iiwa/model.urdf"
         self.robot = Robot.Robot(urdf_file)
@@ -173,8 +174,8 @@ class SimulationWorld():
 
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
                 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
-                duration = 6
-                samples = 5
+                duration = 20
+                samples = 50
                 full_arm = group1 + group2
                 # full_arm = group1_test
                 lower_d_safe = 2
@@ -182,8 +183,7 @@ class SimulationWorld():
                 self.reset_joint_states(start_state)
 
                 self.plan_trajectory(full_arm, goal_state, samples, duration, lower_d_safe, upper_d_safe)
-                self.execute_trajectory()
-
+                self.execute_trajectory(full_arm)
                 # import sys
                 # sys.exit()
 
@@ -228,7 +228,8 @@ class SimulationWorld():
             # print contact_points
 
             if len(contact_points) > 0:
-                jacobian.append(np.asarray(jac_t[:, self.joint_name_to_id[joint_name]]).reshape(3, 1))
+                # jacobian.append(np.asarray(jac_t[:, self.joint_name_to_id[joint_name]]).reshape(3, 1))
+                jacobian.append(np.asarray(jac_t))
                 normal.append(np.asarray(contact_points[0][7]).reshape(3, 1))
                 initial_signed_distance.append(contact_points[0][8])
                 # normal_times_jacobian.append(np.matmul(np.asarray(contact_points[0][7]).reshape(3, 1).T,
@@ -245,13 +246,12 @@ class SimulationWorld():
             # })
             # print normal_times_jacobian, initial_signed_distance
             self.collision_constraints[joint_name] = munchify({
-                "jacobian": jacobian,
-                "normal": normal,
+                "jacobian": np.vstack(jacobian),
+                "normal": np.vstack(normal),
                 # "normal_times_jacobian": np.asarray(normal_times_jacobian).T[self.joint_name_to_id[joint_name]],
-                "initial_signed_distance": initial_signed_distance,
+                "initial_signed_distance": np.vstack(initial_signed_distance),
                 "limits": {"lower": lower_d_safe_limit, "upper": upper_d_safe_limit}
             })
-
             # print joint_name, self.collision_constraints[joint_name]
             # print "self.collision_constraints[lbr_iiwa_joint_1]", self.collision_constraints["lbr_iiwa_joint_1"]
         # print self.collision_constraints
@@ -283,7 +283,7 @@ class SimulationWorld():
             current_state[joint] = sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]
         return current_state
 
-    def execute_trajectory(self):
+    def execute_trajectory(self, group):
         trajectories = self.robot.get_trajectory()
         for i in range(int(trajectories.no_of_samples)):
             for joint_name, corresponding_trajectory in trajectories.trajectory_by_name.items():
@@ -299,6 +299,21 @@ class SimulationWorld():
             # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
             time.sleep(trajectories.duration / float(trajectories.no_of_samples))
             # sim.stepSimulation()
+        # print trajectories.trajectory
+        # for traj in trajectories.trajectory:
+        #     for i in range(len(group)):
+        #         sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[group[i]],
+        #                                   controlMode=sim.POSITION_CONTROL,
+        #                                   targetPosition=traj[i], targetVelocity=0,
+        #                                   force=self.robot.model.joint_by_name[group[i]].limit.effort,
+        #                                   positionGain=0.03,
+        #                                   velocityGain=.5,
+        #                                   # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
+        #                                   )
+        #         # self.get_contact_points()
+        #     # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
+        #     time.sleep(trajectories.duration / float(trajectories.no_of_samples))
+        #     # sim.stepSimulation()
 
         status = "Trajectory execution has finished"
         self.logger.info(status)

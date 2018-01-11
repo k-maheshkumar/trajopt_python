@@ -146,14 +146,13 @@ class TrajectoryOptimizationPlanner:
 
         else:
             # self.sqp_solver1.init(self, self.solver, self.solver_config, self.verbose)
-            self.sqp_solver1.init(P=self.problem.cost_matrix_P, q=self.problem.cost_matrix_q, G=self.problem.velocity_matrix,
+            self.sqp_solver1.init(P=self.problem.cost_matrix_P, q=self.problem.cost_matrix_q, G=self.problem.constraints_matrix,
                                   lbG=self.problem.velocity_lower_limits, ubG=self.problem.velocity_upper_limits,
                                   A=self.problem.start_and_goal_matrix, b=self.problem.start_and_goal_limits,
                                   initial_guess=self.problem.initial_guess, solver_config=self.solver_config)
             start = time.time()
             self.solver_status, trajectory = self.sqp_solver1.solve(initial_guess)
             end = time.time()
-        print trajectory
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
 
         # trajectory = dict(zip(self.joint_names, trajectory))

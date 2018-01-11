@@ -30,7 +30,8 @@
 
 
 robot:
-    urdf: "/home/mahe/catkin_ws/src/iai_robots/iai_boxy_description/robots/boxy_description.urdf"
+#    urdf: "/home/mahe/catkin_ws/src/iai_robots/iai_boxy_description/robots/boxy_description.urdf"
+    urdf: "/home/mahesh/catkin_ws/src/iai_robots/iai_boxy_description/robots/boxy_description.urdf"
     config_params:
       samples: 5
       duration: 6

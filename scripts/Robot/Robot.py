@@ -73,7 +73,7 @@ class Robot:
             else:
                 decimals_to_round = 3
         else:
-            decimals_to_round = 3
+            decimals_to_round = 5
 
         if "current_state" in kwargs:
             self.update_robot_state(kwargs["current_state"])
@@ -100,6 +100,13 @@ class Robot:
                             "limit": joint.limit,
                             "collision_constraints": collision_constraint
                         })
+            # import  numpy as np
+            # request = {}
+            # request["samples"] = samples
+            # request["duration"] = duration
+            # request["joints"] = joints
+            # np.savez("problem_with_collision_constraints", request)
+
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               solver=solver, solver_config=solver_config, solver_class=0,

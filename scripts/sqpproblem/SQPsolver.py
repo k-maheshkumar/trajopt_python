@@ -82,6 +82,7 @@ class SQPsolver:
             self.solver_config = solver_config
         else:
             file_path_prefix = '../../config/'
+            # file_path_prefix = '../../../config/'
             sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
             sqp_yaml = yaml.ConfigParser(sqp_config_file)

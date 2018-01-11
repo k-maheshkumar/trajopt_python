@@ -1,4 +1,5 @@
 from collections import defaultdict
+import numpy as np
 
 class Trajectory:
     def __init__(self):
@@ -35,9 +36,9 @@ class Trajectory:
         self.extract_trajectory_of_individual_joints(group)
 
     def extract_trajectory_of_individual_joints(self, group):
-        for traj in self.trajectory:
-            for i in range(len(group)):
-                self.__trajectory_by_joint_name[group[i]].append(traj[i])
+        self.__trajectory_by_joint_name = dict(zip(group, np.array(self.trajectory).T))
+
+
 
 
 

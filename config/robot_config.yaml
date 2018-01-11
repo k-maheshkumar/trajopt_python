@@ -30,13 +30,9 @@
 
 
 robot:
-#    urdf: "/home/mahe/masterThesis/bullet3/data/kuka_iiwa/model.urdf"
-    urdf: "/home/mahesh/libraries/bullet3/data/kuka_iiwa/model.urdf"
     config_params:
-      samples: {"value": 5, "step": 1, "min": 3, "max": 50}
-      duration: {"value": 10, "step": 1, "min": 3, "max": 50}
-      lower_collision_limit: {"value": 4, "step": 0.5, "min": 1, "max": 30}
-      upper_collision_limit: {"value": 5, "step": 0.5, "min": 0, "max": 30}
+      samples: 5
+      duration: 6
     joints_groups:
 #      joints:
       right_arm: &right_arm
@@ -59,28 +55,21 @@ robot:
         lbr_iiwa_joint_6: 1.574
         lbr_iiwa_joint_7: 1.571
       initial:
-      # endState = [-0.43397739069763064, 1.4723163745550858, -1.5581591136925037,
-#             -1.0268873087087633, 1.567033026684058, 1.5814537807610403, 1.571342501955761]
-        lbr_iiwa_joint_1: -0.433
-        lbr_iiwa_joint_2: 1.472
-        lbr_iiwa_joint_3: -1.558
-        lbr_iiwa_joint_4: -1.026
-        lbr_iiwa_joint_5: 1.567
-        lbr_iiwa_joint_6: 1.581
+        lbr_iiwa_joint_1: -2.041
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
         lbr_iiwa_joint_7: 1.571
       pick:
-#      {'lbr_iiwa_joint_5': 1.5979105177314896, 'lbr_iiwa_joint_4': -0.5791571346767671,
-#      'lbr_iiwa_joint_7': 1.5726221954434347,
-#      'lbr_iiwa_joint_6': 1.5857854098720727, 'lbr_iiwa_joint_1': -0.08180533826032865,
-#      'lbr_iiwa_joint_3': -1.5873548294514912, 'lbr_iiwa_joint_2': 1.5474152457596664}
-
-        lbr_iiwa_joint_1: -0.08180533826032865
-        lbr_iiwa_joint_2: 1.5474152457596664
-        lbr_iiwa_joint_3: -1.5873548294514912
-        lbr_iiwa_joint_4: -0.5791571346767671
-        lbr_iiwa_joint_5: 1.5979105177314896
-        lbr_iiwa_joint_6: 1.5857854098720727
-        lbr_iiwa_joint_7: .5726221954434347
+        lbr_iiwa_joint_1: -2.041
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
+        lbr_iiwa_joint_7: 1.571
       place:
         lbr_iiwa_joint_1: -2.041
         lbr_iiwa_joint_2: 0.944

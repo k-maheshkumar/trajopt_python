@@ -17,22 +17,57 @@ import logging
 
 
 class SQPsolver:
-    def __init__(self, problem, solver, solver_config, decimals_to_round=None, verbose="DEBUG"):
-        self.P = problem.P
-        self.q = problem.q
-        self.G = problem.G
-        self.lb = problem.lb
-        self.ub = problem.ub
-        self.lbG = problem.lbG
-        self.ubG = problem.ubG
-        self.A = problem.A
-        self.b = problem.b
-        self.initial_guess = problem.initial_guess
+    def __init__(self):
+        self.P = []
+        self.G = []
+        self.A = []
+        self.q = []
+        self.lb = []
+        self.ub = []
+        self.lbG = []
+        self.ubG = []
+        self.b = []
+
+        self.initial_guess = []
         self.status = "-1"
+        self.norm_ = 1
+
+        self.solver_config = {}
+
+        self.solver = []
+
+        self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+
+    def init(self, **kwargs):
+        if "P" in kwargs:
+            self.P = kwargs["P"]
+        if "q" in kwargs:
+            self.q = kwargs["q"]
+        if "G" in kwargs:
+            self.G = kwargs["G"]
+        if "lbG" in kwargs:
+            self.lbG = kwargs["lbG"]
+        if "ubG" in kwargs:
+            self.ubG = kwargs["ubG"]
+        if "A" in kwargs:
+            self.A = kwargs["A"]
+        if "b" in kwargs:
+            self.b = kwargs["b"]
+        if "initial_guess" in kwargs:
+            self.initial_guess = kwargs["initial_guess"]
+        if "solver_config" in kwargs:
+            solver_config = kwargs["solver_config"]
+        else:
+            solver_config = None
+        if "solver" in kwargs:
+            solver = kwargs["solver"]
+        else:
+            solver = None
 
         if solver_config is not None:
             self.solver_config = solver_config
         else:
+            # file_path_prefix = '../../../config/'
             file_path_prefix = '../../config/'
             sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
@@ -43,53 +78,39 @@ class SQPsolver:
         else:
             self.solver = self.solver_config["solver"][0]
 
-        self.logger = logging.getLogger("SQP Solver")
-        ch = logging.StreamHandler()
-        # create formatter
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        # add formatter to ch
-        ch.setFormatter(formatter)
+        if solver_config is not None:
+            self.solver_config = solver_config
+        else:
+            file_path_prefix = '../../config/'
+            # file_path_prefix = '../../../config/'
+            sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
+            sqp_yaml = yaml.ConfigParser(sqp_config_file)
+            self.solver_config = sqp_yaml.get_by_key("sqp")
+        if solver is not None:
+            self.solver = solver
+        else:
+            self.solver = self.solver_config["solver"][0]
 
-        if verbose == "WARN":
-            self.logger.setLevel(logging.WARN)
-            ch.setLevel(logging.WARN)
-
-        elif verbose == "INFO":
-            self.logger.setLevel(logging.INFO)
-            ch.setLevel(logging.INFO)
-
-        elif verbose == "DEBUG":
-            self.logger.setLevel(logging.DEBUG)
-            ch.setLevel(logging.DEBUG)
-
-        # add ch to logger
-        self.logger.addHandler(ch)
-
-
-    def displayProblem(self):
+    def display_problem(self):
         print ("P")
         print (self.P)
         print ("q")
         print (self.q)
         print ("G")
         print (self.G)
-        print ("lb")
-        print (self.lb)
-        print ("ub")
-        print (self.ub)
         print ("lbG")
         print (self.lbG)
         print ("ubG")
         print (self.ubG)
-        print ("b")
-        print (self.b)
         print ("A")
         print (self.A)
-
-        print ("maxNoOfIteration")
-        print (self.max_no_of_Iteration)
-
+        print ("b")
+        print (self.b)
+        print ("lb")
+        print (self.lb)
+        print ("ub")
+        print (self.ub)
 
     def evaluate_constraints(self, x_k):
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
@@ -101,8 +122,8 @@ class SQPsolver:
         cons1_cond = np.matmul(self.G, x_k) <= self.ubG
         cons2_cond = np.matmul(-self.G, x_k) >= self.lbG
         cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
-
-        return cons1_cond.all() and cons2_cond.all() and cons3_cond.all()
+        # return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
+        return cons2_cond.all() and cons3_cond.all() and cons1_cond.all()
 
     def get_constraints_gradients(self):
         cons1_grad = self.G
@@ -137,12 +158,13 @@ class SQPsolver:
         x = cvxpy.Variable(self.P.shape[0])
         x.value = copy.copy(x_k)
         objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
-        objective += penalty * (cvxpy.norm1(self.G * x - self.ubG.flatten()) + cvxpy.norm1(-self.G * x + self.lbG.flatten()) + cvxpy.norm1(
-            self.A * x + self.b.flatten()) )
+        objective += penalty * (
+        cvxpy.norm1(self.G * x - self.ubG.flatten()) + cvxpy.norm1(-self.G * x + self.lbG.flatten()) + cvxpy.norm1(
+            self.A * x + self.b.flatten()))
 
         return objective
 
-    def sovle_problem(self, x_k, penalizer, p, delta):
+    def solve_problem(self, x_k, penalizer, p, delta):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         constraints = [cvxpy.norm(p, "inf") <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
@@ -157,18 +179,19 @@ class SQPsolver:
 
         return max_con1, max_con2, max_con3
 
-    def solveSQP(self, initial_guess=None):
+    def solve(self, initial_guess=None):
         self.logger.info("Starting SQP solver . . . . . . .")
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
         penalty = cvxpy.Parameter(nonneg=True)
-        penalty.value = 1
         # x_0 = np.full((1, self.P.shape[0]), 8.0).flatten()
         if initial_guess is None:
             x_0 = self.initial_guess
         else:
             x_0 = initial_guess
         p_0 = np.zeros(p.shape[0])
+
+        penalty.value = float(self.solver_config["initial_penalty"])
         trust_box_size = float(self.solver_config["trust_region_size"])
         max_penalty = float(self.solver_config["max_penalty"])
         min_trust_box_size = float(self.solver_config["min_trust_box_size"])
@@ -210,6 +233,7 @@ class SQPsolver:
         predicted_reduction = 0
 
         rho_k = 0
+        inter_status = "-1"
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value, trust_box_size
             self.logger.debug("penalty " + str(penalty.value))
@@ -220,7 +244,7 @@ class SQPsolver:
                 self.logger.debug("iteration_count " + str(iteration_count))
                 # print "iteration_count", iteration_count, trust_box_size
                 while trust_box_size >= min_trust_box_size:
-                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.sovle_problem(x_k,
+                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
                                                                                                              penalty, p,
                                                                                                              trust_box_size)
 
@@ -251,7 +275,7 @@ class SQPsolver:
                         # print "need to adjust penalty"
                         isAdjustPenalty = True
                         break
-                    # if rho_k > good_rho_k:
+                        # if rho_k > good_rho_k:
                         # x_k += p_k
 
                     if trust_box_size < min_trust_box_size:
@@ -308,7 +332,11 @@ class SQPsolver:
                     break
             if self.is_constraints_satisfied(x_k, const_violation_tolerance):
                 is_converged = True
-                self.logger.info(inter_status + " and constraints violations are satisfied")
+                if inter_status != "-1":
+                    inter_status += " and"
+                else:
+                    inter_status = ""
+                self.logger.info(inter_status + " constraints violations are satisfied")
 
                 self.status = "Solved"
                 break

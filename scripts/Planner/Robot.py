@@ -1,29 +1,23 @@
 from urdf_parser_py.urdf import URDF
-import Planner
-import time
+import scripts.Planner.Planner
 from munch import *
-from scripts.utils import yaml_paser as yaml
+import logging
 
 
 class Robot:
     def __init__(self, urdf_file):
-
-        # location_prefix = '/home/mahesh/libraries/bullet3/data/'
-        # location_prefix = '/home/mahe/masterThesis/bullet3/data/'
-
-        # self.model = URDF.from_xml_file(location_prefix + "kuka_iiwa/model.urdf")
-        print urdf_file
         self.model = URDF.from_xml_file(urdf_file)
-        # self.__replace_joints_in_model_with_map()
+        self.__setup_get_joint_by_name()
         self.state = self.init_state()
-        self.planner = {}
+        self.planner = scripts.Planner.Planner.TrajectoryOptimizationPlanner()
+        self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
     def init_state(self):
         state = {}
         for joint in self.model.joints:
             state[joint.name] = {
-                                    "current_value": 0
-                                }
+                "current_value": 0
+            }
         state = munchify(state)
         return state
 
@@ -33,14 +27,12 @@ class Robot:
     def get_trajectory(self):
         return self.planner.trajectory
 
-    def __replace_joints_in_model_with_map(self):
+    def __setup_get_joint_by_name(self):
         joints = {}
         for joint in self.model.joints:
             joints[joint.name] = joint
-        del self.model.joints[:]
-        self.model.joints = joints
+        self.model.joint_by_name = joints
 
-    # def plan_trajectory(self, joint_group, states, samples, duration):
     def plan_trajectory(self, *args, **kwargs):
         joints = {}
         status = "-1"
@@ -55,51 +47,59 @@ class Robot:
             solver = kwargs["solver"]
         else:
             solver = "SCS"
-        if "decimals_to_round" in kwargs:
-            decimals_to_round = kwargs["decimals_to_round"]
-        else:
-            decimals_to_round = 3
-        if "solver" in kwargs:
-            solver = kwargs["solver"]
-        else:
-            solver = "SCS"
         if "solver_config" in kwargs:
             solver_config = kwargs["solver_config"]
+
+        if solver_config is not None:
+            if "decimals_to_round" in solver_config:
+                decimals_to_round = solver_config["decimals_to_round"]
+        else:
+            decimals_to_round = 3
+
         if "current_state" in kwargs:
             self.update_robot_state(kwargs["current_state"])
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
+        if "collision_constraints" in kwargs:
+            collision_constraints = kwargs["collision_constraints"]
+
+        if "lower_d_safe" in kwargs:
+            lower_d_safe = kwargs["lower_d_safe"]
+
+        if "upper_d_safe" in kwargs:
+            upper_d_safe = kwargs["upper_d_safe"]
 
         # if "states" in kwargs:
         #     states = kwargs["states"]
-        # else:
+
         if "current_state" in kwargs and "goal_state" in kwargs:
             states = {}
             for joint in self.model.joints:
                 for joint_in_group in joint_group:
                     if joint_in_group in self.state and joint_in_group in goal_state:
-                        states[joint_in_group] = {"start": self.state[joint_in_group]["current_value"], "end": goal_state[joint_in_group]}
-
-                    if joint.name == joint_in_group:
-                        # joints.append(munchify({
-                        #     "name": joint.name,
-                        #     "states": states[joint_in_group],
-                        #     "limits": joint.limit
-                        # }))
+                        states[joint_in_group] = {"start": self.state[joint_in_group]["current_value"],
+                                                  "end": goal_state[joint_in_group]}
+                    if joint.name == joint_in_group and joint.limit is not None:
                         joints[joint.name] = (munchify({
                             "states": states[joint_in_group],
-                            "limits": joint.limit
+                            "limits": joint.limit,
+                            # "collision_constraints": collision_constraints[joint.name]
                         }))
+                        if collision_constraints is not None:
+                            joints[joint.name]["collision_constraints"] = collision_constraints[joint.name]
         if len(joints):
-            self.planner = Planner.TrajectoryOptimizationPlanner(joints=joints, samples=samples, duration=duration,
-                                                                 solver=solver, solver_config=solver_config, solver_class=0, decimals_to_round=decimals_to_round, verbose=True)
-            # self.planner.displayProblem()
-            status = self.planner.calculate_trajectory()
+            self.planner.init(joints=joints, samples=samples, duration=duration,
+                              solver=solver, solver_config=solver_config, lower_d_safe=lower_d_safe,
+                              upper_d_safe=upper_d_safe,
+                              solver_class=0, decimals_to_round=decimals_to_round, verbose=True)
+            self.planner.display_problem()
+            status, can_execute_trajectory = self.planner.calculate_trajectory()
+            # status, can_execute_trajectory = "testing", False
         else:
             status = "No trajectory has been found"
-            print "joints are empty"
+            self.logger.warning("Joints are empty, so trajectory can't be found")
 
-        return status
+        return status, can_execute_trajectory
 
     # def get_robot_trajectory(self):
     #     return self.planner.trajectory.get_trajectory()
@@ -109,8 +109,7 @@ class Robot:
             if key in current_state:
                 self.state[key]["current_value"] = current_state[key]
 
-        # print self.state
-
+                # print self.state
 
 # if __name__ == "__main__":
 #     robo = Robot(None)
@@ -162,7 +161,7 @@ class Robot:
 #
 #     file_path_prefix = '../../config/'
 #
-#     robot_config_file = file_path_prefix + 'robot_config.yaml'
+#     robot_config_file = file_path_prefix + 'robot_config_kukka_arm.yaml'
 #     robot_yaml = yaml.ConfigParser(robot_config_file)
 #     robot_config = robot_yaml.get_by_key("robot")
 #     # print robot_config["joint_configurations"]

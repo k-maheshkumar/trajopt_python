@@ -15,80 +15,102 @@ import logging
 
 
 class SQPProblem:
-    def __init__(self, problem, solver, solver_config, verbose=False):
-        self.P = problem.P
-        self.q = problem.q
-        self.G = problem.G
-        self.lb = problem.lb
-        self.ub = problem.ub
-        self.lbG = problem.lbG
-        self.ubG = problem.ubG
-        self.A = problem.A
-        self.b = problem.b
-        self.initial_guess = problem.initial_guess
+    def __init__(self, *args, **kwargs):
+        self.P = []
+        self.G = []
+        self.A = []
+        self.q = []
+        self.lb = []
+        self.ub = []
+        self.lbG = []
+        self.ubG = []
+        self.b = []
+
+        self.initial_guess = []
         self.status = "-1"
         self.norm_ = 1
+
+        self.solver_config = {}
+
+        self.solver = []
+
+        self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+
+    def init(self, **kwargs):
+        if "P" in kwargs:
+            self.P = kwargs["P"]
+        if "q" in kwargs:
+            self.q = kwargs["q"]
+        if "G" in kwargs:
+            self.G = kwargs["G"]
+        if "lbG" in kwargs:
+            self.lbG = kwargs["lbG"]
+        if "ubG" in kwargs:
+            self.ubG = kwargs["ubG"]
+        if "A" in kwargs:
+            self.A = kwargs["A"]
+        if "b" in kwargs:
+            self.b = kwargs["b"]
+        if "initial_guess" in kwargs:
+            self.initial_guess = kwargs["initial_guess"]
+        if "solver_config" in kwargs:
+            solver_config = kwargs["solver_config"]
+        else:
+            solver_config = None
+        if "solver" in kwargs:
+            solver = kwargs["solver"]
+        else:
+            solver = None
 
         if solver_config is not None:
             self.solver_config = solver_config
         else:
+            # file_path_prefix = '../../../config/'
             file_path_prefix = '../../config/'
             sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
             sqp_yaml = yaml.ConfigParser(sqp_config_file)
             self.solver_config = sqp_yaml.get_by_key("sqp")
-
         if solver is not None:
             self.solver = solver
         else:
-            self.solver = self.solver_config["solver"][1]
+            self.solver = self.solver_config["solver"][0]
 
+        if solver_config is not None:
+            self.solver_config = solver_config
+        else:
+            file_path_prefix = '../../config/'
+            # file_path_prefix = '../../../config/'
+            sqp_config_file = file_path_prefix + 'sqp_config.yaml'
 
-        self.logger = logging.getLogger("SQP Solver")
-        ch = logging.StreamHandler()
-        # create formatter
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        # add formatter to ch
-        ch.setFormatter(formatter)
+            sqp_yaml = yaml.ConfigParser(sqp_config_file)
+            self.solver_config = sqp_yaml.get_by_key("sqp")
+        if solver is not None:
+            self.solver = solver
+        else:
+            self.solver = self.solver_config["solver"][0]
 
-        if verbose == "WARN":
-            self.logger.setLevel(logging.WARN)
-            ch.setLevel(logging.WARN)
-
-        elif verbose == "INFO" or verbose is True:
-            self.logger.setLevel(logging.INFO)
-            ch.setLevel(logging.INFO)
-
-        elif verbose == "DEBUG":
-            self.logger.setLevel(logging.DEBUG)
-            ch.setLevel(logging.DEBUG)
-
-        # add ch to logger
-        self.logger.addHandler(ch)
-
-    def displayProblem(self):
+    def display_problem(self):
         print ("P")
         print (self.P)
         print ("q")
         print (self.q)
         print ("G")
         print (self.G)
-        print ("lb")
-        print (self.lb)
-        print ("ub")
-        print (self.ub)
         print ("lbG")
         print (self.lbG)
         print ("ubG")
         print (self.ubG)
+        print (self.A)
         print ("b")
         print (self.b)
+        print ("lb")
+        print (self.lb)
+        print ("ub")
+        print (self.ub)
         print ("A")
-        print (self.A)
 
-        print ("maxNoOfIteration")
-        print (self.max_no_of_Iteration)
-
+    # noinspection PyMethodMayBeStatic
     def interpolate(self, start, end, samples):
         data = []
         stepSize = (end - start) / (samples - 1)
@@ -143,7 +165,7 @@ class SQPProblem:
 
         return objective
 
-    def sovle_problem(self, x_k, penalizer, p, delta):
+    def solve_problem(self, x_k, penalizer, p, delta):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         constraints = [cvxpy.norm(p, "inf") <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
@@ -156,7 +178,7 @@ class SQPProblem:
         max_con2 = (np.linalg.norm(con2, np.inf))
         return max_con1, max_con2
 
-    def solveSQP(self, initial_guess=None):
+    def solve(self, initial_guess=None):
         self.logger.info("Starting SQP solver . . . . . . .")
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
@@ -202,7 +224,7 @@ class SQPProblem:
         good_rho_k = 0.2
         is_improved = False
         p_k = 0
-
+        inter_status = ""
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
@@ -211,7 +233,7 @@ class SQPProblem:
                 # print("iteration count", iteration_count)
                 self.logger.debug("iteration_count " + str(iteration_count))
                 while trust_box_size >= min_trust_box_size:
-                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.sovle_problem(x_k,
+                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
                                                                                                              penalty, p,
                                                                                                              trust_box_size)
 
@@ -243,7 +265,7 @@ class SQPProblem:
                         # print "need to adjust penalty"
                         isAdjustPenalty = True
                         break
-                    # if rho_k > good_rho_k:
+                        # if rho_k > good_rho_k:
                         # x_k += p_k
 
                     if trust_box_size < min_trust_box_size:
@@ -261,7 +283,6 @@ class SQPProblem:
                         # print "resetting trust region, since trust region size is same for last ",
                         #  same_trust_region_count, " iterations"
                         trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
-
 
                     if rho_k <= 0.25:
                         trust_box_size *= trust_shrink_ratio

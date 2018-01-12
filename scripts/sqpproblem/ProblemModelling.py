@@ -12,7 +12,7 @@ class ProblemModelling:
         self.joints = {}
         self.cost_matrix_P = []
         self.cost_matrix_q = []
-        self.constraints_matrix = []
+        self.robot_constraints_matrix = []
         self.velocity_lower_limits = []
         self.velocity_upper_limits = []
         self.joints_lower_limits = []
@@ -95,13 +95,13 @@ class ProblemModelling:
 
     def fill_velocity_matrix(self):
 
-        self.constraints_matrix = np.zeros((self.no_of_joints * self.samples, self.samples * self.no_of_joints))
-        np.fill_diagonal(self.constraints_matrix, -1.0)
-        i, j = np.indices(self.constraints_matrix.shape)
-        self.constraints_matrix[i == j - self.no_of_joints] = -1.0
+        self.robot_constraints_matrix = np.zeros((self.no_of_joints * self.samples, self.samples * self.no_of_joints))
+        np.fill_diagonal(self.robot_constraints_matrix, -1.0)
+        i, j = np.indices(self.robot_constraints_matrix.shape)
+        self.robot_constraints_matrix[i == j - self.no_of_joints] = -1.0
 
         # to slice zero last row
-        self.constraints_matrix.resize(self.constraints_matrix.shape[0] - self.no_of_joints, self.constraints_matrix.shape[1])
+        self.robot_constraints_matrix.resize(self.robot_constraints_matrix.shape[0] - self.no_of_joints, self.robot_constraints_matrix.shape[1])
 
     def fill_velocity_limits(self):
         start_and_goal_lower_limits = []
@@ -217,9 +217,9 @@ class ProblemModelling:
         self.velocity_matrix = self.get_velocity_matrix()
         self.joints_matrix = self.get_joints_matrix()
         # self.constraints_matrix = np.vstack([self.velocity_matrix, self.joints_matrix])
-        self.constraints_matrix.append(self.velocity_matrix)
-        self.constraints_matrix.append(self.joints_matrix)
-        self.constraints_matrix = np.vstack(self.constraints_matrix)
+        self.robot_constraints_matrix.append(self.velocity_matrix)
+        self.robot_constraints_matrix.append(self.joints_matrix)
+        self.robot_constraints_matrix = np.vstack(self.robot_constraints_matrix)
 
         collision_constraints = []
         # # print self.joints["lbr_iiwa_joint_5"]["collision_constraints"]
@@ -257,6 +257,10 @@ class ProblemModelling:
         #         # print joint_name, normal_times_jacobian
         #
         # # collision_matrix = self.get_collision_matrix()
+
+
+    def formulate_collision_constraints(self, initial_singed_distance, normal, jacbian, safe_distance):
+        pass
 
     def interpolate(self, start, end, samples=None):
         if samples is None:

@@ -179,7 +179,7 @@ class SQPsolver:
 
         return max_con1, max_con2, max_con3
 
-    def solve(self, initial_guess=None):
+    def solve(self, initial_guess=None, callback_function=None):
         self.logger.info("Starting SQP solver . . . . . . .")
         x = cvxpy.Variable(self.P.shape[0])
         p = cvxpy.Variable(x.shape[0])
@@ -256,6 +256,8 @@ class SQPsolver:
 
                     rho_k = actual_reduction / predicted_reduction
                     x_k += p_k
+                    if callback_function is not None:
+                        callback_function(x_k, p_k)
 
                     self.logger.debug("\n x_k " + str(x_k))
                     self.logger.debug("\n rho_k " + str(rho_k))

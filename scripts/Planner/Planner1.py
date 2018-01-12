@@ -130,7 +130,7 @@ class TrajectoryOptimizationPlanner:
             self.problem = model.ProblemModelling()
             self.problem.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round)
             self.sqp_solver.init(P=self.problem.cost_matrix_P, q=self.problem.cost_matrix_q,
-                                 G=self.problem.constraints_matrix,
+                                 G=self.problem.robot_constraints_matrix,
                                  lbG=self.problem.constraints_lower_limits, ubG=self.problem.constraints_upper_limits,
                                  A=self.problem.start_and_goal_matrix, b=self.problem.start_and_goal_limits,
                                  initial_guess=self.problem.initial_guess, solver_config=self.solver_config)
@@ -149,7 +149,7 @@ class TrajectoryOptimizationPlanner:
     #     # print problem.cost_matrix
         # print problem.velocity_matrix
 
-    def calculate_trajectory(self, initial_guess= None):
+    def calculate_trajectory(self, initial_guess= None, callback_function=None):
         can_execute_trajectory = False
         self.logger.info("getting trajectory")
         # if self.solver_class:
@@ -165,7 +165,9 @@ class TrajectoryOptimizationPlanner:
         #                           A=self.problem.start_and_goal_matrix, b=self.problem.start_and_goal_limits,
         #                           initial_guess=self.problem.initial_guess, solver_config=self.solver_config)
         start = time.time()
-        self.solver_status, trajectory = self.sqp_solver.solve(initial_guess)
+        # callback_function("in planner class")
+
+        self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
 

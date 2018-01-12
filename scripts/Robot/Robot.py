@@ -120,11 +120,10 @@ class Robot:
                               solver=solver, solver_config=solver_config, solver_class=1,
                               decimals_to_round=decimals_to_round, verbose=True)
 
-    def calulate_trajecotory(self):
-
+    def calulate_trajecotory(self, callback_function=None):
         status, can_execute_trajectory = "No trajectory has been found", False
-        # self.planner.display_problem()
-        status, can_execute_trajectory = self.planner.calculate_trajectory()
+        # callback_function("in robot class")
+        status, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)
 
         # else:
         #     status = "No trajectory has been found"

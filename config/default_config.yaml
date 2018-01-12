@@ -1,0 +1,5 @@
+config:
+  robot: "./robot_config_kukka_arm.yaml"
+  solver: "./sqp_config.yaml"
+  world:
+    sdf: "/home/mahe/MEGA/thesis/pycharm/trajPlanner/world/world.sdf"

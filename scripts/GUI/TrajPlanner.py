@@ -3,18 +3,23 @@ from scripts.utils import yaml_paser as yaml
 import functools
 from scripts.simulation import SimulationWorld
 import numpy as np
+import logging
 
 
 class PlannerGui(QtGui.QMainWindow):
-    def __init__(self, val):
+    def __init__(self, verbose=False, file_log=False):
         QtGui.QMainWindow.__init__(self)
-        self.setGeometry(200, 100, 1200, 500)
+        self.setGeometry(200, 100, 1200, 400)
+
         file_path_prefix = '../../config/'
-        self.sqp_config_file = file_path_prefix + 'sqp_config.yaml'
+        self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
+        self.config = self.default_config.get_by_key("config")
+
+        self.sqp_config_file = file_path_prefix + self.config["solver"]
 
         self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
         self.sqp_config = self.sqp_yaml.get_by_key("sqp")
-        robot_config_file = file_path_prefix + 'robot_config.yaml'
+        robot_config_file = file_path_prefix + self.config["robot"]
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
         self.start_simulation_button = QtGui.QPushButton('Start Simulation')
@@ -54,8 +59,6 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.simulation_scroll = QtGui.QScrollArea()
 
-        self.sim_world = SimulationWorld.SimulationWorld()
-
         self.selected_robot_combo_value = {}
         self.selected_robot_spin_value = {}
 
@@ -66,9 +69,47 @@ class PlannerGui(QtGui.QMainWindow):
         self.main_hbox_layout = QtGui.QHBoxLayout()
 
         self.last_status = "Last Status: "
-        self.initUI(25)
+        self.init_ui(25)
+        self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
+        self.can_execute_trajectory = False
+        main_logger_name = "Trajectory_Planner"
+        self.logger = logging.getLogger(main_logger_name)
+        self.setup_logger(main_logger_name, verbose, file_log)
 
-    def initUI(self, val):
+    def setup_logger(self, main_logger_name, verbose=False, log_file=False):
+
+        # creating a formatter
+        formatter = logging.Formatter('-%(asctime)s - %(name)s - %(levelname)-8s: %(message)s')
+
+        # create console handler with a debug log level
+        log_console_handler = logging.StreamHandler()
+        if log_file:
+            # create file handler which logs info messages
+            logger_file_handler = logging.FileHandler(main_logger_name + '.log', 'w', 'utf-8')
+            logger_file_handler.setLevel(logging.INFO)
+            # setting handler format
+            logger_file_handler.setFormatter(formatter)
+            # add the file logging handlers to the logger
+            self.logger.addHandler(logger_file_handler)
+
+        if verbose == "WARN":
+            self.logger.setLevel(logging.WARN)
+            log_console_handler.setLevel(logging.WARN)
+
+        elif verbose == "INFO" or verbose is True:
+            self.logger.setLevel(logging.INFO)
+            log_console_handler.setLevel(logging.INFO)
+
+        elif verbose == "DEBUG":
+            self.logger.setLevel(logging.DEBUG)
+            log_console_handler.setLevel(logging.DEBUG)
+
+        # setting console handler format
+        log_console_handler.setFormatter(formatter)
+        # add the handlers to the logger
+        self.logger.addHandler(log_console_handler)
+
+    def init_ui(self, val):
 
         self.main_widget.setLayout(self.main_layout)
         self.main_layout.addLayout(self.main_hbox_layout)
@@ -80,7 +121,6 @@ class PlannerGui(QtGui.QMainWindow):
         max_sqp_config = 100
         min_robot_config = 3
         max_robot_config = 60
-
 
         for key, value in self.sqp_config.items():
             self.sqp_labels[key] = QtGui.QLabel(key)
@@ -120,7 +160,7 @@ class PlannerGui(QtGui.QMainWindow):
 
         for key in self.robot_config:
             # print key, value
-            if key != "config_params":
+            if key != "config_params" and key != "urdf":
                 self.robot_config_combo_box[key] = QtGui.QComboBox(self)
                 self.robot_config_combo_box[key].addItem("Select")
                 self.robot_config_form.addRow(key, self.robot_config_combo_box[key])
@@ -131,14 +171,17 @@ class PlannerGui(QtGui.QMainWindow):
                     # self.selected_robot_combo_value[key] = value1
                     # print " key1, value1",  key1, value1
 
-            else:
+            if key == "config_params":
                 for key1, value1 in self.robot_config[key].items():
-                    # print " key1, value1",  key1, value1
+                    print " key1, value1", key1, value1
                     self.robot_config_params_spin_box[key1] = QtGui.QDoubleSpinBox(self)
                     self.robot_config_form.addRow(key1, self.robot_config_params_spin_box[key1])
-                    self.robot_config_params_spin_box[key1].setValue(float(value1))
-                    self.robot_config_params_spin_box[key1].valueChanged.connect(functools.partial(self.on_robot_spin_box_value_changed, key1))
-                    self.robot_config_params_spin_box[key1].setRange(min_robot_config, max_robot_config)
+                    self.robot_config_params_spin_box[key1].setValue(float(value1["value"]))
+                    self.robot_config_params_spin_box[key1].valueChanged.connect(
+                        functools.partial(self.on_robot_spin_box_value_changed, key1))
+                    self.robot_config_params_spin_box[key1].setRange(value1["min"], value1["max"])
+                    self.robot_config_params_spin_box[key1].setSingleStep(value1["step"])
+
                     # self.selected_robot_spin_value[key] = value1
 
         self.robot_action_button_hbox.addStretch(1)
@@ -194,28 +237,57 @@ class PlannerGui(QtGui.QMainWindow):
             group = self.selected_robot_combo_value["joints_groups"]
         if "joint_configurations" in self.selected_robot_combo_value:
             goal_state = self.selected_robot_combo_value["joint_configurations"]
-            if key == "plan":
-                if samples is not None and duration is not None \
-                        and group is not None and goal_state is not None and self.sqp_config is not None:
-                    status = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples, duration=duration,
-                                               solver_config=self.sqp_config)
+
+        if group is not None and goal_state is not None:
+            if samples is not None and duration is not None and self.sqp_config is not None:
+                if key == "plan" or key == "plan_and_execute":
+                    self.statusBar.clearMessage()
+                    status = "Please wait, trajectory is being planned... Then trajectory will be executed.."
                     self.statusBar.showMessage(self.last_status + status)
+                    status = self.initiate_plan_trajectory(group, goal_state, samples, duration)
+                    self.statusBar.clearMessage()
+                    self.statusBar.showMessage(self.last_status + status)
+                if key == "plan_and_execute" or key == "execute":
+                    if self.can_execute_trajectory:
+                        self.statusBar.clearMessage()
+                        status = "Please wait, trajectory is being executed.."
+                        self.statusBar.showMessage(self.last_status + status)
+                        status = self.sim_world.execute_trajectory()
+                        self.statusBar.clearMessage()
+                        self.statusBar.showMessage(self.last_status + status)
+                    else:
+                        self.statusBar.clearMessage()
+                        status = "First plan the trajectory to execute.."
+                        self.statusBar.showMessage(self.last_status + status)
+        else:
+            self.statusBar.clearMessage()
+            status = "Please select the planning group and joint configuration.."
+            self.statusBar.showMessage(self.last_status + status)
 
         if key == "random_pose":
+            self.statusBar.clearMessage()
+            status = "Please wait, random pose for the joints are being set.."
+            self.statusBar.showMessage(self.last_status + status)
             if group is not None:
-                status = self.sim_world.reset_joint_states(group, motor_dir=np.random.rand(1, 7).flatten())
+                status = self.sim_world.reset_joint_states(group, motor_dir=np.random.rand(1, len(group)).flatten())
+                self.statusBar.showMessage(self.last_status + status)
+            else:
+                self.statusBar.clearMessage()
+                status = "Please select the planning group.."
                 self.statusBar.showMessage(self.last_status + status)
 
-        if key == "execute":
-            status = self.sim_world.execute_trajectory()
-            self.statusBar.showMessage(self.last_status + status)
-        if key == "plan_and_execute":
-            if samples is not None and duration is not None \
-                    and group is not None and goal_state is not None and self.sqp_config is not None:
-                status = self.sim_world.plan_and_execute_trajectory(group=group, goal_state=goal_state, samples=samples,
-                                                        duration=duration,
-                                                        solver_config=self.sqp_config)
-                self.statusBar.showMessage(self.last_status + status)
+    def initiate_plan_trajectory(self, group, goal_state, samples, duration):
+        can_execute_trajectory = False
+        if samples is not None and duration is not None \
+                and group is not None and goal_state is not None and self.sqp_config is not None:
+            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state,
+                                                                                 samples=samples,
+                                                                                 duration=duration,
+                                                                                 solver_config=self.sqp_config)
+        else:
+            status = "Please select the planning group and joint configuration.."
+
+        return status
 
     def on_sqp_spin_box_value_changed(self, key, value):
         # print (key, value)
@@ -232,4 +304,4 @@ class PlannerGui(QtGui.QMainWindow):
         if key != "Select":
             # print self.robot_config_combo_box[combo_box_key][self.robot_config_combo_box[combo_box_key].currentText()]
             self.selected_robot_combo_value[str(combo_box_key)] = self.robot_config[combo_box_key][str(key)]
-        # print self.selected_robot_combo_value
+            # print self.selected_robot_combo_value

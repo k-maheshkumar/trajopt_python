@@ -11,6 +11,7 @@ class Trajectory:
         self.__initial = None
         self.__trajectories = []
         self.__final = None
+        self.__trajectory_group = None
 
     def get_single_joint_trajectory(self, joint_index):
         if joint_index == self.__trajectory.shape[0]:
@@ -41,10 +42,11 @@ class Trajectory:
     def trajectory_by_name(self):
         return self.__trajectory_by_joint_name
 
-    def init(self, trajectory, no_of_samples, duration):
+    def init(self, trajectory, no_of_samples, duration, group):
         self.__no_of_samples = no_of_samples
         self.__duration = duration
         self.__initial = np.array(trajectory)
+        self.__trajectory_group = group
 
     def update(self, trajectory, group):
         self.__final = trajectory
@@ -52,6 +54,13 @@ class Trajectory:
 
     def extract_trajectory_of_individual_joints(self, group):
         self.__trajectory_by_joint_name = dict(zip(group, np.array(self.final).T))
+
+    def add_trajectory(self, trajectory):
+        self.__trajectories.append(trajectory)
+
+    # def get_trajectory_by_name(self, trajectory):
+    #     self.add_trajectory(trajectory)
+
 
 
 

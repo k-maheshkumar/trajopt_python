@@ -164,9 +164,14 @@ class SQPsolver:
 
         return objective
 
-    def solve_problem(self, x_k, penalizer, p, delta):
+    def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
-        constraints = [cvxpy.norm(p, "inf") <= delta]
+        if constraints is not None:
+            print lower_limit, constraints.shape
+            constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= constraints * p]
+            # constraints = [cvxpy.norm(p, "inf") <= delta]
+        else:
+            constraints = [cvxpy.norm(p, "inf") <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
         result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
         return p.value, model_objective, actual_objective, problem.status
@@ -234,6 +239,7 @@ class SQPsolver:
 
         rho_k = 0
         inter_status = "-1"
+        p_k = None
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value, trust_box_size
             self.logger.debug("penalty " + str(penalty.value))
@@ -244,9 +250,24 @@ class SQPsolver:
                 self.logger.debug("iteration_count " + str(iteration_count))
                 # print "iteration_count", iteration_count, trust_box_size
                 while trust_box_size >= min_trust_box_size:
-                    p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
+                    if callback_function is not None:
+                        constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
+                        if constraints is not None and lower_limit is not None and upper_limit is not None:
+                            p_k, model_objective_at_p_k, \
+                            actual_objective_at_x_k, solver_status = self.solve_problem(x_k, penalty, p, trust_box_size,
+                                                                                        constraints, lower_limit,
+                                                                                        upper_limit)
+                        else:
+                            is_converged = True
+                            inter_status = "dynamic constrained satisfied "
+                            self.logger.info(inter_status)
+
+                            self.status = "Solved"
+                            break
+                    else:
+                        p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
                                                                                                              penalty, p,
-                                                                                                             trust_box_size)
+                                                                                                             trust_box_size,)
 
                     actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty)
                     model_objective_at_p_0 = self.get_actual_objective(p_0, penalty)
@@ -256,8 +277,7 @@ class SQPsolver:
 
                     rho_k = actual_reduction / predicted_reduction
                     x_k += p_k
-                    if callback_function is not None:
-                        callback_function(x_k, p_k)
+
 
                     self.logger.debug("\n x_k " + str(x_k))
                     self.logger.debug("\n rho_k " + str(rho_k))

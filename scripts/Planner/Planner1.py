@@ -37,6 +37,8 @@ class TrajectoryOptimizationPlanner:
         self.max_no_of_Iteration = -1
         self.max_no_of_Iteration = -1
         self.decimals_to_round = 5
+        self.lower_safe_distance_threshold = 0.5
+        self.upper_safe_distance_threshold = 2
         self.solver_class = 0
 
         self.solver_config = None
@@ -45,6 +47,7 @@ class TrajectoryOptimizationPlanner:
         # self.sqp_solver = SQPsolver.SQPsolver()
         self.sqp_solver1 = None
         self.sqp_solver = None
+        self.planner_group = None
 
         self.verbose = False
         self.logger = logging.getLogger("Trajectory_Planner."+__name__)
@@ -95,6 +98,12 @@ class TrajectoryOptimizationPlanner:
                     self.delta_max = self.problem["max_delta"]
                 else:
                     self.delta_max = 5
+                if "lower_safe_distance_threshold" in self.problem:
+                    self.lower_safe_distance_threshold = self.problem["lower_safe_distance_threshold"]
+                if "upper_safe_distance_threshold" in self.problem:
+                    self.upper_safe_distance_threshold = self.problem["upper_safe_distance_threshold"]
+                if "joint_group" in self.problem:
+                    self.planner_group = self.problem["joint_group"]
 
             if "joints" in kwargs:
                 self.joints = kwargs["joints"]
@@ -116,6 +125,11 @@ class TrajectoryOptimizationPlanner:
             else:
                 self.decimals_to_round = 5
 
+            if "lower_safe_distance_threshold" in kwargs:
+                self.lower_safe_distance_threshold = float(kwargs["lower_safe_distance_threshold"])
+            if "upper_safe_distance_threshold" in self.problem:
+                self.upper_safe_distance_threshold = float(kwargs["upper_safe_distance_threshold"])
+
             if "solver_class" in kwargs:
                 self.solver_class = kwargs["solver_class"]
 
@@ -128,13 +142,15 @@ class TrajectoryOptimizationPlanner:
                 self.sqp_solver = SQPproblem.SQPProblem()
 
             self.problem = model.ProblemModelling()
-            self.problem.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round)
+            self.problem.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
+                              self.lower_safe_distance_threshold, self.upper_safe_distance_threshold)
             self.sqp_solver.init(P=self.problem.cost_matrix_P, q=self.problem.cost_matrix_q,
                                  G=self.problem.robot_constraints_matrix,
                                  lbG=self.problem.constraints_lower_limits, ubG=self.problem.constraints_upper_limits,
                                  A=self.problem.start_and_goal_matrix, b=self.problem.start_and_goal_limits,
                                  initial_guess=self.problem.initial_guess, solver_config=self.solver_config)
-            self.trajectory.init(np.array((np.split(self.problem.initial_guess, self.no_of_samples))), self.problem.samples, self.problem.duration)
+            self.trajectory.init(np.array((np.split(self.problem.initial_guess, self.no_of_samples)))
+                                 , self.problem.samples, self.problem.duration, self.planner_group)
             # self.trajectory.init(np.array(self.problem.initial_guess), self.problem.samples, self.problem.duration)
 
 

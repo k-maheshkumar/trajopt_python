@@ -15,14 +15,14 @@ class SimulationWorld():
 
         if urdf_file is None:
             main_logger_name = "Trajectory_Planner"
-            # verbose = "DEBUG"
-            verbose = False
+            verbose = "DEBUG"
+            # verbose = False
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
             self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
-        # self.gui = sim.connect(sim.GUI)
+        self.gui = sim.connect(sim.GUI)
         self.gui = sim.connect(sim.DIRECT)
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 0)
         home = os.path.expanduser('~')
@@ -45,6 +45,12 @@ class SimulationWorld():
                                                    position=[0, 0, 0.0])
 
         self.robot_id = self.place_items_from_urdf(urdf_file, position=[0, 0.25, 0.6])
+
+        self.planning_group = []
+        self.planning_samples = 0
+        self.lower_collision_limit = 0.5
+        self.upper_collision_limit = 2
+        self.collision_check_distance = 0.2
 
         self.end_effector_index = 6
         use_real_time_simulation = 0
@@ -178,7 +184,7 @@ class SimulationWorld():
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
                 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
                 duration = 20
-                samples = 5
+                samples = 20
                 full_arm = group1 + group2
                 # full_arm = group1_test
                 lower_d_safe = 2
@@ -188,26 +194,29 @@ class SimulationWorld():
                 time.sleep(1)
                 distance = 0.2
                 self.plan_trajectory(goal_state.keys(), goal_state, samples, duration, lower_d_safe, upper_d_safe, collision_check_distance=distance)
-                # self.execute_trajectory(full_arm)
-                import sys
-                sys.exit()
+                self.execute_trajectory(full_arm)
+                # import sys
+                # sys.exit()
 
-    def get_collision_infos(self, initial_trajectory, group, lower_d_safe_limit, upper_d_safe_limit, distance=0.20):
+    def get_collision_infos(self, initial_trajectory, group, lower_d_safe_limit, upper_d_safe_limit, distance=0.20,
+                                     collision_safe_threshold=0.4):
 
         # print initial_trajectory
-        self.formulate_collision_infos(initial_trajectory, group, distance)
+        initial_signed_distance, normal, \
+        jacobian = self.formulate_collision_infos(initial_trajectory, group, distance)
 
+        return initial_signed_distance, normal, jacobian
 
-    def formulate_collision_infos(self, trajectory, group, distance=0.2):
+    def formulate_collision_infos(self, trajectory, group, distance=0.2,):
         normal = []
         initial_signed_distance = []
         closest_pts = []
         jacobian = []
-        normal_times_jacobian = []
-        signed_distance = []
-        collision_matrix = []
 
+        jacobian_matrix = []
+        start_state = self.get_current_states_for_given_joints(group)
         for time_step_of_trajectory, delta_trajectory in zip(trajectory, trajectory):
+
             time_step_of_trajectory = time_step_of_trajectory.reshape((time_step_of_trajectory.shape[0], 1))
             self.reset_joint_states_to(time_step_of_trajectory, group)
             robot_link_state = self.get_joint_states(group)[0]
@@ -225,31 +234,44 @@ class SimulationWorld():
                     jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, closest_points[0][5],
                                                          robot_link_state,
                                                          zero_vec, zero_vec)
-                    collision_matrix.append(np.asarray(jac_t))
+                    jacobian_matrix.append(np.asarray(jac_t))
                     jacobian.append(np.asarray(jac_t))
                     normal.append(np.asarray(closest_points[0][7]).reshape(3, 1))
                 else:
-                    collision_matrix.append(np.zeros((3, len(group))))
+                    jacobian_matrix.append(np.zeros((3, len(group))))
+            else:
+                jacobian_matrix.append(np.zeros((3, len(group))))
 
+        #
+        #         # jacobian = np.asarray(jac_t)
+        #         # normal = np.asarray(closest_points[0][7]).reshape(3, 1)
+        #
+        #         # normal_times_jacobian.append(np.matmul(np.asarray(normal).T, np.asarray(jacobian)))
+        #
+        #         # print np.asarray(jacobian).shape
+        if len(jacobian) > 0:
+            jacobian = np.hstack(np.asarray(jacobian))
 
-                # jacobian = np.asarray(jac_t)
-                # normal = np.asarray(closest_points[0][7]).reshape(3, 1)
+        if len(normal) > 0:
+            normal = np.hstack(np.asarray(normal))
 
-                # normal_times_jacobian.append(np.matmul(np.asarray(normal).T, np.asarray(jacobian)))
+        if len(initial_signed_distance) > 0:
+            initial_signed_distance = np.hstack(np.asarray(initial_signed_distance))
 
-                # print np.asarray(jacobian).shape
-        jacobian = np.hstack(np.asarray(jacobian))
-        normal = np.hstack(np.asarray(normal))
-        initial_signed_distance = np.hstack(np.asarray(initial_signed_distance))
-        collision_matrix = np.hstack(np.asarray(collision_matrix))
-        print "jacobian", jacobian
-        print "normal", normal.shape
-        print "initial_signed_distance", initial_signed_distance.shape
-        print "initial", time_step_of_trajectory.shape
-        print "initial_trajectory", np.asarray(trajectory.flatten()).shape
-        print "collision matrix", collision_matrix.shape
-        print "collision matrix", collision_matrix
+        if len(jacobian_matrix) > 0:
+            jacobian_matrix = np.hstack(jacobian_matrix)
+        # print "jacobian", jacobian.shape
+        # print "normal", normal.shape
+        # print "initial_signed_distance", initial_signed_distance.shape
+        # print "initial", time_step_of_trajectory.shape
+        # print "initial_trajectory", np.asarray(trajectory.flatten()).shape
+        # print "collision matrix", jacobian_matrix.shape
+        # print "collision matrix", jacobian_matrix
+        self.reset_joint_states(start_state, group)
 
+        return initial_signed_distance, normal, jacobian_matrix
+        # for i in jacobian_matrix:
+        #     print i
         #
         #
         # jacobian = np.vstack(jacobian)
@@ -331,12 +353,32 @@ class SimulationWorld():
             # print self.collision_constraints
 
     def update_collsion_infos(self, new_trajectory, delta_trajectory):
-        print "param: ", delta_trajectory
+        import copy
+        self.robot.planner.trajectory.add_trajectory(new_trajectory)
+        trajectory = np.split(new_trajectory, self.planning_samples)
+        collision_infos = self.get_collision_infos(trajectory, self.planning_group,
+                                                   self.lower_collision_limit,
+                                                   self.upper_collision_limit, distance=self.collision_check_distance,
+                                                   collision_safe_threshold=0.4)
+
+        constraints, lower_limit, upper_limit = self.robot.planner.problem.update_collision_infos(collision_infos)
+        # initial_signed_distance = collision_infos[0]
+        # normal = collision_infos[1]
+        # jacobian = collision_infos[2]
+        # normal_times_jacobian = np.matmul(normal.T, jacobian)
+        # lower_limit =
+
+        return constraints, lower_limit, upper_limit
+
 
     def plan_trajectory(self, group, goal_state, samples, duration, lower_collision_limit=None,
                         upper_collision_limit=None, solver_config=None, collision_check_distance=0.2):
         self.collision_constraints = {}
-
+        self.planning_group = group
+        self.planning_samples = samples
+        self.lower_collision_limit = lower_collision_limit
+        self.upper_collision_limit = upper_collision_limit
+        self.collision_check_distance = collision_check_distance
         # if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
             # self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
         #
@@ -361,13 +403,16 @@ class SimulationWorld():
                                         duration=int(duration),
                                         # collision_constraints=self.collision_constraints,
                                         solver_config=solver_config)
-        self.get_collision_infos(self.robot.get_trajectory().initial, group, lower_collision_limit,
-                                 upper_collision_limit, distance=collision_check_distance)
+        # collision_infos = self.get_collision_infos(self.robot.get_trajectory().initial, group, lower_collision_limit,
+        #                          upper_collision_limit, distance=collision_check_distance,
+        #                              collision_safe_threshold=0.4)
 
-        # status, can_execute_trajectory = self.robot.calulate_trajecotory(self.update_collsion_infos) # callback function
+        # self.robot.planner.problem.update_collision_infos(collision_infos)
+
+        status, can_execute_trajectory = self.robot.calulate_trajecotory(self.update_collsion_infos) # callback function
         # status, can_execute_trajectory = self.robot.calulate_trajecotory(None)
 
-        # return status, can_execute_trajectory
+        return status, can_execute_trajectory
 
     def get_current_states_for_given_joints(self, joints):
         current_state = {}
@@ -378,6 +423,8 @@ class SimulationWorld():
 
     def execute_trajectory(self, group):
         trajectories = self.robot.get_trajectory()
+        sleep_time = trajectories.duration / float(trajectories.no_of_samples)
+
         for i in range(int(trajectories.no_of_samples)):
             for joint_name, corresponding_trajectory in trajectories.trajectory_by_name.items():
                 sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[joint_name],
@@ -390,7 +437,9 @@ class SimulationWorld():
                                           )
                 # self.get_contact_points()
             # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
-            time.sleep(trajectories.duration / float(trajectories.no_of_samples))
+            # sim.stepSimulation()
+            self.step_simulation_for(sleep_time)
+            # time.sleep(sleep_time)
             # sim.stepSimulation()
         # print trajectories.trajectory
         # for traj in trajectories.trajectory:

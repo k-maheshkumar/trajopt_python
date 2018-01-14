@@ -116,7 +116,7 @@ class Robot:
                         # request["joints"] = joints
                         # np.savez("problem_with_collision_constraints", request)
         if len(joints):
-            self.planner.init(joints=joints, samples=samples, duration=duration,
+            self.planner.init(joints=joints, samples=samples, duration=duration, joint_group=joint_group,
                               solver=solver, solver_config=solver_config, solver_class=1,
                               decimals_to_round=decimals_to_round, verbose=True)
 

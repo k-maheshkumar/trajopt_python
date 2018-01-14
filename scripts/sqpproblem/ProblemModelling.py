@@ -24,6 +24,8 @@ class ProblemModelling:
         self.velocity_upper_limits = []
         self.initial_guess = []
         self.collision_constraints = None
+        self.lower_safe_distance_threshold = 0.5
+        self.upper_safe_distance_threshold = 2
 
         main_logger_name = "Trajectory_Planner"
         # verbose = "DEBUG"
@@ -31,17 +33,19 @@ class ProblemModelling:
         self.logger = logging.getLogger(main_logger_name)
         self.setup_logger(main_logger_name, verbose)
 
-    def init(self, joints, no_of_samples, duration, decimals_to_round=5):
+    def init(self, joints, no_of_samples, duration, decimals_to_round=5, lower_safe_distance_threshold=0.5, upper_safe_distance_threshold=2):
         self.samples = no_of_samples
         self.duration = duration
         self.no_of_joints = len(joints)
         self.joints = joints
         self.decimals_to_round = decimals_to_round
+        self.lower_safe_distance_threshold = lower_safe_distance_threshold
+        self.upper_safe_distance_threshold = upper_safe_distance_threshold
         if "collision_constraints" in self.joints:
             self.collision_constraints = self.joints["collision_constraints"]
         self.fill_cost_matrix()
         # self.fill_velocity_matrix()
-        self.fill_constraints()
+        self.fill_robot_constraints_matrix()
         self.fill_start_and_goal_matrix()
         self.fill_velocity_limits()
 
@@ -160,6 +164,35 @@ class ProblemModelling:
         self.initial_guess = (np.asarray(self.initial_guess).T).flatten()
         # print self.initial_guess
 
+    def update_collision_infos(self, collision_infos):
+        normal_times_jacobian, lower_collision_limit, upper_collision_limit = None, None, None
+        if collision_infos is not None:
+            if len(collision_infos) > 0:
+                initial_signed_distance = collision_infos[0]
+                normal = collision_infos[1]
+                jacobian = collision_infos[2]
+                if len(initial_signed_distance) > 0 and len(normal) > 0 and len(jacobian) > 0:
+                    normal_times_jacobian = np.matmul(normal.T, jacobian)
+                    # print self.robot_constraints_matrix.shape
+                    # self.robot_constraints_matrix = np.vstack([self.robot_constraints_matrix, normal_times_jacobian])
+
+                    np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
+                    lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.lower_safe_distance_threshold) - initial_signed_distance
+                    upper_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
+                    lower_collision_limit = lower_collision_limit.flatten()
+                    upper_collision_limit = upper_collision_limit.flatten()
+
+                    # self.constraints_lower_limits = np.hstack([self.constraints_lower_limits, lower_collision_limit])
+                    # self.constraints_upper_limits = np.hstack([self.constraints_upper_limits, upper_collision_limit])
+                    #
+                    # print self.robot_constraints_matrix.shape
+                    # print self.constraints_lower_limits.shape
+                    # print self.constraints_upper_limits.shape
+                    # lower_collision_limit = np.vstack([lower_collision_limit])
+                    # upper_collision_limit = np.vstack([upper_collision_limit])
+
+        return normal_times_jacobian, lower_collision_limit, upper_collision_limit
+
     def get_collision_matrix(self):
         collision_matrix = []
 
@@ -213,7 +246,7 @@ class ProblemModelling:
         joints_matrix = np.eye(self.samples * self.no_of_joints)
         return joints_matrix
 
-    def fill_constraints(self):
+    def fill_robot_constraints_matrix(self):
         self.velocity_matrix = self.get_velocity_matrix()
         self.joints_matrix = self.get_joints_matrix()
         # self.constraints_matrix = np.vstack([self.velocity_matrix, self.joints_matrix])

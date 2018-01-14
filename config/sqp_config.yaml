@@ -2,7 +2,7 @@ sqp:
   const_violation_tolerance: 0.01
   decimals_to_round: 3.0
   improve_ratio_threshold: 0.25
-  initial_penalty: 10
+  initial_penalty: 1
   max_iteration: 20
   max_penalty: 1e6
   max_trust_box_size: 10

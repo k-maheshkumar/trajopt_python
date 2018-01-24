@@ -106,6 +106,19 @@ class Problem:
         objective += penalty * (constraints1 + constraints2 + constraints3)
         return objective
 
+    def get_actual_objective_for_p(self, pk, penalty, delta, constraint=None, limit=None):
+        p = cvxpy.Variable(self.P.shape[0])
+        p.value = copy.copy(pk)
+        objective = 0.5 * cvxpy.quad_form(p, self.P) + self.q * p
+        constraints1 = cvxpy.norm1(np.linalg.norm(p, np.inf) - delta)
+        if constraint is not None:
+            constraints2 = cvxpy.norm1(-constraint * p + limit)
+            objective += penalty * (constraints1 + constraints2)
+        else:
+            objective += penalty * constraints1
+
+        return objective
+
 
     def sovle_problem(self, xk, penalizer, p, delta):
         model_objective, actual_objective = self.get_model_objective(xk, penalizer, p)

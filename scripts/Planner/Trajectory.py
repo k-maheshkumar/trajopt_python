@@ -21,6 +21,9 @@ class Trajectory:
     @property
     def trajectory(self):
         return self.__trajectory
+    @property
+    def trajectories(self):
+        return self.__trajectories
 
     @property
     def initial(self):
@@ -41,6 +44,9 @@ class Trajectory:
     @property
     def trajectory_by_name(self):
         return self.__trajectory_by_joint_name
+    @property
+    def trajectory_group(self):
+        return self.__trajectory_by_joint_name
 
     def init(self, trajectory, no_of_samples, duration, group):
         self.__no_of_samples = no_of_samples
@@ -49,6 +55,7 @@ class Trajectory:
         self.__trajectory_group = group
 
     def update(self, trajectory, group):
+        self.__trajectory = trajectory
         self.__final = trajectory
         self.extract_trajectory_of_individual_joints(group)
 
@@ -56,7 +63,7 @@ class Trajectory:
         self.__trajectory_by_joint_name = dict(zip(group, np.array(self.final).T))
 
     def add_trajectory(self, trajectory):
-        self.__trajectories.append(trajectory)
+        self.__trajectories.append(dict(zip(self.trajectory_group, np.array(trajectory).T)))
 
     # def get_trajectory_by_name(self, trajectory):
     #     self.add_trajectory(trajectory)

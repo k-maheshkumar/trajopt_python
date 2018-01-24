@@ -1,12 +1,13 @@
-import numpy as np
-from scripts.sqpproblem import SQPproblem
-from scripts.sqpproblem import SQPsolver
-
-import Trajectory
-from scripts.sqpproblem import ProblemBuilder as sqp
 import logging
 import time
+
+import numpy as np
+
+import Trajectory
 import scripts.sqpproblem.ProblemModelling as model
+from scripts.sqp_solver import SQPsolver
+from scripts.sqpproblem import SQPproblem
+
 
 class TrajectoryOptimizationPlanner:
 

@@ -5,20 +5,21 @@ sqp:
   initial_penalty: 1
   max_iteration: 20
   max_penalty: 1e6
-  max_trust_box_size: 10
-  max_trust_region_size: 15
+  max_trust_region_size: 5
   min_actual_redution: 1e-2
   min_actual_worse_redution: -100
   min_equality_norm: 1e-2
   min_improve_ratio: 0.001
   min_model_improve: 1e-4
-  min_trust_box_size: 1e-4
+  min_trust_region_size: 1e-4
   min_x_redution: 1e-3
   solver:
+  - ECOS
   - SCS
   - ECOS_BB
-  - ECOS
+  - CVXOPT
   trust_expand_ratio: 2.0
+  trust_bad_region_ratio: 0.25
   trust_good_region_ratio: 0.75
-  trust_region_size: 2.0
+  trust_region_size: 0.2
   trust_shrink_ratio: 0.25

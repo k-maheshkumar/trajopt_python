@@ -1,4 +1,9 @@
 **/.idea/*
 **/*.*~
 **/*.pyc
-
+*/*/*LOCAL*
+*/*/*BASE*
+*/*/*BACKUP*
+*.orig
+*/*/*bak*
+*/*/*back*

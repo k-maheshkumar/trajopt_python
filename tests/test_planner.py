@@ -7,6 +7,7 @@ import yaml
 import numpy as np
 
 from scripts.Planner import Planner as planner
+from scripts.cvxpy_optimizer.solver_cvxpy import ConvexOptimizer
 from collections import defaultdict
 import cvxpy
 import random
@@ -26,14 +27,13 @@ class Test_sqp_solver(unittest.TestCase):
         with open("problem.yaml", 'r') as config:
             cls.problem = edict(yaml.load(config))
         cls.planner = planner.TrajectoryOptimizationPlanner()
+        cls.cvx_optimizer = ConvexOptimizer()
 
-        # np.random.seed(0)
+        np.random.seed(0)
         length = 1
         cls.samples = np.random.random_integers(20, 30, size=(1, length)).flatten()
         cls.durations = np.random.random_integers(5, 20, size=(1, length)).flatten()
         joints_random = np.random.random_integers(7, 20, size=(1, length)).flatten()
-        # print samples
-        # print durations
         cls.joints = []
 
         for i in range(len(joints_random)):
@@ -84,7 +84,8 @@ class Test_sqp_solver(unittest.TestCase):
         pass
         # print joints["10"].states
         for sample, duration, joints in itertools.izip(self.samples, self.durations, self.joints):
-            actual_result = self.get_actual_result(joints, sample, duration)
+            self.cvx_optimizer.init(joints, sample, duration)
+            actual_result = self.cvx_optimizer.solve()
             self.planner.init(joints=joints, samples=sample, duration=duration,
                            solver=None, solver_config=None, solver_class=1,
                            decimals_to_round=7, verbose=False)

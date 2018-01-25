@@ -97,7 +97,8 @@ class ProblemModelling:
         self.start_and_goal_matrix[i == j] = [1] * self.no_of_joints + [0] * self.no_of_joints
         self.start_and_goal_matrix[i == j - (shape - 2* self.no_of_joints) ] = [0] * self.no_of_joints + [1] * self.no_of_joints
 
-        self.start_and_goal_matrix = np.vstack([self.start_and_goal_matrix, self.start_and_goal_matrix])
+        self.start_and_goal_matrix = np.vstack([self.start_and_goal_matrix, self.start_and_goal_matrix,
+                                                self.start_and_goal_matrix])
 
     def fill_velocity_matrix(self):
 
@@ -128,20 +129,7 @@ class ProblemModelling:
 
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)
-            # print "min_vel", min_vel
-            # print "max_vel", max_vel
 
-            min_vel_ = min(min_vel * self.duration / float(self.samples - 1), 2 * joint_lower_limit)
-            max_vel_ = max(max_vel * self.duration / float(self.samples - 1), 2 * joint_upper_limit)
-
-            min_vel = min_vel_ if min_vel_ < min_vel else min_vel
-            max_vel = max_vel_ if max_vel_ > max_vel else max_vel
-
-            # min_vel = min_vel if min_vel < joint_lower_limit else joint_lower_limit * 2
-            # max_vel = max_vel if max_vel > joint_upper_limit else joint_upper_limit * 2
-            #
-            # print "min_vel", min_vel
-            # print "max_vel", max_vel
 
             self.velocity_lower_limits.append(np.full((1, self.samples - 1), min_vel))
             self.velocity_upper_limits.append(np.full((1, self.samples - 1), max_vel))
@@ -163,37 +151,15 @@ class ProblemModelling:
 
         self.start_and_goal_limits = np.hstack(
             [start_and_goal_lower_limits, start_and_goal_upper_limits, start_and_goal_lower_limits,
+             start_and_goal_upper_limits, start_and_goal_lower_limits,
              start_and_goal_upper_limits])
 
         self.constraints_lower_limits = np.hstack([self.velocity_lower_limits.flatten(),
-                                                   # self.velocity_lower_limits.flatten(),
-                                                   # self.velocity_lower_limits.flatten(),
-                                                   # self.velocity_lower_limits.flatten(),
-                                                   # self.velocity_lower_limits.flatten(),
-                                                   # self.joints_lower_limits.flatten(),
-                                                   # self.joints_lower_limits.flatten(),
-                                                   # self.joints_lower_limits.flatten(),
-                                                   # self.joints_lower_limits.flatten(),
                                                    self.joints_lower_limits.flatten()])
         self.constraints_upper_limits = np.hstack([self.velocity_upper_limits.flatten(),
-                                                   # self.velocity_upper_limits.flatten(),
-                                                   # self.velocity_upper_limits.flatten(),
-                                                   # self.velocity_upper_limits.flatten(),
-                                                   # self.velocity_upper_limits.flatten(),
-                                                   # self.joints_upper_limits.flatten(),
-                                                   # self.joints_upper_limits.flatten(),
-                                                   # self.joints_upper_limits.flatten(),
-                                                   # self.joints_upper_limits.flatten(),
                                                    self.joints_upper_limits.flatten()])
-        # print self.constraints_lower_limits
-        # print self.constraints_upper_limits
-        # print np.full((1, self.samples - 2), 0).flatten()
-        # self.start_and_goal_limits = np.hstack(
-        #     [start_and_goal_lower_limits, np.full((1, (self.samples - 2) * self.no_of_joints), 0).flatten(),
-        #      start_and_goal_upper_limits])
 
         self.initial_guess = (np.asarray(self.initial_guess).T).flatten()
-        # print self.initial_guess
 
 
     def update_collision_infos1(self, collision_infos):
@@ -298,7 +264,7 @@ class ProblemModelling:
         velocity_matrix = np.zeros((self.no_of_joints * self.samples, self.samples * self.no_of_joints))
         np.fill_diagonal(velocity_matrix, -1.0)
         i, j = np.indices(velocity_matrix.shape)
-        velocity_matrix[i == j - self.no_of_joints] = -1.0
+        velocity_matrix[i == j - self.no_of_joints] = 1.0
 
         # to slice zero last row
         velocity_matrix.resize(velocity_matrix.shape[0] - self.no_of_joints, velocity_matrix.shape[1])
@@ -314,53 +280,9 @@ class ProblemModelling:
         self.joints_matrix = self.get_joints_matrix()
         # self.constraints_matrix = np.vstack([self.velocity_matrix, self.joints_matrix])
         self.robot_constraints_matrix.append(self.velocity_matrix)
-        # self.robot_constraints_matrix.append(self.velocity_matrix)
-        # self.robot_constraints_matrix.append(self.velocity_matrix)
-        # self.robot_constraints_matrix.append(self.velocity_matrix)
-        # self.robot_constraints_matrix.append(self.velocity_matrix)
-        # self.robot_constraints_matrix.append(self.joints_matrix)
-        # self.robot_constraints_matrix.append(self.joints_matrix)
-        # self.robot_constraints_matrix.append(self.joints_matrix)
-        # self.robot_constraints_matrix.append(self.joints_matrix)
         self.robot_constraints_matrix.append(self.joints_matrix)
         self.robot_constraints_matrix = np.vstack(self.robot_constraints_matrix)
 
-        collision_constraints = []
-        # # print self.joints["lbr_iiwa_joint_5"]["collision_constraints"]
-        # # if self.collision_constraints is not None:
-        # for joint_name, joint in self.joints.items():
-        #     # print joint_name, joint
-        #     # for constraints in joint.collision_constraints:
-        #         # print joint.collision_constraints.limits
-        #     if type(self.collision_constraints) is dict:
-        #         # lower_limit = self.collision_constraints["limits"]["lower"] - \
-        #         #               self.collision_constraints["initial_signed_distance"]
-        #         initial_signed_distance = joint["collision_constraints"]["initial_signed_distance"]
-        #         lower_limit = joint["collision_constraints"]["limits"]["lower"]
-        #         upper_limit = joint["collision_constraints"]["limits"]["upper"]
-        #         normal = joint["collision_constraints"]["normal"]
-        #         jacobian = joint["collision_constraints"]["jacobian"]
-        #         max_vel = self.joints[joint]["limit"]["velocity"]
-        #
-        #     else:
-        #         # lower_limit = self.collision_constraints.limits.lower - \
-        #         #               self.collision_constraints.initial_signed_distance
-        #         initial_signed_distance = joint.collision_constraints.initial_signed_distance
-        #         lower_limit = joint.collision_constraints.limits.lower
-        #         upper_limit = joint.collision_constraints.limits.upper
-        #         normal = joint.collision_constraints.normal
-        #         jacobian = joint.collision_constraints.jacobian
-        #         max_vel = joint.limit.velocity
-        #
-        #         if type(normal) is list or tuple:
-        #             normal = np.asarray(normal)
-        #         if type(jacobian) is list or tuple:
-        #             jacobian = np.asarray(jacobian)
-        #         normal_times_jacobian = np.matmul(normal.T, jacobian)
-        #
-        #         # print joint_name, normal_times_jacobian
-        #
-        # # collision_matrix = self.get_collision_matrix()
 
 
     def formulate_collision_constraints(self, initial_singed_distance, normal, jacbian, safe_distance):

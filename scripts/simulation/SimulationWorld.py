@@ -191,7 +191,7 @@ class SimulationWorld():
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
                 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
                 duration = 20
-                samples = 5
+                samples = 20
                 full_arm = group1 + group2
                 # full_arm = group1_test
                 upper_d_safe = 8
@@ -199,7 +199,7 @@ class SimulationWorld():
                 self.step_simulation_for(2)
                 # time.sleep(1)
                 check_distance = 0.2
-                lower_d_safe = 0.05
+                lower_d_safe = 0.1
 
 
                 self.plan_trajectory(goal_state.keys(), goal_state, samples, duration, lower_d_safe, upper_d_safe, collision_check_distance=check_distance)
@@ -257,8 +257,8 @@ class SimulationWorld():
                             # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, closest_points[0][5],
 
                             jac_t, jac_r = sim.calculateJacobian(self.robot_id, link_index,
-                                                                 # closest_points[0][5],
-                                                                 closest_point_on_link_in_link_frame,
+                                                                 closest_points[0][5],
+                                                                 # closest_point_on_link_in_link_frame,
                                                                  robot_joint_positions,
                                                                  zero_vec, zero_vec)
                             jaco1 = np.hstack(np.asarray([[[0]* len(group)]*3] * (time_step_count - 1)))

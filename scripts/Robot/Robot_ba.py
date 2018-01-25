@@ -1,6 +1,6 @@
 from urdf_parser_py.urdf import URDF
 # from scripts.Planner import Planner as planner
-from scripts.Planner import Planner1 as planner
+from scripts.Planner import Planner as planner
 import time
 from munch import *
 from scripts.utils import yaml_paser as yaml

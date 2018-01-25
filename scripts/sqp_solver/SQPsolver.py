@@ -188,16 +188,13 @@ class SQPsolver:
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         if constraints is not None:
-            # print lower_limit, constraints.shape, delta
+            print lower_limit, constraints.shape, delta
             constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= constraints * p]
             # constraints = [cvxpy.norm(p, "inf") <= delta]
         else:
             constraints = [cvxpy.norm(p, "inf") <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
-        if self.solver == "CVXOPT":
-            result = problem.solve(solver=self.solver, warm_start=True, kktsolver=cvxpy.ROBUST_KKTSOLVER, verbose=False)
-        else:
-            result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
+        result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
         return p.value, model_objective, actual_objective, problem.status
 
     def approx_equal(self, x, y, tolerance=0.001):
@@ -253,9 +250,11 @@ class SQPsolver:
 
         iteration_count = 0
         is_converged = False
+        is_objective_converged = False
         is_x_converged = False
-        is_function_converged = False
-        is_adjust_penalty = False
+        check_for_constraints = False
+
+        isAdjustPenalty = False
         old_rho_k = 0
         new_x_k = copy.copy(x_0)
 
@@ -280,11 +279,11 @@ class SQPsolver:
         dynamic_constraints_satisfied = False
 
         while penalty.value <= max_penalty:
-            print "penalty ", penalty.value
+            # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
             while iteration_count < max_iteration:
                 iteration_count += 1
-                print "iteration_count", iteration_count
+                # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 while trust_box_size >= min_trust_box_size:
                     if callback_function is not None:
@@ -292,22 +291,22 @@ class SQPsolver:
                         if constraints is not None and lower_limit is not None and upper_limit is not None:
                             dynamic_constraints_count = len(lower_limit)
                             if dynamic_constraints_count > last_dynamic_constraints_count:
-                                print "collision count increases. . . .. . ."
+                                # print "collision count increases. . . .. . ."
                                 # print x_k
-                                # x_k -= p_k
+                                x_k -= p_k
                                 # print x_k
-                                penalty.value *= trust_expand_ratio
+                                # penalty.value *= trust_expand_ratio
                                 # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
                                 trust_box_size = np.fmax(min_trust_box_size, np.linalg.norm(lower_limit, np.inf) * 3)
                                 # trust_box_size = np.fmin(trust_box_size * trust_expand_ratio, max_trust_box_size)
                                 # trust_box_size = np.fmin(trust_box_size * trust_shrink_ratio, max_trust_box_size)
-                                # print "delta: ", trust_box_size
-                            print constraints
+                            # print "delta: ", trust_box_size
+
                             last_dynamic_constraints_count = copy.copy(dynamic_constraints_count)
-                            # if trust_box_size < np.linalg.norm(lower_limit, np.inf):
-                            #     trust_box_size = np.fmin(np.linalg.norm(lower_limit, np.inf) * trust_expand_ratio,
-                            #                              max_trust_box_size)
-                            #     print "delta 1 .. .: ", trust_box_size
+                            if trust_box_size < np.linalg.norm(lower_limit, np.inf):
+                                trust_box_size = np.fmin(np.linalg.norm(lower_limit, np.inf) * trust_expand_ratio,
+                                                         max_trust_box_size)
+                                # print "delta 1 .. .: ", trust_box_size
                             start = time.time()
                             p_k, model_objective_at_p_k, \
                             actual_objective_at_x_k, solver_status = self.solve_problem(x_k, penalty, p, trust_box_size,
@@ -315,14 +314,14 @@ class SQPsolver:
                                                                                         upper_limit)
                             end = time.time()
 
-                            print "each solve_problem time: ", end - start
+                            # print "each solve_problem time: ", end - start
                         else:
                             dynamic_constraints_satisfied = True
                             inter_status = "dynamic constrained satisfied "
                             self.logger.info(inter_status)
 
                             self.status = "Solved"
-                            print "must check for constrains satisfaction .. . . ..  ."
+                            # print "must check for constrains satisfaction .. . . ..  ."
 
                             break
                     else:
@@ -333,8 +332,8 @@ class SQPsolver:
 
                     if p_k is None:
                         x_k -= last_p_k
-                    #     p.value = last_p_k
-                    #     p_k = last_p_k
+                        p.value = last_p_k
+                        p_k = last_p_k
                     if p_k is not None:
                         actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty)
                         model_objective_at_p_0 = self.get_model_objective(x_k, penalty, p_0)[0]
@@ -343,16 +342,17 @@ class SQPsolver:
                         predicted_reduction = model_objective_at_p_0.value - model_objective_at_p_k.value
 
                         if predicted_reduction == 0:
-                            # predicted_reduction = 0.0000001
-                            predicted_reduction = 0.001
+                            predicted_reduction = 0.0000001
                         rho_k = actual_reduction / predicted_reduction
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(rho_k))
-                        print "objective_at_x_plus_p_k", actual_objective_at_x_plus_p_k.value
-                        print "model_objective_at_x_plus_p_k", model_objective_at_p_0.value
-                        print "actual xk, xk1", actual_objective_at_x_plus_p_k.value, actual_objective_at_x_k.value
-                        print "model p0, pk",model_objective_at_p_0.value, model_objective_at_p_k.value
+                        # print x_k, rho_k
+
+                        # print "objective_at_x_plus_p_k", actual_objective_at_x_plus_p_k.value
+                        # print "model_objective_at_x_plus_p_k", model_objective_at_p_0.value
+                        # print "actual xk, xk1", actual_objective_at_x_plus_p_k.value, actual_objective_at_x_k.value
+                        # print "model p0, pk",model_objective_at_p_0.value, model_objective_at_p_k.value
 
                         if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                             self.logger.warn("Infeasible problem cannot be solved")
@@ -360,32 +360,25 @@ class SQPsolver:
                             is_converged = True
                             break
 
-
-
                         if rho_k >= trust_good_region_ratio:
                             trust_box_size = np.fmin(trust_box_size * trust_expand_ratio, max_trust_box_size)
                             self.logger.debug("expanding trust region" + str(trust_box_size))
-                            print "exapandin . .. . "
                             x_k += p_k
+                            # print "expanding . .. . .. "
                             new_x_k = copy.copy(x_k)
                             break
-                        else:
-                            if rho_k <= trust_bad_region_ratio:
-                                trust_box_size *= trust_shrink_ratio
-                                self.logger.debug("shrinking trust region " + str(trust_box_size))
-                                # x_k = copy.copy(new_x_k)
-                                x_k -= p_k
+                        elif rho_k <= trust_bad_region_ratio:
+                            trust_box_size *= trust_shrink_ratio
+                            self.logger.debug("shrinking trust region " + str(trust_box_size))
+                            # x_k = copy.copy(new_x_k)
+                            x_k -= p_k
 
-                        if self.is_x_converged(x_k, p_k, min_x_redution):
-                            inter_status = "reduction in x is very small"
-                            print "reduction in x is very small"
-
-                            self.logger.info(inter_status)
-                            self.status = "Solved"
-                            is_x_converged = True
+                        if trust_box_size < min_x_redution:
+                            check_for_constraints = True
                             break
-                        # else:
-                        #     is_converged = False
+
+
+
 
                         if old_trust_region == trust_box_size:
                             # print "incresing same trust region count . . .. . "
@@ -394,39 +387,48 @@ class SQPsolver:
                             # print "resetting trust region, since trust region size is same for last ",
                             #  same_trust_region_count, " iterations"
                             trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
-                            break
                         if old_rho_k == rho_k:
                             # print "rho_k are same"
-                            is_adjust_penalty = True
+                            isAdjustPenalty = True
                             break
 
                         # if trust_box_size < min_x_redution:
-                        #     is_adjust_penalty = True
+                        #     isAdjustPenalty = True
                         #     break
                         old_rho_k = rho_k
                         old_trust_region = copy.copy(trust_box_size)
                         last_p_k = p_k
 
-                # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
+                trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
 
-                print "halllooo"
-                if is_x_converged:
-                    print "yes x converged"
+
+                # else:
+                #     is_converged = False
+
+                if check_for_constraints:
                     break
 
                 if self.is_objective_function_converged(actual_reduction, min_actual_redution):
-                    is_function_converged = True
+                    is_objective_converged = True
                     inter_status = "actual reduction is very small"
-                    print "actual reduction is very small"
+                    # print "actual reduction is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"
                     break
                 # else:
                 #     is_converged = False
-                trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
+
+                if self.is_x_converged(x_k, p_k, min_x_redution):
+                    is_x_converged = True
+                    inter_status = "reduction in x is very small"
+                    # print "reduction in x is very small"
+                    self.logger.info(inter_status)
+                    self.status = "Solved"
+                    break
+
 
             if self.is_constraints_satisfied(x_k, const_violation_tolerance):
-                print "checking for constrains satisfaction .. . . ..  ."
+                # print "constrains satisfied .. . . ..  ."
                 if callback_function is not None:
                     if dynamic_constraints_satisfied:
                         is_converged = True
@@ -451,8 +453,11 @@ class SQPsolver:
                     self.status = "Solved"
                     break
             else:
-                print "constraints not satisfied . . . ."
                 is_converged = False
+                is_objective_converged = False
+                is_x_converged = False
+                check_for_constraints = False
+
             if is_converged:
                 break
             penalty.value *= 10

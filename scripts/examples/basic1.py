@@ -1,7 +1,7 @@
 import logging
 import json
 from easydict import EasyDict as edict
-from scripts.Planner.Planner1 import TrajectoryOptimizationPlanner
+from scripts.Planner.Planner import TrajectoryOptimizationPlanner
 import time
 
 class Example:

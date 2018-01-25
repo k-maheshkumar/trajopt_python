@@ -44,9 +44,6 @@ class TrajectoryOptimizationPlanner:
 
         self.solver_config = None
         self.trajectory = Trajectory.Trajectory()
-        # self.sqp_solver1 = SQPproblem.SQPProblem()
-        # self.sqp_solver = SQPsolver.SQPsolver()
-        self.sqp_solver1 = None
         self.sqp_solver = None
         self.planner_group = None
 
@@ -158,37 +155,13 @@ class TrajectoryOptimizationPlanner:
     def display_problem(self):
         self.sqp_solver.display_problem()
 
-    # def calculate_trajectory(self):
-    #     status, trajectory = self.sqp_solver1.solveSQP()
-    #
-    #     return
-    #     # print trajectory
-    #     # print problem.cost_matrix
-        # print problem.velocity_matrix
-
     def calculate_trajectory(self, initial_guess= None, callback_function=None):
         can_execute_trajectory = False
         self.logger.info("getting trajectory")
-        # if self.solver_class:
-        #     self.sqp_solver.init(self, self.solver, self.solver_config, self.verbose)
-        #     start = time.time()
-        #     self.solver_status, self.trajectory = self.sqp_solver.solveSQP(initial_guess)
-        #     end = time.time()
-        #
-        # else:
-        #     # self.sqp_solver1.init(self, self.solver, self.solver_config, self.verbose)
-        #     self.sqp_solver1.init(P=self.problem.cost_matrix_P, q=self.problem.cost_matrix_q, G=self.problem.constraints_matrix,
-        #                           lbG=self.problem.constraints_lower_limits, ubG=self.problem.constraints_upper_limits,
-        #                           A=self.problem.start_and_goal_matrix, b=self.problem.start_and_goal_limits,
-        #                           initial_guess=self.problem.initial_guess, solver_config=self.solver_config)
         start = time.time()
-        # callback_function("in planner class")
-
         self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
-
-        # trajectory = dict(zip(self.joint_names, trajectory))
         self.trajectory.update(trajectory, self.joints.keys())
         status = "-1"
         if self.solver_status == "Solved":

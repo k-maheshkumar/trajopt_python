@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-import scripts.sqpproblem.ProblemModelling as model
+import scripts.sqp_solver.ProblemModelling as model
 from scripts.Robot import Trajectory
 from scripts.sqp_solver import SQPsolver
 from scripts.sqpproblem import SQPproblem

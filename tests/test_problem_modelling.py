@@ -2,7 +2,7 @@ import sys
 # sys.path.append('../')
 sys.path.insert(0, '../')
 import unittest
-import scripts.sqpproblem.ProblemModelling as modelling
+import scripts.sqp_solver.ProblemModelling as modelling
 import numpy as np
 from easydict import EasyDict as edict
 import time

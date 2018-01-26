@@ -24,7 +24,7 @@ logger.addHandler(stream_handler)
 class Test_sqp_solver(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        with open("problem.yaml", 'r') as config:
+        with open("problem_1_joint.yaml", 'r') as config:
             cls.problem = edict(yaml.load(config))
         cls.planner = planner.TrajectoryOptimizationPlanner()
         cls.cvx_optimizer = ConvexOptimizer()
@@ -81,7 +81,6 @@ class Test_sqp_solver(unittest.TestCase):
         return x.value.T
 
     def test_random_joints_planning(self):
-        pass
         # print joints["10"].states
         for sample, duration, joints in itertools.izip(self.samples, self.durations, self.joints):
             self.cvx_optimizer.init(joints, sample, duration)
@@ -89,12 +88,25 @@ class Test_sqp_solver(unittest.TestCase):
             self.planner.init(joints=joints, samples=sample, duration=duration,
                            solver=None, solver_config=None, solver_class=1,
                            decimals_to_round=7, verbose=False)
+            # self.planner.display_problem()
             self.planner.calculate_trajectory()
             trajectory =  self.planner.get_trajectory().final.T
 
             self.assertEquals(np.isclose(actual_result, trajectory, atol=0.01).all(), True)
 
+    def test_planning_from_file(self):
+        # print joints["10"].states
+        self.cvx_optimizer.init(self.problem.joints, self.problem.samples, self.problem.duration)
+        actual_result = self.cvx_optimizer.solve()
+        self.planner.init(joints=self.problem.joints, samples=self.problem.samples, duration=self.problem.duration,
+                          solver=None, solver_config=None, solver_class=1,
+                          decimals_to_round=7, verbose=False)
+        # self.planner.display_problem()
+        self.planner.calculate_trajectory()
+        trajectory = self.planner.get_trajectory().final.T
+        # print trajectory
 
+        self.assertEquals(np.isclose(actual_result, trajectory, atol=0.01).all(), True)
 
 if __name__ == '__main__':
     unittest.main()

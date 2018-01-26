@@ -49,16 +49,27 @@ class SQPsolver:
             self.G = kwargs["G"]
         if "lbG" in kwargs:
             self.lbG = kwargs["lbG"]
+        else:
+            self.lbG = None
         if "ubG" in kwargs:
             self.ubG = kwargs["ubG"]
+        else:
+            self.ubG = None
         if "A" in kwargs:
             self.A = kwargs["A"]
+        else:
+            self.A = None
         if "b" in kwargs:
             self.b = kwargs["b"]
+        else:
+            self.A = None
         if "initial_guess" in kwargs:
             self.initial_guess = kwargs["initial_guess"]
         else:
             self.initial_guess = np.zeros((self.P.shape[0], 1)).flatten()
+
+        self.analyse_inputs()
+
         if "solver_config" in kwargs:
             solver_config = kwargs["solver_config"]
         else:
@@ -116,16 +127,17 @@ class SQPsolver:
         print ("ub")
         print (self.ub)
 
-    def interpolate(self, start, end, samples):
-        data = []
-        stepSize = (end - start) / (samples - 1)
-        intermediate = start
-        # if start < 0 and end < 0:
-        #     stepSize *= -1
-        for i in range(samples):
-            data.append(intermediate)
-            intermediate += stepSize
-        return np.round(data, 3)
+    def analyse_inputs(self):
+        if self.G is not None and self.lbG is None and self.ubG is not None:
+            # self.lbG = np.ones(self.ubG.shape) * -1000
+            self.lbG = -self.ubG
+            # self.G = np.vstack([self.G])
+            # self.lbG = np.hstack([-self.ubG])
+            # self.ubG = np.hstack([self.ubG])
+        if self.G is not None and self.ubG is None and self.lbG is not None:
+            self.G = np.vstack([-self.G, -self.G])
+            self.lbG = np.hstack([-self.ubG, -self.ubG])
+            self.ubG  = np.hstack([self.ubG, -self.ubG])
 
     def is_constraints_satisfied(self, x_k, tolerance=1e-3):
         cons1_cond = np.matmul(self.G, x_k) <= self.ubG
@@ -135,7 +147,6 @@ class SQPsolver:
         return cons2_cond.all() and cons3_cond.all() and cons1_cond.all()
 
     def is_x_converged(self, x_k, p_k, tolerance=1e-3):
-
         return abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= tolerance
 
     def is_objective_function_converged(self, objective, tolerance=1e-3):

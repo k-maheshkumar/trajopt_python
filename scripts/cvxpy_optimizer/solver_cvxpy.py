@@ -1,4 +1,6 @@
 import cvxpy
+import numpy as np
+
 
 class ConvexOptimizer:
 
@@ -40,6 +42,39 @@ class ConvexOptimizer:
     def init_problem(self):
         self.problem = cvxpy.Problem(cvxpy.Minimize(self.objective), self.constraints)
 
-    def solve(self):
-        self.problem.solve(solver=cvxpy.ECOS, verbose=False)
-        return self.x.value.T
+    def get_problem_data(self):
+        data = {}
+        # data["P"]= np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["P"].todense())[:self.samples, -self.samples:]
+        # data["q"]= np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["q"])[-self.samples:]
+        # data["A"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["A"].todense())[::, -self.samples:]
+        # data["G"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["F"].todense())[::2]
+        # data["ubG"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["G"])
+        # data["b"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["b"])[-self.samples:]
+        # # data["G"] = np.vstack([data["G"], -data["G"]])
+        # data["lbG"] = np.zeros(data["ubG"].shape)
+        # # data["lbG"] = np.vstack([data["ubG"], -data["ubG"]]).flatten()
+        # # data["ubG"] = np.vstack([data["ubG"], -data["ubG"]]).flatten()    `
+        # data["lbG"] = -data["ubG"]
+
+        # print data["lbG"]
+        # print data["ubG"]
+        #
+        # print data["G"]
+
+        data["P"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["P"].todense())
+        data["q"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["q"])
+        data["A"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["A"].todense())
+        data["G"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["F"].todense())
+        data["ubG"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["G"])
+        data["b"] = np.asarray(self.problem.get_problem_data(cvxpy.OSQP)[0]["b"])
+        # data["G"] = np.vstack([data["G"], -data["G"]])
+        data["lbG"] = np.zeros(data["ubG"].shape)
+        # data["lbG"] = np.vstack([data["ubG"], -data["ubG"]]).flatten()
+        # data["ubG"] = np.vstack([data["ubG"], -data["ubG"]]).flatten()    `
+        data["lbG"] = -data["ubG"]
+
+        return data
+
+    def solve(self, solver="ECOS"):
+        self.problem.solve(solver=solver, verbose=False)
+        return np.asarray(self.x.value.T)

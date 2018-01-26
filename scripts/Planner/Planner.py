@@ -147,7 +147,7 @@ class TrajectoryOptimizationPlanner:
                                  lbG=self.problem.constraints_lower_limits, ubG=self.problem.constraints_upper_limits,
                                  A=self.problem.start_and_goal_matrix, b=self.problem.start_and_goal_limits,
                                  initial_guess=self.problem.initial_guess, solver_config=self.solver_config)
-            self.trajectory.init(np.array((np.split(self.problem.initial_guess[-self.no_of_samples:], self.no_of_samples)))
+            self.trajectory.init(np.array((np.split(self.problem.initial_guess, self.no_of_samples)))
                                  , self.problem.samples, self.problem.duration, self.planner_group)
             # self.trajectory.init(np.array(self.problem.initial_guess), self.problem.samples, self.problem.duration)
 

@@ -1,13 +1,13 @@
 from PyQt4 import QtGui
 from scripts.utils import yaml_paser as yaml
 import functools
-from scripts.simulation import SimulationWorld
+from scripts.simulation.SimulationWorld import SimulationWorld
 import numpy as np
 import logging
 
 
 class PlannerGui(QtGui.QMainWindow):
-    def __init__(self, verbose=False, file_log=False):
+    def __init__(self, verbose=False, file_log=False, simulation=None):
         QtGui.QMainWindow.__init__(self)
         self.setGeometry(200, 100, 1200, 400)
 
@@ -70,7 +70,8 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.last_status = "Last Status: "
         self.init_ui(25)
-        self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
+        # self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
+        self.sim_world = simulation
         self.can_execute_trajectory = False
         main_logger_name = "Trajectory_Planner"
         self.logger = logging.getLogger(main_logger_name)
@@ -219,15 +220,16 @@ class PlannerGui(QtGui.QMainWindow):
         # print self.selected_robot_spin_value[key]
 
     def on_robot_action_button_clicked(self, key):
-        if not self.selected_robot_spin_value:
-            for spin_box_key in self.robot_config_params_spin_box:
-                self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
+        # if not self.selected_robot_spin_value:
+        for spin_box_key in self.robot_config_params_spin_box:
+            self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
         # print "self.selected_robot_combo_value", self.selected_robot_combo_value
         # print "self.selected_robot_spin_value", self.selected_robot_spin_value
 
         samples = None
         duration = None
         group = None
+        safe_collision_distance = None
         goal_state = None
         if "samples" in self.selected_robot_spin_value:
             samples = self.selected_robot_spin_value["samples"]
@@ -237,14 +239,26 @@ class PlannerGui(QtGui.QMainWindow):
             group = self.selected_robot_combo_value["joints_groups"]
         if "joint_configurations" in self.selected_robot_combo_value:
             goal_state = self.selected_robot_combo_value["joint_configurations"]
+        if "safe_collision_distance" in self.selected_robot_spin_value:
+            safe_collision_distance = self.selected_robot_spin_value["safe_collision_distance"]
+        # if "upper_collision_limit" in self.selected_robot_spin_value:
+        #     upper_collision_limit = self.selected_robot_spin_value["upper_collision_limit"]
+        # print samples
+        # print duration
+        # print group
+        # print goal_state
+        # print safe_collision_distance
 
         if group is not None and goal_state is not None:
-            if samples is not None and duration is not None and self.sqp_config is not None:
+            if samples is not None and duration is not None and self.sqp_config is not None and \
+                            safe_collision_distance is not None:
+                print "here"
                 if key == "plan" or key == "plan_and_execute":
                     self.statusBar.clearMessage()
                     status = "Please wait, trajectory is being planned... Then trajectory will be executed.."
                     self.statusBar.showMessage(self.last_status + status)
-                    status = self.initiate_plan_trajectory(group, goal_state, samples, duration)
+                    status = self.initiate_plan_trajectory(group, goal_state, samples, duration,
+                                                           safe_collision_distance)
                     self.statusBar.clearMessage()
                     self.statusBar.showMessage(self.last_status + status)
                 if key == "plan_and_execute" or key == "execute":
@@ -276,14 +290,15 @@ class PlannerGui(QtGui.QMainWindow):
                 status = "Please select the planning group.."
                 self.statusBar.showMessage(self.last_status + status)
 
-    def initiate_plan_trajectory(self, group, goal_state, samples, duration):
+
+    def initiate_plan_trajectory(self, group, goal_state, samples, duration, collision_d_safe_limit):
         can_execute_trajectory = False
         if samples is not None and duration is not None \
                 and group is not None and goal_state is not None and self.sqp_config is not None:
-            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state,
-                                                                                 samples=samples,
+            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples,
                                                                                  duration=duration,
-                                                                                 solver_config=self.sqp_config)
+                                                                                 collision_safe_distance=collision_d_safe_limit,
+                                                                                 solver_config=self.sqp_config, )
         else:
             status = "Please select the planning group and joint configuration.."
 

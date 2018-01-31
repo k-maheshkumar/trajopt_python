@@ -18,8 +18,8 @@ sqp:
   - SCS
   - ECOS_BB
   - CVXOPT
-  trust_expand_ratio: 2.0
-  trust_bad_region_ratio: 0.99
-  trust_good_region_ratio: 1.0000001
+  trust_expand_ratio: 2
+  trust_bad_region_ratio: 0.25
+  trust_good_region_ratio: 0.75
   trust_region_size: 1
   trust_shrink_ratio: 0.25

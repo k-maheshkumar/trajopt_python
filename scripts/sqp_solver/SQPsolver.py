@@ -199,9 +199,12 @@ class SQPsolver:
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         if constraints is not None:
-            print lower_limit, constraints.shape, delta
+            print upper_limit, constraints.shape, delta
             # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= constraints * p]
-            constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
+            # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
+            # constraints = [cvxpy.norm(p, "inf") <= delta, - lower_limit >= cvxpy.matmul(constraints, p)]
+            # constraints = [cvxpy.norm(p, "inf") <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
+            constraints = [cvxpy.norm(p, "inf") <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
             # constraints = [cvxpy.norm(p, "inf") <= delta]
         else:
             constraints = [cvxpy.norm(p, "inf") <= delta]
@@ -267,7 +270,7 @@ class SQPsolver:
         is_x_converged = False
         check_for_constraints = False
 
-        isAdjustPenalty = False
+        is_adjust_penalty = False
         old_rho_k = 0
         new_x_k = copy.copy(x_0)
 
@@ -375,9 +378,10 @@ class SQPsolver:
                         # print "model p0, pk",model_objective_at_p_0.value, model_objective_at_p_k.value
 
                         if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
-                            self.logger.warn("Infeasible problem cannot be solved" + str(penalty.value))
-                            self.status = "Infeasible"
-                            isAdjustPenalty = True
+                            # self.logger.warn("Infeasible problem cannot be solved" + str(penalty.value))
+                            # self.status = "Infeasible"
+                            # is_adjust_penalty = True
+                            penalty.value *= trust_expand_ratio
                             break
 
                         if rho_k >= trust_good_region_ratio:
@@ -392,6 +396,15 @@ class SQPsolver:
                             self.logger.debug("shrinking trust region " + str(trust_box_size))
                             # x_k = copy.copy(new_x_k)
                             x_k -= p_k
+
+
+                        # if actual_reduction > 0.2 * predicted_reduction:
+                        #     trust_box_size *= trust_expand_ratio
+                        #     print "expanding  .. .. . ."
+                        #     x_k += p_k
+                        # else:
+                        #     trust_box_size *=trust_shrink_ratio
+                        #     print "shrinking  .. .. . ."
 
                         if trust_box_size < min_x_redution:
                             check_for_constraints = True
@@ -409,11 +422,11 @@ class SQPsolver:
                             trust_box_size = np.fmax(min_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
                         if old_rho_k == rho_k:
                             # print "rho_k are same"
-                            isAdjustPenalty = True
+                            is_adjust_penalty = True
                             break
 
                         # if trust_box_size < min_x_redution:
-                        #     isAdjustPenalty = True
+                        #     is_adjust_penalty = True
                         #     break
                         old_rho_k = rho_k
                         old_trust_region = copy.copy(trust_box_size)
@@ -426,7 +439,7 @@ class SQPsolver:
                 # else:
                 #     is_converged = False
 
-                if isAdjustPenalty or dynamic_constraints_satisfied:
+                if is_adjust_penalty or dynamic_constraints_satisfied:
                     break
 
                 if check_for_constraints:
@@ -486,7 +499,7 @@ class SQPsolver:
                 break
             penalty.value *= 10
             iteration_count = 0
-            isAdjustPenalty = False
+            is_adjust_penalty = False
         self.logger.debug("\n initial x_0 " + str(x_0))
         self.logger.debug("\n final x_k " + str(x_k))
         self.logger.debug("solver status: " + self.status)

@@ -206,8 +206,12 @@ class ProblemModelling:
                     # self.robot_constraints_matrix = np.vstack([self.robot_constraints_matrix, normal_times_jacobian])
 
                     np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
-                    lower_collision_limit = self.lower_safe_distance_threshold - initial_signed_distance
-                    upper_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
+                    # lower_collision_limit = self.lower_safe_distance_threshold - initial_signed_distance
+                    # upper_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
+                    # lower_collision_limit = lower_collision_limit.flatten()
+                    # upper_collision_limit = upper_collision_limit.flatten()
+                    lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
+                    upper_collision_limit = initial_signed_distance - self.lower_safe_distance_threshold
                     lower_collision_limit = lower_collision_limit.flatten()
                     upper_collision_limit = upper_collision_limit.flatten()
 

@@ -72,7 +72,7 @@ class SimulationWorld():
 
         # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.28, radius=0.1,
         #                                           position=[-0.17, -0.22, 0.9], mass=1)
-        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.20],
+        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.25],
                                              position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints.append(self.table_id)
 
@@ -192,14 +192,14 @@ class SimulationWorld():
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
                 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
                 duration = 20
-                samples = 30
+                samples = 20
                 full_arm = group1 + group2
                 # full_arm = group1_test
                 self.reset_joint_states(start_state)
                 self.step_simulation_for(2)
                 # time.sleep(1)
                 check_distance = 0.2
-                collision_safe_distance = 0.05
+                collision_safe_distance = 0.10
 
 
                 self.plan_trajectory(goal_state.keys(), goal_state, samples, duration,

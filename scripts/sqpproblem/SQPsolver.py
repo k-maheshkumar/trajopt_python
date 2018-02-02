@@ -160,7 +160,7 @@ class SQPsolver:
         objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
         objective += penalty * (
         cvxpy.norm1(self.G * x - self.ubG.flatten()) + cvxpy.norm1(-self.G * x + self.lbG.flatten()) + cvxpy.norm1(
-            self.A * x + self.b.flatten()))
+            self.A * x - self.b.flatten()))
 
         return objective
 

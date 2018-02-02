@@ -2,7 +2,7 @@ from urdf_parser_py.urdf import URDF
 # from scripts.Planner import Planner as planner
 from scripts.Planner import Planner as planner
 import time
-from munch import *
+from easydict import EasyDict as edict
 from scripts.utils import yaml_paser as yaml
 import logging
 
@@ -21,7 +21,7 @@ class Robot:
             state[joint.name] = {
                 "current_value": 0
             }
-        state = munchify(state)
+        state = edict(state)
         return state
 
     def get_state(self):
@@ -88,15 +88,9 @@ class Robot:
                         states[joint_in_group] = {"start": self.state[joint_in_group]["current_value"],
                                                   "end": goal_state[joint_in_group]}
                     if joint.name == joint_in_group and joint.limit is not None:
-                        # collision_constraints = collision_constraints[joint.name]
-                        if collision_constraints is not None:
-                            collision_constraint = collision_constraints.get(joint.name)
-                        else:
-                            collision_constraint = None
-                        joints[joint.name] = munchify({
+                        joints[joint.name] = edict({
                             "states": states[joint_in_group],
                             "limit": joint.limit,
-                            # "collision_constraints": collision_constraint
                         })
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration, joint_group=joint_group,

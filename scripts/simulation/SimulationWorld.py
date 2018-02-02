@@ -6,6 +6,7 @@ from scripts.Robot import Robot
 from munch import *
 import os
 import PyKDL as kdl
+import itertools
 
 CYLINDER = sim.GEOM_CYLINDER
 BOX = sim.GEOM_BOX
@@ -16,8 +17,8 @@ class SimulationWorld():
 
         if urdf_file is None:
             main_logger_name = "Trajectory_Planner"
-            verbose = "DEBUG"
-            # verbose = False
+            # verbose = "DEBUG"
+            verbose = False
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
@@ -199,7 +200,7 @@ class SimulationWorld():
                 self.step_simulation_for(2)
                 # time.sleep(1)
                 check_distance = 0.2
-                collision_safe_distance = 0.10
+                collision_safe_distance = 0.05
 
 
                 self.plan_trajectory(goal_state.keys(), goal_state, samples, duration,
@@ -229,9 +230,12 @@ class SimulationWorld():
 
         jacobian_matrix = []
         nomral_T_times_jacobian = []
+        increase_resolution_matrix = []
         start_state = self.get_current_states_for_given_joints(group)
         time_step_count = 0
-        for time_step_of_trajectory, delta_trajectory in zip(trajectory, trajectory):
+        # increase_resolution_matrix = np.ones((1, (len(trajectory) * len(group)))).flatten()
+
+        for time_step_of_trajectory, delta_trajectory in itertools.izip(trajectory, trajectory):
             time_step_count += 1
             time_step_of_trajectory = time_step_of_trajectory.reshape((time_step_of_trajectory.shape[0], 1))
             self.reset_joint_states_to(time_step_of_trajectory, group)
@@ -267,21 +271,84 @@ class SimulationWorld():
                                                                  robot_joint_positions,
                                                                  zero_vec, zero_vec)
                             jaco1 = np.asarray([[[0] * len(group)] * 3] * (time_step_count - 1))
+
+                            # for i in range(1, 3):
+                            #     mat1 = [0] * (link_index - 1) + [1] + [0] * (len(group) - link_index)
+                            #     mat2 = [0] * (link_index - 1) + [-1] + [0] * (len(group) - link_index)
+                            #     mat = [[0] * len(group)] * (time_step_count-(i+1)) + [mat2] + [mat1] + [[0] * len(group)] * ((len(trajectory)) - (time_step_count) + (i-1))
+                            #     # print "mat", link_index, time_step_count
+                            # # print np.hstack(mat)
+                            #     print mat
+                            # mat = np.zeros((7  , len(group) * len(trajectory)))
+                            # i, j = np.indices(mat.shape)
+                            #
+                            # # mat[i == j - link_index] = -1
+                            # # mat[i == j - (link_index + len(trajectory))] = 1
+                            #
+                            # mat[i == j - (((time_step_count - 1) * self.planning_samples) + link_index)] = -1
+                            # mat[i == j - ((link_index + (time_step_count ) * self.planning_samples))] = 1
+
+                            velocity_matrix = np.zeros((len(group) * self.planning_samples, self.planning_samples * len(group)))
+                            np.fill_diagonal(velocity_matrix, -1.0)
+                            i, j = np.indices(velocity_matrix.shape)
+                            velocity_matrix[i == j - len(group)] = 1.0
+
+                            # to slice zero last row
+                            velocity_matrix.resize(velocity_matrix.shape[0] - len(group), velocity_matrix.shape[1])
+
+                            # print velocity_matrix
+
+                            mat = velocity_matrix[((time_step_count - 2) * len(group)):, :]
+                            # print mat
+
+                            mat = mat[link_index::(len(group)), :]
+                            # print mat
+
+                            mat = mat[:5:, :]
+
+                            # print "mat", link_index, time_step_count
+                            # print mat.shape
+                            # print np.vstack(mat)
+                            if len(mat):
+                                increase_resolution_matrix.append(np.vstack(mat))
+
+                            # res1 = np.asarray([[[0] * len(group)]] * (time_step_count - 1))
                             if len(jaco1):
                                 jaco1 = np.hstack(jaco1)
 
                             jaco2 = np.asarray([[[0] * len(group)] * 3] * (len(trajectory) - (time_step_count)))
+
                             if len(jaco2) > 0:
                                 jaco2 = np.hstack(jaco2)
                                 jaco = np.hstack([jaco1, np.asarray(jac_t), jaco2])
                             else:
                                 jaco = np.hstack([jaco1, np.asarray(jac_t)])
+
+                            res1 = np.zeros((1, (time_step_count - 1))).flatten()
+
+                            # if len(res1):
+                            #     res1 = np.hstack(res1)
+                            #
+                            # # res2 = np.asarray([[[0] * len(group)]] * (len(trajectory) - (time_step_count)))
+                            # res2 = np.zeros((1, (len(trajectory) - time_step_count))).flatten()
+                            # if len(res2) > 0:
+                            #     res2 = np.hstack(res2)
+                            #     # res = np.hstack([res1, np.asarray([[[0] * len(group)]]), res2])
+                            #     temp = np.ones((1, (len(trajectory) - time_step_count))).flatten()
+                            #     # print res1.shape, res2.shape, temp.shape
+                            #     res = np.hstack([res1, temp, res2])
+                            # else:
+                            #     res = np.hstack([res1, np.ones((1, (len(group))))])
+                            #
+                            # res = np.ones((1, (len(trajectory) * len(time_step_of_trajectory)))).flatten()
                             # print np.asarray(jac_t).shape
                             # print jaco.shape, link_index, time_step_count - 1
                             jacobian_matrix.append(jaco)
                             # normal.append(np.asarray(closest_points[0][7]).reshape(3, 1))
                             normal.append(np.vstack(closest_points[0][7]).reshape(3, 1))
                             nomral_T_times_jacobian.append(np.matmul(np.asarray(closest_points[0][7]).reshape(1, 3), jaco))
+                            # print link_index
+                            # print res
 
 
                 #     else:
@@ -318,18 +385,22 @@ class SimulationWorld():
             # print "nomral_T_times_jacobian", nomral_T_times_jacobian.shape
             # print "nomral_T_times_jacobian"
             # print nomral_T_times_jacobian
+        if len(increase_resolution_matrix) > 0:
+            increase_resolution_matrix = np.vstack(increase_resolution_matrix)
+            # print "increase_resolution_matrix", increase_resolution_matrix.shape
+            # print "increase_resolution_matrix \n", increase_resolution_matrix
         # print "initial_signed_distance", initial_signed_distance.shape
         # print "initial", time_step_of_trajectory.shape
         # print "initial_trajectory", np.asarray(trajectory.flatten()).shape
         # print "collision matrix", jacobian_matrix.shape
-        # print "collision matrix", jacobian_matrix
+        # print "collision matrix", jacobian_matrix[ 0.  0.  0.  1.  0.]
         self.reset_joint_states(start_state, group)
 
         # collision_infos = [initial_signed_distance, nomral_T_times_jacobian]
 
         # constraints, lower_limit, upper_limit = self.robot.planner.problem.update_collision_infos(collision_infos)
 
-        return initial_signed_distance, nomral_T_times_jacobian
+        return initial_signed_distance, nomral_T_times_jacobian, increase_resolution_matrix
 
     def get_point_in_local_frame(self, frame_position, frame_orientation, point):
         # frame = kdl.Frame()
@@ -345,11 +416,15 @@ class SimulationWorld():
         return [point_on_frame[0], point_on_frame[1], point_on_frame[2]]
 
     def update_collsion_infos(self, new_trajectory, delta_trajectory=None):
-        self.robot.planner.trajectory.add_trajectory(new_trajectory)
+        trajectory = np.array((np.split(new_trajectory, self.planning_samples)))
+
+        self.robot.planner.trajectory.add_trajectory(trajectory)
         trajectory = np.split(new_trajectory, self.planning_samples)
         collision_infos = self.get_collision_infos(trajectory, self.planning_group, distance=self.collision_check_distance)
 
-        constraints, lower_limit, upper_limit = self.robot.planner.problem.update_collision_infos(collision_infos, self.collision_safe_distance)
+        constraints, lower_limit, upper_limit = self.robot.planner.problem_model.update_collision_infos(collision_infos, self.collision_safe_distance)
+        if len(collision_infos[2]) > 0:
+            self.robot.planner.update_prob()
         # initial_signed_distance = collision_infos[0]
         # normal = collision_infos[1]
         # jacobian = collision_infos[2]

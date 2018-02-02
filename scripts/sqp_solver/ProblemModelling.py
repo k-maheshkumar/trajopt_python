@@ -200,6 +200,9 @@ class ProblemModelling:
             if len(collision_infos) > 0:
                 initial_signed_distance = collision_infos[0]
                 normal_times_jacobian = collision_infos[1]
+                resoultion_matrix = collision_infos[2]
+                if len(resoultion_matrix) > 0:
+                    self.update_constraints(resoultion_matrix)
                 # print "befr", normal_times_jacobian.shape
                 if len(initial_signed_distance) > 0:
                     # print self.robot_constraints_matrix.shape
@@ -262,6 +265,12 @@ class ProblemModelling:
 
 
         return collision_matrix
+
+    def update_constraints(self, matrix):
+        # print self.constraints_lower_limits.shape, matrix.shape, np.full((1, matrix.shape[0]), -0.2).shape
+        self.robot_constraints_matrix = np.vstack([self.robot_constraints_matrix, matrix])
+        self.constraints_lower_limits = np.hstack([self.constraints_lower_limits, np.full((1, matrix.shape[0]), -0.2).flatten()])
+        self.constraints_upper_limits = np.hstack([self.constraints_upper_limits, np.full((1, matrix.shape[0]), 0.2).flatten()])
 
     def get_velocity_matrix(self):
 

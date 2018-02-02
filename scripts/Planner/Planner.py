@@ -44,6 +44,7 @@ class TrajectoryOptimizationPlanner:
 
         self.solver_config = None
         self.trajectory = Trajectory.Trajectory()
+        self.problem_model = model.ProblemModelling()
         self.sqp_solver = None
         self.planner_group = None
 
@@ -123,6 +124,10 @@ class TrajectoryOptimizationPlanner:
             else:
                 self.decimals_to_round = 5
 
+
+            if "joint_group" in kwargs:
+                self.planner_group = kwargs["joint_group"]
+
             if "lower_safe_distance_threshold" in kwargs:
                 self.lower_safe_distance_threshold = float(kwargs["lower_safe_distance_threshold"])
             if "upper_safe_distance_threshold" in kwargs:
@@ -139,18 +144,22 @@ class TrajectoryOptimizationPlanner:
             else:
                 self.sqp_solver = SQPproblem.SQPProblem()
 
-            self.problem = model.ProblemModelling()
-            self.problem.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
-                              self.lower_safe_distance_threshold, self.upper_safe_distance_threshold)
-            self.sqp_solver.init(P=self.problem.cost_matrix_P, q=self.problem.cost_matrix_q,
-                                 G=self.problem.robot_constraints_matrix,
-                                 lbG=self.problem.constraints_lower_limits, ubG=self.problem.constraints_upper_limits,
-                                 A=self.problem.start_and_goal_matrix, b=self.problem.start_and_goal_limits,
-                                 initial_guess=self.problem.initial_guess, solver_config=self.solver_config)
-            self.trajectory.init(np.array((np.split(self.problem.initial_guess, self.no_of_samples)))
-                                 , self.problem.samples, self.problem.duration, self.planner_group)
-            # self.trajectory.init(np.array(self.problem.initial_guess), self.problem.samples, self.problem.duration)
 
+            self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
+                              self.lower_safe_distance_threshold, self.upper_safe_distance_threshold)
+            self.sqp_solver.init(P=self.problem_model.cost_matrix_P, q=self.problem_model.cost_matrix_q,
+                                 G=self.problem_model.robot_constraints_matrix,
+                                 lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,
+                                 A=self.problem_model.start_and_goal_matrix, b=self.problem_model.start_and_goal_limits,
+                                 initial_guess=self.problem_model.initial_guess, solver_config=self.solver_config)
+            self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
+                                 , self.problem_model.samples, self.problem_model.duration, self.planner_group)
+            # self.trajectory.init(np.array(self.problem_model.initial_guess), self.problem_model.samples, self.problem_model.duration)
+
+
+    def update_prob(self):
+        self.sqp_solver.update_prob(G=self.problem_model.robot_constraints_matrix,
+                                    lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits)
 
     def display_problem(self):
         self.sqp_solver.display_problem()
@@ -163,9 +172,11 @@ class TrajectoryOptimizationPlanner:
         end = time.time()
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
         self.trajectory.update(trajectory, self.joints.keys())
+        self.trajectory.plot_trajectories()
         status = "-1"
         if self.solver_status == "Solved":
             can_execute_trajectory = True
+            print "Optimal Trajectory has been found in " + str(end - start) + " secs"
             status = "Optimal Trajectory has been found in " + str(end - start) + " secs"
             self.logger.info(status)
         else:

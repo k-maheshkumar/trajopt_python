@@ -1,7 +1,6 @@
 import numpy as np
 import logging
-import collections
-
+from scripts.utils.utils import Utils as utils
 
 class ProblemModelling:
     def __init__(self):
@@ -139,7 +138,7 @@ class ProblemModelling:
             end_state = np.round(self.joints[joint]["states"]["end"], self.decimals_to_round)
             start_and_goal_lower_limits.append(np.round(start_state, self.decimals_to_round))
             start_and_goal_upper_limits.append(np.round(end_state, self.decimals_to_round))
-            self.initial_guess.append(self.interpolate(start_state, end_state))
+            self.initial_guess.append(utils.interpolate(start_state, end_state, self.samples, self.decimals_to_round))
 
         self.joints_lower_limits = np.hstack([self.joints_lower_limits] * self.samples).reshape(
             (1, len(self.joints_lower_limits) * self.samples))
@@ -300,17 +299,6 @@ class ProblemModelling:
 
     def formulate_collision_constraints(self, initial_singed_distance, normal, jacbian, safe_distance):
         pass
-
-    def interpolate(self, start, end, samples=None):
-        if samples is None:
-            samples = self.samples
-        data = []
-        step_size = (end - start) / (samples - 1)
-        intermediate = start
-        for i in range(samples):
-            data.append(intermediate)
-            intermediate += step_size
-        return np.round(data, self.decimals_to_round)
 
     def __diagonal_block_mat_slicing(self, matrix):
         shape = matrix[0].shape

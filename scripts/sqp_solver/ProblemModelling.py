@@ -268,8 +268,8 @@ class ProblemModelling:
     def update_constraints(self, matrix):
         # print self.constraints_lower_limits.shape, matrix.shape, np.full((1, matrix.shape[0]), -0.2).shape
         self.robot_constraints_matrix = np.vstack([self.robot_constraints_matrix, matrix])
-        self.constraints_lower_limits = np.hstack([self.constraints_lower_limits, np.full((1, matrix.shape[0]), -0.2).flatten()])
-        self.constraints_upper_limits = np.hstack([self.constraints_upper_limits, np.full((1, matrix.shape[0]), 0.2).flatten()])
+        self.constraints_lower_limits = np.hstack([self.constraints_lower_limits, np.full((1, matrix.shape[0]), -0.02).flatten()])
+        self.constraints_upper_limits = np.hstack([self.constraints_upper_limits, np.full((1, matrix.shape[0]), 0.02).flatten()])
 
     def get_velocity_matrix(self):
 

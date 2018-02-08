@@ -146,8 +146,10 @@ class SQPsolver:
             self.ubG = np.hstack([self.ubG, -self.ubG])
 
     def is_constraints_satisfied(self, x_k, tolerance=1e-3):
-        cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
-        cons2_cond = np.isclose(np.matmul(-self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
+        cons1_cond = np.matmul(self.G, x_k) <= self.ubG
+        cons2_cond =  np.matmul(-self.G, x_k) >= self.lbG
+        # cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
+        # cons2_cond = np.isclose(np.matmul(-self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
         cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
         # return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
 
@@ -207,7 +209,7 @@ class SQPsolver:
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         if constraints is not None:
-            # print upper_limit, constraints.shape, delta
+            print upper_limit, constraints.shape, delta
             # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= constraints * p]
             # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
             # constraints = [cvxpy.norm(p, "inf") <= delta, - lower_limit >= cvxpy.matmul(constraints, p)]
@@ -356,7 +358,7 @@ class SQPsolver:
                             self.status = "Solved"
                             # print "must check for constrains satisfaction .. . . ..  ."
 
-                            break
+                            # break
                     else:
                         p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
                                                                                                                  penalty,

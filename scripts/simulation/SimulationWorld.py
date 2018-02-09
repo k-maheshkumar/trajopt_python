@@ -23,7 +23,7 @@ class SimulationWorld():
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
-            self.logger = logging.getLogger("Trajectory_Planner."    + __name__)
+            self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
         self.gui = sim.connect(sim.GUI)
         # self.gui = sim.connect(sim.DIRECT)
@@ -76,7 +76,7 @@ class SimulationWorld():
         #                                           position=[-0.17, -0.43, 0.9], mass=1)
         self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.25],
                                              # position=[-0.17, -0.42, 0.9], mass=100)
-                                                position = [0.28, -0.43, 0.9], mass = 100)
+                                             position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints.append(self.table_id)
 
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
@@ -202,11 +202,11 @@ class SimulationWorld():
                 self.step_simulation_for(2)
                 # time.sleep(1)
                 check_distance = 0.2
-                collision_safe_distance = 0.1
-
+                collision_safe_distance = 0.10
 
                 self.plan_trajectory(goal_state.keys(), goal_state, samples, duration,
-                                     collision_safe_distance=collision_safe_distance, collision_check_distance=check_distance)
+                                     collision_safe_distance=collision_safe_distance,
+                                     collision_check_distance=check_distance)
                 self.execute_trajectory()
                 # self.execute_trajectories(full_arm)
                 # import sys
@@ -217,15 +217,13 @@ class SimulationWorld():
         self.reset_joint_states_to(trajectory, group)
         for link_index in self.planning_group_ids:
             state = sim.getLinkState(self.robot_id, link_index, computeLinkVelocity=1,
-                         computeForwardKinematics=1)
+                                     computeForwardKinematics=1)
             link_states.append(state)
         return link_states
-
 
     def extract_ids_from_planning_group(self, group):
         for joint in group:
             self.planning_group_ids.append(self.joint_name_to_id[joint])
-
 
     def get_collision_infos(self, initial_trajectory, group, distance=0.20):
 
@@ -248,24 +246,29 @@ class SimulationWorld():
         time_step_count = 0
         # increase_resolution_matrix = np.ones((1, (len(trajectory) * len(group)))).flatten()
 
-        for previous_time_step_of_trajectory, current_time_step_of_trajectory, next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
+        for previous_time_step_of_trajectory, current_time_step_of_trajectory, next_time_step_of_trajectory in utils.iterate_with_previous_and_next(
+                trajectory):
             time_step_count += 1
-            current_time_step_of_trajectory = current_time_step_of_trajectory.reshape((current_time_step_of_trajectory.shape[0], 1))
+            current_time_step_of_trajectory = current_time_step_of_trajectory.reshape(
+                (current_time_step_of_trajectory.shape[0], 1))
             # self.reset_joint_states_to(current_time_step_of_trajectory, group)
 
             if next_time_step_of_trajectory is not None:
                 next_link_states = self.get_link_states_at(next_time_step_of_trajectory, group)
+                robot_next_joint_positions = list(current_time_step_of_trajectory)
+
             current_link_states = self.get_link_states_at(current_time_step_of_trajectory, group)
 
-            robot_joint_positions = list(current_time_step_of_trajectory)
-            zero_vec = [0.0] * len(robot_joint_positions)
+            robot_current_joint_positions = list(current_time_step_of_trajectory)
+            zero_vec = [0.0] * len(robot_current_joint_positions)
 
-            for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids, current_link_states,
-                                                                 next_link_states):
+            for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
+                                                                                  current_link_states,
+                                                                                  next_link_states):
 
                 for constraint in self.collision_constraints:
                     closest_points = sim.getClosestPoints(self.robot_id, constraint,
-                                                      linkIndexA=link_index, distance=distance)
+                                                          linkIndexA=link_index, distance=distance)
                     if len(closest_points) > 0:
                         if closest_points[0][8] < 0:
                             # if link_index == self.end_effector_index:
@@ -277,42 +280,46 @@ class SimulationWorld():
                             #     next_link_state = sim.getLinkState(self.robot_id, link_index, computeLinkVelocity=1,
                             #                                   computeForwardKinematics=1)
                             if next_link_state is not None:
-                                ray_test_result = sim.rayTest(current_link_state[4], next_link_state[4])
+                                # ray_test_result = sim.rayTest(current_link_state[0], next_link_state[0])
+                                ray_test_result = sim.rayTest(closest_points[0][7], next_link_state[0])
                                 # print ray_test_result[0][3]
                             if len(ray_test_result):
-                                if np.asarray(ray_test_result[0][3]).all() > 0:
+                                if ray_test_result[0][0] > -1:
                                     hit_ratio = float(ray_test_result[0][2])
-                                    # link_position_in_world_frame = current_link_state[4]
-                                    # link_orentation_in_world_frame = current_link_state[5]
-                                    link_position_in_world_frame = current_link_state[4]
-                                    link_orentation_in_world_frame = current_link_state[5]
-                                    link_position_in_world_frame = np.asarray(link_position_in_world_frame) * hit_ratio \
-                                                                   + (1- hit_ratio) * np.asarray(next_link_state[4])
-                                    closest_point_on_link_in_world_frame = ray_test_result[0][3]
+                                    ray_normal = ray_test_result[0][4]
+                                    ray_hit_point = ray_test_result[0][3]
+                                    # link_position_in_world_frame_at_current_time_step = current_link_state[4]
+                                    # link_orentation_in_world_frame_at_current_time_step = current_link_state[5]
+                                    link_position_in_world_frame_at_current_time_step = current_link_state[4]
+                                    link_orentation_in_world_frame_at_current_time_step = current_link_state[5]
+                                    link_position_in_world_frame_at_current_time_step = np.asarray(link_position_in_world_frame_at_current_time_step) * hit_ratio \
+                                                                   + (1 - hit_ratio) * np.asarray(next_link_state[0])
+                                    # link_orentation_in_world_frame_at_current_time_step = np.asarray(link_orentation_in_world_frame_at_current_time_step) * hit_ratio \
+                                    #                                + (1 - hit_ratio) * np.asarray(next_link_state[1])
+                                    closest_point_on_link_in_world_frame_at_current_time_step = ray_hit_point
 
-                                    normal_vector = np.asarray(ray_test_result[0][4]).reshape(3, 1)
-                                    #
+                                    normal_vector = np.asarray(ray_normal).reshape(3, 1)
 
-                                    # normal_vector *= hit_ratio
-                                    # p_0 = np.asarray(current_link_state[4])
-                                    # p_1 = np.asarray(next_link_state[4])
+                                    p_0 = np.asarray(current_link_state[4])
+                                    p_1 = np.asarray(next_link_state[4])
                                     # print hit_ratio, p_0, p_0 * hit_ratio
-                                    # p_swept = hit_ratio * p_0 + (1 - hit_ratio) * p_1
+                                    p_swept = hit_ratio * p_0 + (1 - hit_ratio) * p_1
 
-                                    # alpha = np.linalg.norm((p_1 - p_swept), np.inf)
-                                    #
-                                    # # temp1 = np.linalg.norm((p_1 - p_swept), np.inf)
-                                    # alpha = alpha / (alpha + np.linalg.norm((p_0 - p_swept), np.inf))
+                                    alpha = np.linalg.norm((p_1 - p_swept), np.inf)
 
-                                    alpha = 1
+                                    # temp1 = np.linalg.norm((p_1 - p_swept), np.inf)
+                                    alpha = alpha / (alpha + np.linalg.norm((p_0 - p_swept), np.inf))
+
+                                    # alpha = 1
+                                    # alpha = hit_ratio
 
 
                                     # print "point ", ray_test_result[0][3], closest_points[0][5]
                                     # print "normal_vector ", ray_test_result[0][4], closest_points[0][7]
 
-                                    # link_position_in_world_frame = current_link_state[4]
-                                    # link_orentation_in_world_frame = current_link_state[5]
-                                    # closest_point_on_link_in_world_frame = closest_points[0][5]
+                                    # link_position_in_world_frame_at_current_time_step = current_link_state[4]
+                                    # link_orentation_in_world_frame_at_current_time_step = current_link_state[5]
+                                    # closest_point_on_link_in_world_frame_at_current_time_step = closest_points[0][5]
                                     #
                                     # normal_vector = np.asarray(closest_points[0][7]).reshape(3, 1)
 
@@ -320,12 +327,20 @@ class SimulationWorld():
                                     # normal_vector *= alpha
                                     # print "normal after ", normal_vector.T
 
-                                    closest_point_on_link_in_link_frame = self.get_point_in_local_frame(
-                                        link_position_in_world_frame, link_orentation_in_world_frame,
-                                        closest_point_on_link_in_world_frame)
+                                    closest_point_on_link_in_link_frame_at_current_time_step = self.get_point_in_local_frame(
+                                        link_position_in_world_frame_at_current_time_step, link_orentation_in_world_frame_at_current_time_step,
+                                        closest_point_on_link_in_world_frame_at_current_time_step)
 
-                                    # print "closest_point_on_link_in_link_frame", closest_point_on_link_in_link_frame
-                                    # print "closest_point_on_link_in_world_frame", closest_point_on_link_in_world_frame
+                                    link_position_in_world_frame_at_next_time_step = next_link_state[4]
+                                    link_orentation_in_world_frame_at_next_time_step = next_link_state[5]
+                                    next_joint_state_in_world_frame_at_next_time_step = next_link_state[0]
+                                    next_joint_state_in_link_frame_at_next_time_step = self.get_point_in_local_frame(
+                                        link_position_in_world_frame_at_next_time_step,
+                                        link_orentation_in_world_frame_at_next_time_step,
+                                        next_joint_state_in_world_frame_at_next_time_step)
+
+                                    # print "closest_point_on_link_in_link_frame_at_current_time_step", closest_point_on_link_in_link_frame_at_current_time_step
+                                    # print "closest_point_on_link_in_world_frame_at_current_time_step", closest_point_on_link_in_world_frame_at_current_time_step
                                     initial_signed_distance.append(closest_points[0][8])
                                     closest_pts.append(closest_points[0][5])
                                     # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, closest_points[0][5],
@@ -348,13 +363,15 @@ class SimulationWorld():
                                     # mat[i == j - (((time_step_count - 1) * self.planning_samples) + link_index)] = -1
                                     # mat[i == j - ((link_index + (time_step_count ) * self.planning_samples))] = 1
 
-                                    velocity_matrix = np.zeros((len(group) * self.planning_samples, self.planning_samples * len(group)))
+                                    velocity_matrix = np.zeros(
+                                        (len(group) * self.planning_samples, self.planning_samples * len(group)))
                                     np.fill_diagonal(velocity_matrix, -1.0)
                                     i, j = np.indices(velocity_matrix.shape)
                                     velocity_matrix[i == j - len(group)] = 1.0
 
                                     # to slice zero last row
-                                    velocity_matrix.resize(velocity_matrix.shape[0] - len(group), velocity_matrix.shape[1])
+                                    velocity_matrix.resize(velocity_matrix.shape[0] - len(group),
+                                                           velocity_matrix.shape[1])
 
                                     # print velocity_matrix
 
@@ -374,10 +391,11 @@ class SimulationWorld():
 
                                     # res1 = np.asarray([[[0] * len(group)]] * (time_step_count - 1))
 
+
                                     jac_t, jac_r = sim.calculateJacobian(self.robot_id, link_index,
                                                                          # closest_points[0][5],
-                                                                         closest_point_on_link_in_link_frame,
-                                                                         robot_joint_positions,
+                                                                         closest_point_on_link_in_link_frame_at_current_time_step,
+                                                                         robot_current_joint_positions,
                                                                          zero_vec, zero_vec)
                                     jaco1 = np.asarray([[[0] * len(group)] * 3] * (time_step_count - 1))
                                     if len(jaco1):
@@ -385,30 +403,40 @@ class SimulationWorld():
 
                                     jaco2 = np.asarray([[[0] * len(group)] * 3] * (len(trajectory) - (time_step_count)))
 
-                                    if len(jaco2) > 0:
+                                    if len(jaco1) > 0 and len(jaco2):
                                         jaco2 = np.hstack(jaco2)
-                                        jaco = np.hstack([jaco1, np.asarray(jac_t), jaco2])
-                                    else:
-                                        jaco = np.hstack([jaco1, np.asarray(jac_t)])
+                                        current_state_jacobian = np.hstack(
+                                            [jaco1, np.asarray(jac_t), jaco2])
+                                    elif len(jaco1) > 0 and len(jaco2) == 0:
+                                        current_state_jacobian = np.vstack([jaco1, np.asarray(jac_t).reshape(1, 3, 7)])
+                                    elif len(jaco1) == 0 and len(jaco2) > 0:
+                                        current_state_jacobian = np.vstack([np.asarray(jac_t).reshape(1, 3, 7), jaco2])
+                                        current_state_jacobian = np.hstack(current_state_jacobian)
 
                                     jac_t1, jac_r1 = sim.calculateJacobian(self.robot_id, link_index,
-                                                                         # closest_points[0][5],
-                                                                         closest_point_on_link_in_link_frame,
-                                                                         robot_joint_positions,
-                                                                         zero_vec, zero_vec)
+                                                                           # closest_points[0][5],
+                                                                           closest_point_on_link_in_link_frame_at_current_time_step,
+                                                                           # next_joint_state_in_link_frame_at_next_time_step,
+                                                                           robot_next_joint_positions,
+                                                                           zero_vec, zero_vec)
+
                                     jaco11 = np.asarray([[[0] * len(group)] * 3] * (time_step_count - 1))
-                                    if len(jaco11):
-                                        jaco11 = np.hstack(jaco1)
 
-                                    jaco21 = np.asarray([[[0] * len(group)] * 3] * (len(trajectory) - (time_step_count)))
+                                    jaco21 = np.asarray(
+                                        [[[0] * len(group)] * 3] * (len(trajectory) - (time_step_count)))
 
-                                    if len(jaco21) > 0:
-                                        jaco21 = np.hstack(jaco2)
-                                        jaco3 = np.hstack([jaco1, np.asarray(jac_t), jaco2])
-                                    else:
-                                        jaco3 = np.hstack([jaco1, np.asarray(jac_t)])
+                                    if len(jaco11) > 0 and len(jaco21):
+                                        jaco11 = np.hstack(jaco11)
+                                        jaco21 = np.hstack(jaco21)
+                                        next_state_jacobian = np.hstack(
+                                            [jaco11, np.asarray(jac_t), jaco21])
+                                    elif len(jaco11) > 0 and len(jaco21) == 0:
+                                        next_state_jacobian = np.vstack([jaco11, np.asarray(jac_t1).reshape(1, 3, 7)])
+                                    elif len(jaco11) == 0 and len(jaco21) > 0:
+                                        next_state_jacobian = np.vstack([np.asarray(jac_t).reshape(1, 3, 7), jaco21])
+                                        next_state_jacobian = np.hstack(next_state_jacobian)
 
-                                    res1 = np.zeros((1, (time_step_count - 1))).flatten()
+                                    # res1 = np.zeros((1, (time_step_count - 1))).flatten()
 
                                     # if len(res1):
                                     #     res1 = np.hstack(res1)
@@ -426,32 +454,34 @@ class SimulationWorld():
                                     #
                                     # res = np.ones((1, (len(trajectory) * len(current_time_step_of_trajectory)))).flatten()
                                     # print np.asarray(jac_t).shape
-                                    # print jaco.shape, link_index, time_step_count - 1
-                                    jacobian_matrix.append(jaco)
+                                    # print current_state_jacobian.shape, link_index, time_step_count - 1
+                                    jacobian_matrix.append(current_state_jacobian)
                                     # normal.append(np.asarray(closest_points[0][7]).reshape(3, 1))
                                     normal.append(np.vstack(closest_points[0][7]).reshape(3, 1))
                                     normal_vector = utils.normalize_vector(normal_vector)
                                     # print normal_vector.T, utils.normalize_vector(normal_vector).T
-                                    normal_T_times_jacobian.append(np.matmul(alpha * normal_vector.T, jaco))
-                                    normal_T_times_jacobian1.append(np.matmul((1 - alpha) * normal_vector.T, jaco3))
+                                    normal_T_times_jacobian.append(
+                                        np.matmul(alpha * normal_vector.T, current_state_jacobian))
+                                    normal_T_times_jacobian1.append(
+                                        np.matmul((1 - alpha) * normal_vector.T, next_state_jacobian))
                                     # print link_index
                                     # print res
 
 
-                #     else:
-                #         jacobian.append(np.zeros((3, len(group))))
-                # else:
-                #     jacobian.append(np.zeros((3, len(group))))
+                                    #     else:
+                                    #         jacobian.append(np.zeros((3, len(group))))
+                                    # else:
+                                    #     jacobian.append(np.zeros((3, len(group))))
 
-            #
-            #         # jacobian = np.asarray(jac_t)
-            #         # normal = np.asarray(closest_points[0][7]).reshape(3, 1)
-            #
-            #         # normal_times_jacobian.append(np.matmul(np.asarray(normal).T, np.asarray(jacobian)))
-            #
-            #         # print np.asarray(jacobian).shape
-            # if len(jacobian) > 0:
-            #     jacobian_matrix.append(jacobian)
+                                    #
+                                    #         # jacobian = np.asarray(jac_t)
+                                    #         # normal = np.asarray(closest_points[0][7]).reshape(3, 1)
+                                    #
+                                    #         # normal_times_jacobian.append(np.matmul(np.asarray(normal).T, np.asarray(jacobian)))
+                                    #
+                                    #         # print np.asarray(jacobian).shape
+                                    # if len(jacobian) > 0:
+                                    #     jacobian_matrix.append(jacobian)
 
         if len(normal) > 0:
             normal = np.vstack(np.asarray(normal))
@@ -472,6 +502,7 @@ class SimulationWorld():
             normal_T_times_jacobian1 = np.vstack(normal_T_times_jacobian)
             # normal_T_times_jacobian += normal_T_times_jacobian1
             # print "normal_T_times_jacobian", normal_T_times_jacobian.shape
+            # print "normal_T_times_jacobian1", normal_T_times_jacobian1.shape
             # print "normal_T_times_jacobian"
             # print normal_T_times_jacobian
         if len(increase_resolution_matrix) > 0:
@@ -489,7 +520,7 @@ class SimulationWorld():
 
         # constraints, lower_limit, upper_limit = self.robot.planner.problem.update_collision_infos(collision_infos)
 
-        return initial_signed_distance, normal_T_times_jacobian, increase_resolution_matrix
+        return initial_signed_distance, normal_T_times_jacobian, normal_T_times_jacobian1, increase_resolution_matrix
 
     def get_point_in_local_frame(self, frame_position, frame_orientation, point):
         # frame = kdl.Frame()
@@ -500,7 +531,7 @@ class SimulationWorld():
         frame = kdl.Frame(rotation, position)
         point = kdl.Vector(point[0], point[1], point[2])
 
-        point_on_frame =  frame.Inverse() * point
+        point_on_frame = frame.Inverse() * point
 
         return [point_on_frame[0], point_on_frame[1], point_on_frame[2]]
 
@@ -509,9 +540,11 @@ class SimulationWorld():
 
         self.robot.planner.trajectory.add_trajectory(trajectory)
         trajectory = np.split(new_trajectory, self.planning_samples)
-        collision_infos = self.get_collision_infos(trajectory, self.planning_group, distance=self.collision_check_distance)
+        collision_infos = self.get_collision_infos(trajectory, self.planning_group,
+                                                   distance=self.collision_check_distance)
 
-        constraints, lower_limit, upper_limit = self.robot.planner.problem_model.update_collision_infos(collision_infos, self.collision_safe_distance)
+        constraints, lower_limit, upper_limit = self.robot.planner.problem_model.update_collision_infos(collision_infos,
+                                                                                                        self.collision_safe_distance)
         if len(collision_infos[2]) > 0:
             self.robot.planner.update_prob()
         # initial_signed_distance = collision_infos[0]
@@ -522,15 +555,15 @@ class SimulationWorld():
 
         return constraints, lower_limit, upper_limit
 
-
-    def plan_trajectory(self, group, goal_state, samples, duration, solver_config=None, collision_safe_distance=None, collision_check_distance=0.2):
+    def plan_trajectory(self, group, goal_state, samples, duration, solver_config=None, collision_safe_distance=None,
+                        collision_check_distance=0.2):
         # self.collision_constraints = {}
         self.planning_group = group
         self.planning_samples = samples
         self.collision_safe_distance = collision_safe_distance
         self.collision_check_distance = collision_check_distance
         # if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
-            # self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
+        # self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
         #
         #     # print self.collision_constraints
         #     # print joint_name, jac_t
@@ -565,7 +598,8 @@ class SimulationWorld():
         sim.configureDebugVisualizer(sim.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
         sim.configureDebugVisualizer(sim.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
 
-        status, can_execute_trajectory = self.robot.calulate_trajecotory(self.update_collsion_infos) # callback function
+        status, can_execute_trajectory = self.robot.calulate_trajecotory(
+            self.update_collsion_infos)  # callback function
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
 
         # status, can_execute_trajectory = self.robot.calulate_trajecotory(None)
@@ -576,7 +610,7 @@ class SimulationWorld():
         current_state = {}
         for joint in joints:
             current_state[joint] = \
-            sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]
+                sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]
         return current_state
 
     def execute_trajectory(self):
@@ -619,7 +653,6 @@ class SimulationWorld():
         self.logger.info(status)
         return status
 
-
     def execute_trajectories(self, group):
         trajectories = self.robot.get_trajectory()
         sleep_time = trajectories.duration / float(trajectories.no_of_samples)
@@ -639,8 +672,8 @@ class SimulationWorld():
                 # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
                 # sim.stepSimulation()
                 self.step_simulation_for(sleep_time)
-            # time.sleep(sleep_time)
-            # sim.stepSimulation()
+                # time.sleep(sleep_time)
+                # sim.stepSimulation()
         # print trajectories.trajectory
         # for traj in trajectories.trajectory:
         #     for i in range(len(group)):

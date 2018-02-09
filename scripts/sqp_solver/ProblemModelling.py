@@ -199,7 +199,8 @@ class ProblemModelling:
             if len(collision_infos) > 0:
                 initial_signed_distance = collision_infos[0]
                 normal_times_jacobian = collision_infos[1]
-                resoultion_matrix = collision_infos[2]
+                normal_times_jacobian1 = collision_infos[2]
+                resoultion_matrix = collision_infos[3]
                 if len(resoultion_matrix) > 0:
                     self.update_constraints(resoultion_matrix)
                 # print "befr", normal_times_jacobian.shape
@@ -227,7 +228,8 @@ class ProblemModelling:
                     # upper_collision_limit = np.vstack([upper_collision_limit])
         # print "normal times jacobian", normal_times_jacobian.shape
         # print "lower_collision_limit", np.asarray(lower_collision_limit).shape
-        return normal_times_jacobian, lower_collision_limit, upper_collision_limit
+        # print normal_times_jacobian.shape, normal_times_jacobian1.shape
+        return np.asarray([normal_times_jacobian, normal_times_jacobian1]), lower_collision_limit, upper_collision_limit
 
     def get_collision_matrix(self):
         collision_matrix = []

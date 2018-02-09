@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 from scripts.utils.utils import Utils as utils
+import collections
 
 class ProblemModelling:
     def __init__(self):
@@ -8,7 +9,7 @@ class ProblemModelling:
         self.samples = -1
         self.no_of_joints = -1
         self.decimals_to_round = -1
-        self.joints = {}
+        self.joints = collections.OrderedDict()
         self.cost_matrix_P = []
         self.cost_matrix_q = []
         self.robot_constraints_matrix = []

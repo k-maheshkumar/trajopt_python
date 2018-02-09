@@ -5,6 +5,7 @@ from scripts.utils import yaml_paser as yaml
 import logging
 import os
 import time
+import collections
 
 '''
         minimize
@@ -34,7 +35,7 @@ class SQPsolver:
         self.status = "-1"
         self.norm_ = 1
 
-        self.solver_config = {}
+        self.solver_config = collections.OrderedDict()
 
         self.solver = []
 
@@ -362,7 +363,7 @@ class SQPsolver:
                             self.status = "Solved"
                             # print "must check for constrains satisfaction .. . . ..  ."
 
-                            # break
+                            break
                     else:
                         p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
                                                                                                                  penalty,

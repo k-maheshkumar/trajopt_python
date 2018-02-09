@@ -7,12 +7,12 @@ import scripts.sqp_solver.ProblemModelling as model
 from scripts.Robot import Trajectory
 from scripts.sqp_solver import SQPsolver
 from scripts.sqpproblem import SQPproblem
-
+import collections
 
 class TrajectoryOptimizationPlanner:
 
     def __init__(self, *args, **kwargs):
-        self.sqp = {}
+        self.sqp = collections.OrderedDict()
         self.P = []
         self.G = []
         self.A = []
@@ -26,7 +26,7 @@ class TrajectoryOptimizationPlanner:
         self.initial_guess = []
         self.solver_status = []
         self.joint_names = []
-        self.problem = {}
+        self.problem = collections.OrderedDict()
         self.max_penalty = -1
         self.delta_max = -1
         self.joints = -1
@@ -52,7 +52,7 @@ class TrajectoryOptimizationPlanner:
         self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
     def __clear_all_data(self):
-        self.sqp = {}
+        self.sqp = collections.OrderedDict()
         self.P = []
         self.G = []
         self.A = []

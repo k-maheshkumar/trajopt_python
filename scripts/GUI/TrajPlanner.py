@@ -4,7 +4,7 @@ import functools
 from scripts.simulation.SimulationWorld import SimulationWorld
 import numpy as np
 import logging
-
+import collections
 
 class PlannerGui(QtGui.QMainWindow):
     def __init__(self, verbose=False, file_log=False, simulation=None):
@@ -24,20 +24,20 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_config = robot_yaml.get_by_key("robot")
         self.start_simulation_button = QtGui.QPushButton('Start Simulation')
 
-        self.sqp_labels = {}
-        self.sqp_spin_box = {}
-        self.sqp_combo_box = {}
+        self.sqp_labels = collections.OrderedDict()
+        self.sqp_spin_box = collections.OrderedDict()
+        self.sqp_combo_box = collections.OrderedDict()
 
         self.sqp_config_group_box = QtGui.QGroupBox('SQP solver Parameters')
         self.sqp_config_form = QtGui.QFormLayout()
 
         self.sqp_config_scroll = QtGui.QScrollArea()
 
-        self.robot_config_params = {}
-        self.robot_config_labels = {}
-        self.robot_config_spin_box = {}
-        self.robot_config_combo_box = {}
-        self.robot_config_params_spin_box = {}
+        self.robot_config_params = collections.OrderedDict()
+        self.robot_config_labels = collections.OrderedDict()
+        self.robot_config_spin_box = collections.OrderedDict()
+        self.robot_config_combo_box = collections.OrderedDict()
+        self.robot_config_params_spin_box = collections.OrderedDict()
         self.robot_config_group_box = QtGui.QGroupBox('Robot Actions')
 
         self.robot_config_hbox = QtGui.QVBoxLayout()
@@ -46,7 +46,7 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.robot_config_form = QtGui.QFormLayout()
 
-        self.robot_action_buttons = {}
+        self.robot_action_buttons = collections.OrderedDict()
         self.robot_action_button_group = QtGui.QButtonGroup(self)
         self.robot_action_buttons["execute"] = QtGui.QPushButton('Execute')
         self.robot_action_buttons["plan"] = QtGui.QPushButton('Plan')
@@ -59,8 +59,8 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.simulation_scroll = QtGui.QScrollArea()
 
-        self.selected_robot_combo_value = {}
-        self.selected_robot_spin_value = {}
+        self.selected_robot_combo_value = collections.OrderedDict()
+        self.selected_robot_spin_value = collections.OrderedDict()
 
         self.statusBar = QtGui.QStatusBar()
 
@@ -174,7 +174,7 @@ class PlannerGui(QtGui.QMainWindow):
 
             if key == "config_params":
                 for key1, value1 in self.robot_config[key].items():
-                    print " key1, value1", key1, value1
+                    # print " key1, value1", key1, value1
                     self.robot_config_params_spin_box[key1] = QtGui.QDoubleSpinBox(self)
                     self.robot_config_form.addRow(key1, self.robot_config_params_spin_box[key1])
                     self.robot_config_params_spin_box[key1].setValue(float(value1["value"]))
@@ -252,7 +252,6 @@ class PlannerGui(QtGui.QMainWindow):
         if group is not None and goal_state is not None:
             if samples is not None and duration is not None and self.sqp_config is not None and \
                             safe_collision_distance is not None:
-                print "here"
                 if key == "plan" or key == "plan_and_execute":
                     self.statusBar.clearMessage()
                     status = "Please wait, trajectory is being planned... Then trajectory will be executed.."
@@ -292,11 +291,11 @@ class PlannerGui(QtGui.QMainWindow):
 
 
     def initiate_plan_trajectory(self, group, goal_state, samples, duration, collision_d_safe_limit):
-        can_execute_trajectory = False
+        # can_execute_trajectory = False
         if samples is not None and duration is not None \
                 and group is not None and goal_state is not None and self.sqp_config is not None:
-            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples,
-                                                                                 duration=duration,
+            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=int(samples),
+                                                                                 duration=int(duration),
                                                                                  collision_safe_distance=collision_d_safe_limit,
                                                                                  solver_config=self.sqp_config, )
         else:

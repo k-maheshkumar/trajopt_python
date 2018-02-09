@@ -8,6 +8,7 @@ import os
 import PyKDL as kdl
 import itertools
 from scripts.utils.utils import Utils as utils
+import collections
 
 CYLINDER = sim.GEOM_CYLINDER
 BOX = sim.GEOM_BOX
@@ -23,7 +24,7 @@ class SimulationWorld():
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
-            self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+            self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
         self.gui = sim.connect(sim.GUI)
         # self.gui = sim.connect(sim.DIRECT)
@@ -39,10 +40,10 @@ class SimulationWorld():
         self.robot = Robot.Robot(urdf_file)
         self.robot_id = -1
         self.table_id = -1
-        self.joint_name_to_id = {}
+        self.joint_name_to_id = collections.OrderedDict()
         self.no_of_joints = -1
-        self.start_state_for_traj_planning = {}
-        self.end_state_for_traj_planning = {}
+        self.start_state_for_traj_planning = collections.OrderedDict()
+        self.end_state_for_traj_planning = collections.OrderedDict()
 
         pland_id = self.place_items_from_urdf(urdf_file=location_prefix + "plane.urdf",
                                               position=[0, 0, 0.0])
@@ -91,10 +92,22 @@ class SimulationWorld():
             #     'lbr_iiwa_joint_6': 1.571,
             #     'lbr_iiwa_joint_7': 1.571
             # }
-            start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
-                           'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
-                           'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
-                           'lbr_iiwa_joint_2': 1.4999975516996142}
+            # start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
+            #                'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
+            #                'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
+            #                'lbr_iiwa_joint_2': 1.4999975516996142}
+
+            start_state = collections.OrderedDict()
+
+
+            start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
+            start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
+            start_state["lbr_iiwa_joint_3"] = -1.5762726255540713
+            start_state["lbr_iiwa_joint_4"] = -0.8666279970481103
+            start_state["lbr_iiwa_joint_5"] = 1.5855963769735366
+            start_state["lbr_iiwa_joint_6"] = 1.5770985888989753
+            start_state["lbr_iiwa_joint_7"] = 1.5704531145724918
+
             self.reset_joint_states(start_state)
 
             # else:
@@ -179,17 +192,36 @@ class SimulationWorld():
                 #     'lbr_iiwa_joint_6': 1.571,
                 #     'lbr_iiwa_joint_7': 1.571
                 # }
-                start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
-                               'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
-                               'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
-                               'lbr_iiwa_joint_2': 1.4999975516996142}
-                goal_state = {'lbr_iiwa_joint_5': 1.5979105177314896, 'lbr_iiwa_joint_4': -0.5791571346767671,
-                              'lbr_iiwa_joint_7': 1.5726221954434347, 'lbr_iiwa_joint_6': 1.5857854098720727,
-                              'lbr_iiwa_joint_1': -0.08180533826032865, 'lbr_iiwa_joint_3': -1.5873548294514912,
-                              'lbr_iiwa_joint_2': 1.5474152457596664}
+                start_state = collections.OrderedDict()
+                goal_state = collections.OrderedDict()
+                # start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
+                #                'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
+                #                'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
+                #                'lbr_iiwa_joint_2': 1.4999975516996142}
+                # goal_state = {'lbr_iiwa_joint_5': 1.5979105177314896, 'lbr_iiwa_joint_4': -0.5791571346767671,
+                #               'lbr_iiwa_joint_7': 1.5726221954434347, 'lbr_iiwa_joint_6': 1.5857854098720727,
+                #               'lbr_iiwa_joint_1': -0.08180533826032865, 'lbr_iiwa_joint_3': -1.5873548294514912,
+                #               'lbr_iiwa_joint_2': 1.5474152457596664}
 
                 # startState = [-1.5708022241650113, 1.5711988957726704, -1.57079632679,
                 #               -1.5707784259568982, 1.5713463278825928, 1.5719498333358852, 1.5707901876998593]
+
+                start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
+                start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
+                start_state["lbr_iiwa_joint_3"] = -1.5762726255540713
+                start_state["lbr_iiwa_joint_4"] = -0.8666279970481103
+                start_state["lbr_iiwa_joint_5"] = 1.5855963769735366
+                start_state["lbr_iiwa_joint_6"] = 1.5770985888989753
+                start_state["lbr_iiwa_joint_7"] = 1.5704531145724918
+
+                goal_state["lbr_iiwa_joint_1"] = -0.08180533826032865
+                goal_state["lbr_iiwa_joint_2"] = 1.5474152457596664
+                goal_state["lbr_iiwa_joint_3"] = -1.5873548294514912
+                goal_state["lbr_iiwa_joint_4"] = -0.5791571346767671
+                goal_state["lbr_iiwa_joint_5"] = 1.5979105177314896
+                goal_state["lbr_iiwa_joint_6"] = 1.5857854098720727
+                goal_state["lbr_iiwa_joint_7"] = 1.5726221954434347
+
                 group1_test = ['lbr_iiwa_joint_1']
 
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
@@ -284,7 +316,7 @@ class SimulationWorld():
                                 ray_test_result = sim.rayTest(closest_points[0][7], next_link_state[0])
                                 # print ray_test_result[0][3]
                             if len(ray_test_result):
-                                if ray_test_result[0][0] > -1:
+                                if True or ray_test_result[0][0] > -1:
                                     hit_ratio = float(ray_test_result[0][2])
                                     ray_normal = ray_test_result[0][4]
                                     ray_hit_point = ray_test_result[0][3]
@@ -557,7 +589,7 @@ class SimulationWorld():
 
     def plan_trajectory(self, group, goal_state, samples, duration, solver_config=None, collision_safe_distance=None,
                         collision_check_distance=0.2):
-        # self.collision_constraints = {}
+        # self.collision_constraints = collections.OrderedDict()
         self.planning_group = group
         self.planning_samples = samples
         self.collision_safe_distance = collision_safe_distance
@@ -607,7 +639,7 @@ class SimulationWorld():
         return status, can_execute_trajectory
 
     def get_current_states_for_given_joints(self, joints):
-        current_state = {}
+        current_state = collections.OrderedDict()
         for joint in joints:
             current_state[joint] = \
                 sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]

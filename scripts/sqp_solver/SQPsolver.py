@@ -214,7 +214,11 @@ class SQPsolver:
             # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
             # constraints = [cvxpy.norm(p, "inf") <= delta, - lower_limit >= cvxpy.matmul(constraints, p)]
             # constraints = [cvxpy.norm(p, "inf") <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
+            # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
+            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+                           (cvxpy.matmul(constraints[0], p) +
+                           cvxpy.matmul(constraints[1], p[-p.shape[0] - 7:])) <= upper_limit]
+
             # constraints = [cvxpy.norm(p, "inf") <= delta]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]

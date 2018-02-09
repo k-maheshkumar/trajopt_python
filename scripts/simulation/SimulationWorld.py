@@ -75,7 +75,7 @@ class SimulationWorld():
 
         # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.50, radius=0.12,
         #                                           position=[-0.17, -0.43, 0.9], mass=1)
-        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.25],
+        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.35],
                                              # position=[-0.17, -0.42, 0.9], mass=100)
                                              position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints.append(self.table_id)
@@ -109,6 +109,8 @@ class SimulationWorld():
             start_state["lbr_iiwa_joint_7"] = 1.5704531145724918
 
             self.reset_joint_states(start_state)
+            self.step_simulation_for(3)
+
 
             # else:
 
@@ -447,8 +449,8 @@ class SimulationWorld():
 
                                     jac_t1, jac_r1 = sim.calculateJacobian(self.robot_id, link_index,
                                                                            # closest_points[0][5],
-                                                                           # closest_point_on_link_in_link_frame_at_current_time_step,
-                                                                           next_joint_state_in_link_frame_at_next_time_step,
+                                                                           closest_point_on_link_in_link_frame_at_current_time_step,
+                                                                           # next_joint_state_in_link_frame_at_next_time_step,
                                                                            robot_next_joint_positions,
                                                                            zero_vec, zero_vec)
 
@@ -751,6 +753,18 @@ class SimulationWorld():
         # self.logger.info(status)
         return status
 
+    def reset_joints_to_random_states(self, joints, motor_dir=None):
+        if motor_dir is None:
+            # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
+            motor_dir = np.random.uniform(-1, 1, size=len(joints))
+        half_pi = 1.57079632679
+        for joint in joints:
+            for j in range(len(joints)):
+                sim.resetJointState(self.robot_id, self.joint_name_to_id[joint], motor_dir[j] * half_pi * (-(-1)**j))
+        status = "Reset joints to random pose is complete"
+        self.logger.info(status)
+        return status
+
     def reset_joint_states(self, joints, motor_dir=None):
         # if motor_dir is None:
         #     # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
@@ -775,25 +789,6 @@ class SimulationWorld():
         while time.time() < start + seconds:
             sim.stepSimulation()
 
-    def get_contact_points(self):
-        for i in range(sim.getNumJoints(self.robot_id)):
-            contact_points = sim.getClosestPoints(self.robot_id, self.box_id, linkIndexA=i, distance=4)
-            contact_points1 = sim.getContactPoints(self.robot_id, self.box_id, linkIndexA=i)
-
-            if len(contact_points) > 0 and len(contact_points1) > 0:
-                if contact_points[0][8] < 0:
-                    print "index ", i
-                    print "positionOnA ", contact_points[0][5]
-                    print "positionOnB ", contact_points[0][6]
-                    print "contactNormalOnB ", contact_points[0][7]
-                    print "contactDistance ", contact_points[0][8]
-
-                if contact_points1[0][8] < 0:
-                    print "index 1 ", i
-                    print "positionOnA 1 ", contact_points1[0][5]
-                    print "positionOnB 1 ", contact_points1[0][6]
-                    print "contactNormalOnB 1 ", contact_points1[0][7]
-                    print "contactDistance 1 ", contact_points1[0][8]
 
 
 if __name__ == "__main__":

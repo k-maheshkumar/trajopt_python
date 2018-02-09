@@ -76,7 +76,7 @@ class SimulationWorld():
         #                                           position=[-0.17, -0.43, 0.9], mass=1)
         self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.25],
                                              # position=[-0.17, -0.42, 0.9], mass=100)
-                                                position = [0.28, -0.43, 0.9], mass = 100)
+                                             position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints.append(self.table_id)
 
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
@@ -221,11 +221,9 @@ class SimulationWorld():
             link_states.append(state)
         return link_states
 
-
     def extract_ids_from_planning_group(self, group):
         for joint in group:
             self.planning_group_ids.append(self.joint_name_to_id[joint])
-
 
     def get_collision_infos(self, initial_trajectory, group, distance=0.20):
 
@@ -417,14 +415,12 @@ class SimulationWorld():
 
                                     jac_t1, jac_r1 = sim.calculateJacobian(self.robot_id, link_index,
                                                                            # closest_points[0][5],
-                                                                           closest_point_on_link_in_link_frame_at_current_time_step,
-                                                                           # next_joint_state_in_link_frame_at_next_time_step,
+                                                                           # closest_point_on_link_in_link_frame_at_current_time_step,
+                                                                           next_joint_state_in_link_frame_at_next_time_step,
                                                                            robot_next_joint_positions,
                                                                            zero_vec, zero_vec)
 
                                     jaco11 = np.asarray([[[0] * len(group)] * 3] * (time_step_count - 1))
-                                    if len(jaco11):
-                                        jaco11 = np.hstack(jaco1)
 
                                     jaco21 = np.asarray(
                                         [[[0] * len(group)] * 3] * (len(trajectory) - (time_step_count)))
@@ -656,7 +652,6 @@ class SimulationWorld():
         status = "Trajectory execution has finished"
         self.logger.info(status)
         return status
-
 
     def execute_trajectories(self, group):
         trajectories = self.robot.get_trajectory()

@@ -23,7 +23,6 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_default_config_params = self.config["robot"]["default_paramaters"]
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
-        self.start_simulation_button = QtGui.QPushButton('Start Simulation')
 
         self.sqp_labels = collections.OrderedDict()
         self.sqp_spin_box = collections.OrderedDict()
@@ -40,6 +39,7 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_config_combo_box = collections.OrderedDict()
         self.robot_config_params_spin_box = collections.OrderedDict()
         self.robot_config_group_box = QtGui.QGroupBox('Robot Actions')
+        self.simulation_action_group_box = QtGui.QGroupBox('Simulation')
 
         self.robot_config_hbox = QtGui.QVBoxLayout()
 
@@ -54,9 +54,18 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_action_buttons["random_pose"] = QtGui.QPushButton('Random Pose')
         self.robot_action_buttons["plan_and_execute"] = QtGui.QPushButton('Plan and Execute')
 
+        self.simulation_action_buttons = collections.OrderedDict()
+
+        # self.start_simulation_button = QtGui.QPushButton('Start Simulation')
+        self.simulation_action_buttons["start_simulation"] = QtGui.QPushButton('Start Simulation')
+        self.simulation_action_buttons["reset_object"] = QtGui.QPushButton('Reset Box')
+
         self.robot_action_button_hbox = QtGui.QHBoxLayout()
 
         self.robot_config_scroll = QtGui.QScrollArea()
+
+        self.simulation_action_button_hbox = QtGui.QHBoxLayout()
+        self.simulation_action_vbox_layout = QtGui.QVBoxLayout()
 
         self.simulation_scroll = QtGui.QScrollArea()
 
@@ -193,24 +202,38 @@ class PlannerGui(QtGui.QMainWindow):
                     functools.partial(self.on_robot_action_button_clicked, key))
                 self.robot_action_buttons[key].setMaximumWidth(220)
 
+        for key in self.simulation_action_buttons:
+                self.simulation_action_button_hbox.addWidget(self.simulation_action_buttons[key])
+                self.simulation_action_buttons[key].clicked.connect(
+                    functools.partial(self.on_simulation_action_button_clicked, key))
+                self.simulation_action_buttons[key].setMaximumWidth(220)
+
         self.robot_config_vbox_layout.addItem(self.robot_action_button_hbox)
 
         self.robot_config_vbox_layout.addStretch(1)
+
+        self.simulation_action_vbox_layout.addItem(self.simulation_action_button_hbox)
+        self.simulation_action_vbox_layout.addStretch(1)
 
         self.robot_config_group_box.setLayout(self.robot_config_vbox_layout)
         self.robot_config_scroll.setWidget(self.robot_config_group_box)
         self.robot_config_scroll.setWidgetResizable(True)
         self.robot_config_scroll.setFixedHeight(400)
         self.main_hbox_layout.addWidget(self.robot_config_scroll)
-        self.simulation_scroll.setWidget(self.start_simulation_button)
-        self.start_simulation_button.clicked.connect(self.on_start_simulation_clicked)
+
+        self.simulation_action_group_box.setLayout(self.simulation_action_vbox_layout)
+        self.simulation_scroll.setWidget(self.simulation_action_group_box)
         self.simulation_scroll.setWidgetResizable(True)
         self.simulation_scroll.setFixedHeight(400)
         self.main_hbox_layout.addWidget(self.simulation_scroll)
 
-    def on_start_simulation_clicked(self):
+    def on_simulation_action_button_clicked(self, key):
         # self.sim_world.run_simulation()
-        self.is_simulation_started = True
+
+        if key == "start_simulation":
+            self.is_simulation_started = True
+        if key == "reset_object" or key == "execute":
+            self.sim_world.reset_objects_to()
 
     def on_robot_spin_box_value_changed(self, key, value):
         # print(key, value)

@@ -34,6 +34,24 @@ class ProblemModelling:
         self.setup_logger(main_logger_name, verbose)
 
     def init(self, joints, no_of_samples, duration, decimals_to_round=5, lower_safe_distance_threshold=0.5, upper_safe_distance_threshold=2):
+        self.duration = -1
+        self.samples = -1
+        self.no_of_joints = -1
+        self.decimals_to_round = -1
+        self.joints = collections.OrderedDict()
+        self.cost_matrix_P = []
+        self.cost_matrix_q = []
+        self.robot_constraints_matrix = []
+        self.velocity_lower_limits = []
+        self.velocity_upper_limits = []
+        self.joints_lower_limits = []
+        self.joints_upper_limits = []
+        self.constraints_lower_limits = []
+        self.constraints_upper_limits = []
+        self.start_and_goal_matrix = []
+        self.start_and_goal_limits = []
+        self.velocity_upper_limits = []
+        self.initial_guess = []
         self.samples = no_of_samples
         self.duration = duration
         self.no_of_joints = len(joints)

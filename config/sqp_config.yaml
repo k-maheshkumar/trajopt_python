@@ -16,8 +16,8 @@ sqp:
   penalty_norm: 2
   solver:
   - ECOS
-  - CVXOPT
   - ECOS_BB
+  - CVXOPT
   - SCS
   trust_expand_ratio: 2
   trust_bad_region_ratio: 0.25

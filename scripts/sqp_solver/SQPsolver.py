@@ -212,7 +212,12 @@ class SQPsolver:
             # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
             # constraints = [cvxpy.norm(p, "inf") <= delta, - lower_limit >= cvxpy.matmul(constraints, p)]
             # constraints = [cvxpy.norm(p, "inf") <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
+            # print cvxpy.matmul(cvxpy.hstack([constraints, constraints]), cvxpy.hstack([p,p]))
+            # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
+            temp = np.hstack([constraints[0], constraints[1]])
+            print temp.shape
+            p1 = cvxpy.hstack([p, p])
+            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(temp, p1) <= upper_limit]
             # constraints = [cvxpy.norm(p, "inf") <= delta]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
@@ -311,15 +316,17 @@ class SQPsolver:
                 iteration_count += 1
                 # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
+                if callback_function is not None:
+                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
                     if callback_function is not None:
-                        constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
+                        # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                         if constraints is not None and lower_limit is not None and upper_limit is not None:
-                            dynamic_constraints_count = len(lower_limit)
+                            # dynamic_constraints_count = len(upper_limit)
                             # if dynamic_constraints_count > last_dynamic_constraints_count:
-                            # print "collision count increases. . . .. . ."
+                            #     print "collision count increases. . . .. . ."
                             # print x_k
-                            # x_k -= p_k
+                            #     x_k -= p_k
                             # print x_k
                             # penalty.value *= trust_expand_ratio
                             # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)

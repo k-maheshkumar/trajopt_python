@@ -284,7 +284,7 @@ class PlannerGui(QtGui.QMainWindow):
             status = "Please wait, random pose for the joints are being set.."
             self.statusBar.showMessage(self.last_status + status)
             if group is not None:
-                status = self.sim_world.reset_joint_states(group, motor_dir=np.random.rand(1, len(group)).flatten())
+                status = self.sim_world.reset_joints_to_random_states(group, motor_dir=np.random.rand(1, len(group)).flatten())
                 self.statusBar.showMessage(self.last_status + status)
             else:
                 self.statusBar.clearMessage()

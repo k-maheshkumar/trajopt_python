@@ -3,10 +3,12 @@ import pybullet as sim
 import time
 import numpy as np
 from scripts.Robot import Robot
-from scripts.utils.utils import utils
+from munch import *
 import os
 import PyKDL as kdl
 import itertools
+from scripts.utils.utils import Utils as utils
+import collections
 
 CYLINDER = sim.GEOM_CYLINDER
 BOX = sim.GEOM_BOX
@@ -22,7 +24,7 @@ class SimulationWorld():
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
-            self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+            self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
         self.gui = sim.connect(sim.GUI)
         # self.gui = sim.connect(sim.DIRECT)
@@ -74,6 +76,7 @@ class SimulationWorld():
         # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.28, radius=0.1,
         #                                           position=[-0.17, -0.22, 0.9], mass=1)
         self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.25],
+                                             # position=[-0.17, -0.42, 0.9], mass=100)
                                              position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints.append(self.table_id)
 
@@ -89,10 +92,22 @@ class SimulationWorld():
             #     'lbr_iiwa_joint_6': 1.571,
             #     'lbr_iiwa_joint_7': 1.571
             # }
-            start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
-                           'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
-                           'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
-                           'lbr_iiwa_joint_2': 1.4999975516996142}
+            # start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
+            #                'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
+            #                'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
+            #                'lbr_iiwa_joint_2': 1.4999975516996142}
+
+            start_state = collections.OrderedDict()
+
+
+            start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
+            start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
+            start_state["lbr_iiwa_joint_3"] = -1.5762726255540713
+            start_state["lbr_iiwa_joint_4"] = -0.8666279970481103
+            start_state["lbr_iiwa_joint_5"] = 1.5855963769735366
+            start_state["lbr_iiwa_joint_6"] = 1.5770985888989753
+            start_state["lbr_iiwa_joint_7"] = 1.5704531145724918
+
             self.reset_joint_states(start_state)
 
             # else:
@@ -177,17 +192,36 @@ class SimulationWorld():
                 #     'lbr_iiwa_joint_6': 1.571,
                 #     'lbr_iiwa_joint_7': 1.571
                 # }
-                start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
-                               'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
-                               'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
-                               'lbr_iiwa_joint_2': 1.4999975516996142}
-                goal_state = {'lbr_iiwa_joint_5': 1.5979105177314896, 'lbr_iiwa_joint_4': -0.5791571346767671,
-                              'lbr_iiwa_joint_7': 1.5726221954434347, 'lbr_iiwa_joint_6': 1.5857854098720727,
-                              'lbr_iiwa_joint_1': -0.08180533826032865, 'lbr_iiwa_joint_3': -1.5873548294514912,
-                              'lbr_iiwa_joint_2': 1.5474152457596664}
+                start_state = collections.OrderedDict()
+                goal_state = collections.OrderedDict()
+                # start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
+                #                'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
+                #                'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
+                #                'lbr_iiwa_joint_2': 1.4999975516996142}
+                # goal_state = {'lbr_iiwa_joint_5': 1.5979105177314896, 'lbr_iiwa_joint_4': -0.5791571346767671,
+                #               'lbr_iiwa_joint_7': 1.5726221954434347, 'lbr_iiwa_joint_6': 1.5857854098720727,
+                #               'lbr_iiwa_joint_1': -0.08180533826032865, 'lbr_iiwa_joint_3': -1.5873548294514912,
+                #               'lbr_iiwa_joint_2': 1.5474152457596664}
 
                 # startState = [-1.5708022241650113, 1.5711988957726704, -1.57079632679,
                 #               -1.5707784259568982, 1.5713463278825928, 1.5719498333358852, 1.5707901876998593]
+
+                start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
+                start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
+                start_state["lbr_iiwa_joint_3"] = -1.5762726255540713
+                start_state["lbr_iiwa_joint_4"] = -0.8666279970481103
+                start_state["lbr_iiwa_joint_5"] = 1.5855963769735366
+                start_state["lbr_iiwa_joint_6"] = 1.5770985888989753
+                start_state["lbr_iiwa_joint_7"] = 1.5704531145724918
+
+                goal_state["lbr_iiwa_joint_1"] = -0.08180533826032865
+                goal_state["lbr_iiwa_joint_2"] = 1.5474152457596664
+                goal_state["lbr_iiwa_joint_3"] = -1.5873548294514912
+                goal_state["lbr_iiwa_joint_4"] = -0.5791571346767671
+                goal_state["lbr_iiwa_joint_5"] = 1.5979105177314896
+                goal_state["lbr_iiwa_joint_6"] = 1.5857854098720727
+                goal_state["lbr_iiwa_joint_7"] = 1.5726221954434347
+
                 group1_test = ['lbr_iiwa_joint_1']
 
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
@@ -298,12 +332,14 @@ class SimulationWorld():
             time_step_count += 1
             # current_time_step_of_trajectory = current_time_step_of_trajectory.reshape((current_time_step_of_trajectory.shape[0], 1))
             # self.reset_joint_states_to(current_time_step_of_trajectory, group)
+
             if next_time_step_of_trajectory is not None:
                 current_robot_state = list(current_time_step_of_trajectory)
                 next_robot_state = list(next_time_step_of_trajectory)
                 zero_vec = [0.0] * len(current_robot_state)
                 current_link_states = self.get_link_states_at(current_time_step_of_trajectory, group)
                 next_link_states = self.get_link_states_at(next_time_step_of_trajectory, group)
+                robot_next_joint_positions = list(current_time_step_of_trajectory)
 
                 self.reset_joint_states_to(current_time_step_of_trajectory, group)
 
@@ -414,6 +450,7 @@ class SimulationWorld():
                                 # print link_index
                                 # print res
 
+    
 
                 #     else:
                 #         jacobian.append(np.zeros((3, len(group))))
@@ -598,7 +635,6 @@ class SimulationWorld():
         self.logger.info(status)
         return status
 
-
     def execute_trajectories(self, group):
         trajectories = self.robot.get_trajectory()
         sleep_time = trajectories.duration / float(trajectories.no_of_samples)
@@ -663,6 +699,18 @@ class SimulationWorld():
             status = "cannot reset the joint states as the trajectory and joints size doesn't match"
 
         # self.logger.info(status)
+        return status
+
+    def reset_joints_to_random_states(self, joints, motor_dir=None):
+        if motor_dir is None:
+            # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
+            motor_dir = np.random.uniform(-1, 1, size=len(joints))
+        half_pi = 1.57079632679
+        for joint in joints:
+            for j in range(len(joints)):
+                sim.resetJointState(self.robot_id, self.joint_name_to_id[joint], motor_dir[j] * half_pi * (-(-1)**j))
+        status = "Reset joints to random pose is complete"
+        self.logger.info(status)
         return status
 
     def reset_joint_states(self, joints, motor_dir=None):

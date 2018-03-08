@@ -78,8 +78,8 @@ class SimulationWorld():
         self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
                                              # position=[-0.17, -0.42, 0.9], mass=100)
                                              position=[0.28, -0.43, 0.9], mass=100)
-        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
-                                             position=[-0.17, -0.42, 0.9], mass=100)
+        # self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
+        #                                      position=[-0.17, -0.42, 0.9], mass=100)
                                              # position=[0.28, -0.43, 0.9], mass=100)
         # self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
         #                                      position=[-0.50, -0.42, 0.9], mass=100)
@@ -565,6 +565,8 @@ class SimulationWorld():
         return status, can_execute_trajectory
 
     def check_for_collision_in_trajectory(self, trajectory, group, distance=0.05):
+        collision = False
+        start_state = self.get_current_states_for_given_joints(group)
 
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
             next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
@@ -595,8 +597,16 @@ class SimulationWorld():
                         if len(cast_closest_points) > 0:
                             dist = cast_closest_points[0][9]
                             if dist < 0:
-                                return True
-        return False
+                                collision = True
+                                break
+                    if collision:
+                        break
+            if collision:
+                break
+
+        self.reset_joint_states(start_state, group)
+
+        return collision
 
     def setup_joint_id_to_joint_name(self):
         for i in range(self.no_of_joints):

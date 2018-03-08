@@ -19,8 +19,8 @@ class SimulationWorld():
 
         if urdf_file is None:
             main_logger_name = "Trajectory_Planner"
-            # verbose = "DEBUG"
-            verbose = False
+            verbose = "DEBUG"
+            # verbose = False
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
@@ -72,11 +72,18 @@ class SimulationWorld():
         self.setup_joint_id_to_joint_name()
         self.collision_constraints = []
 
-        # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.50, radius=0.12,
-        #                                           position=[-0.17, -0.43, 0.9], mass=1)
-        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.25],
+        # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.70, radius=0.12,
+        #                                           # position=[-0.17, -0.43, 0.9], mass=1)
+        #                                           position=[-0.50, 0.42, 0.9], mass=100)
+        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
                                              # position=[-0.17, -0.42, 0.9], mass=100)
                                              position=[0.28, -0.43, 0.9], mass=100)
+        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
+                                             position=[-0.17, -0.42, 0.9], mass=100)
+                                             # position=[0.28, -0.43, 0.9], mass=100)
+        # self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
+        #                                      position=[-0.50, -0.42, 0.9], mass=100)
+                                             # position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints.append(self.table_id)
 
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
@@ -240,6 +247,8 @@ class SimulationWorld():
                 self.plan_trajectory(goal_state.keys(), goal_state, samples, duration,
                                      collision_safe_distance=collision_safe_distance,
                                      collision_check_distance=check_distance)
+                print "if trajectory has collision: ", \
+                self.check_for_collision_in_trajectory(self.robot.get_trajectory().final, goal_state.keys(), collision_safe_distance)
                 self.execute_trajectory()
                 # self.execute_trajectories(full_arm)
                 # import sys
@@ -554,6 +563,40 @@ class SimulationWorld():
         status += self.execute_trajectory()
 
         return status, can_execute_trajectory
+
+    def check_for_collision_in_trajectory(self, trajectory, group, distance=0.05):
+
+        for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
+            next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
+
+            if next_time_step_of_trajectory is not None:
+                current_link_states = self.get_link_states_at(current_time_step_of_trajectory, group)
+                next_link_states = self.get_link_states_at(next_time_step_of_trajectory, group)
+
+                self.reset_joint_states_to(current_time_step_of_trajectory, group)
+
+                for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
+                                                                                      current_link_states,
+                                                                                      next_link_states):
+
+                    for constraint in self.collision_constraints:
+
+                        cast_closest_points = sim.getConvexSweepClosestPoints(self.robot_id, constraint,
+                                                                              linkIndexA=link_index, distance=distance,
+                                                                              bodyAfromPosition=current_link_state[0],
+                                                                              bodyAfromOrientation=current_link_state[
+                                                                                  1],
+                                                                              # bodyAfromOrientation=[0, 0, 0, 1],
+                                                                              bodyAtoPosition=next_link_state[0],
+                                                                              bodyAtoOrientation=next_link_state[1],
+                                                                              # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                              )
+
+                        if len(cast_closest_points) > 0:
+                            dist = cast_closest_points[0][9]
+                            if dist < 0:
+                                return True
+        return False
 
     def setup_joint_id_to_joint_name(self):
         for i in range(self.no_of_joints):

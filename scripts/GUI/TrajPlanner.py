@@ -4,7 +4,7 @@ import functools
 from scripts.simulation.SimulationWorld import SimulationWorld
 import numpy as np
 import logging
-
+import collections
 
 class PlannerGui(QtGui.QMainWindow):
     def __init__(self, verbose=False, file_log=False, simulation=None):
@@ -19,25 +19,26 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
         self.sqp_config = self.sqp_yaml.get_by_key("sqp")
-        robot_config_file = file_path_prefix + self.config["robot"]
+        robot_config_file = file_path_prefix + self.config["robot"]["config"]
+        self.robot_default_config_params = self.config["robot"]["default_paramaters"]
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
         self.start_simulation_button = QtGui.QPushButton('Start Simulation')
 
-        self.sqp_labels = {}
-        self.sqp_spin_box = {}
-        self.sqp_combo_box = {}
+        self.sqp_labels = collections.OrderedDict()
+        self.sqp_spin_box = collections.OrderedDict()
+        self.sqp_combo_box = collections.OrderedDict()
 
         self.sqp_config_group_box = QtGui.QGroupBox('SQP solver Parameters')
         self.sqp_config_form = QtGui.QFormLayout()
 
         self.sqp_config_scroll = QtGui.QScrollArea()
 
-        self.robot_config_params = {}
-        self.robot_config_labels = {}
-        self.robot_config_spin_box = {}
-        self.robot_config_combo_box = {}
-        self.robot_config_params_spin_box = {}
+        self.robot_config_params = collections.OrderedDict()
+        self.robot_config_labels = collections.OrderedDict()
+        self.robot_config_spin_box = collections.OrderedDict()
+        self.robot_config_combo_box = collections.OrderedDict()
+        self.robot_config_params_spin_box = collections.OrderedDict()
         self.robot_config_group_box = QtGui.QGroupBox('Robot Actions')
 
         self.robot_config_hbox = QtGui.QVBoxLayout()
@@ -46,7 +47,7 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.robot_config_form = QtGui.QFormLayout()
 
-        self.robot_action_buttons = {}
+        self.robot_action_buttons = collections.OrderedDict()
         self.robot_action_button_group = QtGui.QButtonGroup(self)
         self.robot_action_buttons["execute"] = QtGui.QPushButton('Execute')
         self.robot_action_buttons["plan"] = QtGui.QPushButton('Plan')
@@ -59,8 +60,8 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.simulation_scroll = QtGui.QScrollArea()
 
-        self.selected_robot_combo_value = {}
-        self.selected_robot_spin_value = {}
+        self.selected_robot_combo_value = collections.OrderedDict()
+        self.selected_robot_spin_value = collections.OrderedDict()
 
         self.statusBar = QtGui.QStatusBar()
 
@@ -159,36 +160,34 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_config_hbox.addStretch(1)
         self.robot_config_vbox_layout.addItem(self.robot_config_hbox)
 
-        for key in self.robot_config:
-            # print key, value
-            if key != "config_params" and key != "urdf":
+        for key, value in self.robot_config.items():
+            if key != "urdf":
                 self.robot_config_combo_box[key] = QtGui.QComboBox(self)
                 self.robot_config_combo_box[key].addItem("Select")
                 self.robot_config_form.addRow(key, self.robot_config_combo_box[key])
                 self.robot_config_combo_box[key].currentIndexChanged.connect(
                     functools.partial(self.on_robot_config_combo_box_value_changed, key))
-                for key1, value1 in self.robot_config[key].items():
-                    self.robot_config_combo_box[key].addItem(key1)
-                    # self.selected_robot_combo_value[key] = value1
-                    # print " key1, value1",  key1, value1
-
-            if key == "config_params":
-                for key1, value1 in self.robot_config[key].items():
-                    print " key1, value1", key1, value1
-                    self.robot_config_params_spin_box[key1] = QtGui.QDoubleSpinBox(self)
-                    self.robot_config_form.addRow(key1, self.robot_config_params_spin_box[key1])
-                    self.robot_config_params_spin_box[key1].setValue(float(value1["value"]))
-                    self.robot_config_params_spin_box[key1].valueChanged.connect(
-                        functools.partial(self.on_robot_spin_box_value_changed, key1))
-                    self.robot_config_params_spin_box[key1].setRange(value1["min"], value1["max"])
-                    self.robot_config_params_spin_box[key1].setSingleStep(value1["step"])
+                if type(self.robot_config[key]) is not str:
+                    for key1, value1 in self.robot_config[key].items():
+                        self.robot_config_combo_box[key].addItem(key1)
+                        self.selected_robot_combo_value[key] = value1
+                        # print " key1, value1",  key1, value1
+        for key, value in self.robot_default_config_params.items():
+            # for key1, value1 in self.robot_config[key].items():
+                # print " key1, value1", key1, value1
+            self.robot_config_params_spin_box[key] = QtGui.QDoubleSpinBox(self)
+            self.robot_config_form.addRow(key, self.robot_config_params_spin_box[key])
+            self.robot_config_params_spin_box[key].setValue(float(value["value"]))
+            self.robot_config_params_spin_box[key].valueChanged.connect(
+                functools.partial(self.on_robot_spin_box_value_changed, key))
+            self.robot_config_params_spin_box[key].setRange(value["min"], value["max"])
+            self.robot_config_params_spin_box[key].setSingleStep(value["step"])
 
                     # self.selected_robot_spin_value[key] = value1
 
         self.robot_action_button_hbox.addStretch(1)
 
         for key in self.robot_action_buttons:
-            if key != "config_params":
                 self.robot_action_button_hbox.addWidget(self.robot_action_buttons[key])
                 self.robot_action_buttons[key].clicked.connect(
                     functools.partial(self.on_robot_action_button_clicked, key))
@@ -230,6 +229,7 @@ class PlannerGui(QtGui.QMainWindow):
         duration = None
         group = None
         safe_collision_distance = None
+        collision_check_distance = None
         goal_state = None
         if "samples" in self.selected_robot_spin_value:
             samples = self.selected_robot_spin_value["samples"]
@@ -241,6 +241,8 @@ class PlannerGui(QtGui.QMainWindow):
             goal_state = self.selected_robot_combo_value["joint_configurations"]
         if "safe_collision_distance" in self.selected_robot_spin_value:
             safe_collision_distance = self.selected_robot_spin_value["safe_collision_distance"]
+        if "collision_check_distance" in self.selected_robot_spin_value:
+            collision_check_distance = self.selected_robot_spin_value["collision_check_distance"]
         # if "upper_collision_limit" in self.selected_robot_spin_value:
         #     upper_collision_limit = self.selected_robot_spin_value["upper_collision_limit"]
         # print samples
@@ -251,14 +253,13 @@ class PlannerGui(QtGui.QMainWindow):
 
         if group is not None and goal_state is not None:
             if samples is not None and duration is not None and self.sqp_config is not None and \
-                            safe_collision_distance is not None:
-                print "here"
+                            safe_collision_distance is not None and collision_check_distance is not None:
                 if key == "plan" or key == "plan_and_execute":
                     self.statusBar.clearMessage()
                     status = "Please wait, trajectory is being planned... Then trajectory will be executed.."
                     self.statusBar.showMessage(self.last_status + status)
                     status = self.initiate_plan_trajectory(group, goal_state, samples, duration,
-                                                           safe_collision_distance)
+                                                           safe_collision_distance, collision_check_distance)
                     self.statusBar.clearMessage()
                     self.statusBar.showMessage(self.last_status + status)
                 if key == "plan_and_execute" or key == "execute":
@@ -291,14 +292,16 @@ class PlannerGui(QtGui.QMainWindow):
                 self.statusBar.showMessage(self.last_status + status)
 
 
-    def initiate_plan_trajectory(self, group, goal_state, samples, duration, collision_d_safe_limit):
-        can_execute_trajectory = False
+    def initiate_plan_trajectory(self, group, goal_state, samples, duration, collision_d_safe_limit,
+                                 collision_check_distance):
+        # can_execute_trajectory = False
         if samples is not None and duration is not None \
                 and group is not None and goal_state is not None and self.sqp_config is not None:
-            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=samples,
-                                                                                 duration=duration,
+            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=int(samples),
+                                                                                 duration=int(duration),
+                                                                                 solver_config=self.sqp_config,
                                                                                  collision_safe_distance=collision_d_safe_limit,
-                                                                                 solver_config=self.sqp_config, )
+                                                                                 collision_check_distance=collision_check_distance)
         else:
             status = "Please select the planning group and joint configuration.."
 

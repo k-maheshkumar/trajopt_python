@@ -5,6 +5,7 @@ import numpy as np
 from scripts.Robot import Robot
 from munch import *
 import os
+import collections
 
 CYLINDER = sim.GEOM_CYLINDER
 BOX = sim.GEOM_BOX
@@ -35,10 +36,10 @@ class SimulationWorld():
         self.robot = Robot.Robot(urdf_file)
         self.robot_id = -1
         self.table_id = -1
-        self.joint_name_to_id = {}
+        self.joint_name_to_id = collections.OrderedDict()
         self.no_of_joints = -1
-        self.start_state_for_traj_planning = {}
-        self.end_state_for_traj_planning = {}
+        self.start_state_for_traj_planning = collections.OrderedDict()
+        self.end_state_for_traj_planning = collections.OrderedDict()
         pland_id = self.place_items_from_urdf(urdf_file=location_prefix + "plane.urdf",
                                               position=[0, 0, 0.0])
 
@@ -535,7 +536,7 @@ class SimulationWorld():
         can_execute_trajectory = False
         pos = self.get_joint_states(group)[0]
         zero_vec = [0.0] * len(pos)
-        jacobian_by_joint_name = {}
+        jacobian_by_joint_name = collections.OrderedDict()
         # for joint_name in group:
         # # result = sim.getLinkState(self.robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
         # #                           computeForwardKinematics=1)
@@ -620,7 +621,7 @@ class SimulationWorld():
 
     def plan_trajectory(self, group, goal_state, samples, duration, lower_collision_limit=None,
                         upper_collision_limit=None, solver_config=None, collision_check_distance=0.2):
-        self.collision_constraints = {}
+        self.collision_constraints = collections.OrderedDict()
         self.planning_group = group
         self.planning_samples = samples
         self.lower_threshold_collision_limit = lower_collision_limit
@@ -661,7 +662,7 @@ class SimulationWorld():
         return status, can_execute_trajectory
 
     def get_current_states_for_given_joints(self, joints):
-        current_state = {}
+        current_state = collections.OrderedDict()
         for joint in joints:
             current_state[joint] = \
             sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]

@@ -1,4 +1,5 @@
 duration: 5
+samples: 5
 joints:
   lbr_iiwa_joint_1:
     collision_constraints:
@@ -40,46 +41,46 @@ joints:
     states:
       end: -2.0417782994426674
       start: -0.49197958189616936
-  lbr_iiwa_joint_2:
-    collision_constraints:
-      initial_signed_distance:
-      - - 0.5226252
-      jacobian:
-      - - -0.0590000004
-        - -0.0331987955
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-      - - 0.000300000014
-        - -0.0257262465
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-      - - 9.76270852e-19
-        - 0.036376386
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-      limits:
-        lower: 2
-        upper: 8
-      normal:
-      - - -0.312383895
-      - - 0.949955947
-      - - -2.62526036e-17
-    limit:
-      lower: -2.09439510239
-      upper: 2.09439510239
-      velocity: 10
-    states:
-      end: 0.9444594031189716
-      start: 1.4223062659337982
+#  lbr_iiwa_joint_2:
+#    collision_constraints:
+#      initial_signed_distance:
+#      - - 0.5226252
+#      jacobian:
+#      - - -0.0590000004
+#        - -0.0331987955
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#      - - 0.000300000014
+#        - -0.0257262465
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#      - - 9.76270852e-19
+#        - 0.036376386
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#        - 0.0
+#      limits:
+#        lower: 2
+#        upper: 8
+#      normal:
+#      - - -0.312383895
+#      - - 0.949955947
+#      - - -2.62526036e-17
+#    limit:
+#      lower: -2.09439510239
+#      upper: 2.09439510239
+#      velocity: 10
+#    states:
+#      end: 0.9444594031189716
+#      start: 1.4223062659337982
 #  lbr_iiwa_joint_3:
 #    collision_constraints:
 #      initial_signed_distance:
@@ -280,4 +281,3 @@ joints:
 #    states:
 #      end: 1.5716145442929421
 #      start: 1.5708037563007493
-samples: 30

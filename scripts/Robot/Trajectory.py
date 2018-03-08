@@ -1,15 +1,14 @@
-from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 from pylab import *
-
+import collections
 
 class Trajectory:
     def __init__(self):
         self.__trajectory = -1
         self.__no_of_samples = -1
         self.__duration = -1
-        self.__trajectory_by_joint_name = defaultdict(list)
+        self.__trajectory_by_joint_name = collections.defaultdict(list)
         self.__initial = None
         self.__trajectories = []
         self.__final = None
@@ -63,12 +62,12 @@ class Trajectory:
         # self.add_trajectory(trajectory)
 
     def extract_trajectory_of_individual_joints(self, group):
-        self.__trajectory_by_joint_name = dict(zip(group, np.array(self.final).T))
+        self.__trajectory_by_joint_name = collections.OrderedDict(zip(group, np.array(self.final).T))
 
     def add_trajectory(self, trajectory):
 
         # self.__trajectories.append(dict(zip(self.trajectory_group, np.array(trajectory).T)))
-        self.__trajectories.append(dict(zip(self.trajectory_group, np.array(trajectory).T)))
+        self.__trajectories.append(collections.OrderedDict(zip(self.trajectory_group, np.array(trajectory).T)))
 
     # def get_trajectory_by_name(self, trajectory):
     #     self.add_trajectory(trajectory)

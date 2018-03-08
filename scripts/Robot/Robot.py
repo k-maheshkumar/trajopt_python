@@ -1,10 +1,11 @@
 from urdf_parser_py.urdf import URDF
+# from scripts.Planner import Planner as planner
 from scripts.Planner import Planner as planner
 import time
 from easydict import EasyDict as edict
-import collections
+from scripts.utils import yaml_paser as yaml
 import logging
-
+import collections
 
 class Robot:
     def __init__(self, urdf_file):

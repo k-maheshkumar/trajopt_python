@@ -1,5 +1,5 @@
 from pymongo import Connection
-
+import collections
 
 class MongoDriver():
     def __init__(self):

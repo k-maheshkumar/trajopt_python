@@ -3,6 +3,7 @@ import cvxpy
 import numpy as np
 from scripts.utils import yaml_paser as yaml
 import logging
+import collections
 
 '''
         minimize
@@ -32,7 +33,7 @@ class SQPsolver:
         self.status = "-1"
         self.norm_ = 1
 
-        self.solver_config = {}
+        self.solver_config = collections.OrderedDict()
 
         self.solver = []
 

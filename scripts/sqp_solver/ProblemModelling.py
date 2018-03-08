@@ -1,7 +1,7 @@
 import numpy as np
 import logging
-from scripts.utils.utils import Utils as utils
 import collections
+
 
 class ProblemModelling:
     def __init__(self):
@@ -34,24 +34,6 @@ class ProblemModelling:
         self.setup_logger(main_logger_name, verbose)
 
     def init(self, joints, no_of_samples, duration, decimals_to_round=5, lower_safe_distance_threshold=0.5, upper_safe_distance_threshold=2):
-        self.duration = -1
-        self.samples = -1
-        self.no_of_joints = -1
-        self.decimals_to_round = -1
-        self.joints = collections.OrderedDict()
-        self.cost_matrix_P = []
-        self.cost_matrix_q = []
-        self.robot_constraints_matrix = []
-        self.velocity_lower_limits = []
-        self.velocity_upper_limits = []
-        self.joints_lower_limits = []
-        self.joints_upper_limits = []
-        self.constraints_lower_limits = []
-        self.constraints_upper_limits = []
-        self.start_and_goal_matrix = []
-        self.start_and_goal_limits = []
-        self.velocity_upper_limits = []
-        self.initial_guess = []
         self.samples = no_of_samples
         self.duration = duration
         self.no_of_joints = len(joints)
@@ -157,7 +139,7 @@ class ProblemModelling:
             end_state = np.round(self.joints[joint]["states"]["end"], self.decimals_to_round)
             start_and_goal_lower_limits.append(np.round(start_state, self.decimals_to_round))
             start_and_goal_upper_limits.append(np.round(end_state, self.decimals_to_round))
-            self.initial_guess.append(utils.interpolate(start_state, end_state, self.samples, self.decimals_to_round))
+            self.initial_guess.append(self.interpolate(start_state, end_state))
 
         self.joints_lower_limits = np.hstack([self.joints_lower_limits] * self.samples).reshape(
             (1, len(self.joints_lower_limits) * self.samples))
@@ -247,7 +229,6 @@ class ProblemModelling:
                     # upper_collision_limit = np.vstack([upper_collision_limit])
         # print "normal times jacobian", normal_times_jacobian.shape
         # print "lower_collision_limit", np.asarray(lower_collision_limit).shape
-        # print normal_times_jacobian.shape, normal_times_jacobian1.shape
         return np.asarray([normal_times_jacobian, normal_times_jacobian1]), lower_collision_limit, upper_collision_limit
 
     def get_collision_matrix(self):
@@ -289,8 +270,8 @@ class ProblemModelling:
     def update_constraints(self, matrix):
         # print self.constraints_lower_limits.shape, matrix.shape, np.full((1, matrix.shape[0]), -0.2).shape
         self.robot_constraints_matrix = np.vstack([self.robot_constraints_matrix, matrix])
-        self.constraints_lower_limits = np.hstack([self.constraints_lower_limits, np.full((1, matrix.shape[0]), -0.02).flatten()])
-        self.constraints_upper_limits = np.hstack([self.constraints_upper_limits, np.full((1, matrix.shape[0]), 0.02).flatten()])
+        self.constraints_lower_limits = np.hstack([self.constraints_lower_limits, np.full((1, matrix.shape[0]), -0.2).flatten()])
+        self.constraints_upper_limits = np.hstack([self.constraints_upper_limits, np.full((1, matrix.shape[0]), 0.2).flatten()])
 
     def get_velocity_matrix(self):
 
@@ -320,6 +301,17 @@ class ProblemModelling:
 
     def formulate_collision_constraints(self, initial_singed_distance, normal, jacbian, safe_distance):
         pass
+
+    def interpolate(self, start, end, samples=None):
+        if samples is None:
+            samples = self.samples
+        data = []
+        step_size = (end - start) / (samples - 1)
+        intermediate = start
+        for i in range(samples):
+            data.append(intermediate)
+            intermediate += step_size
+        return np.round(data, self.decimals_to_round)
 
     def __diagonal_block_mat_slicing(self, matrix):
         shape = matrix[0].shape

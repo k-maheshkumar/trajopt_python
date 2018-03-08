@@ -32,12 +32,9 @@ A = np.asarray([
 # print A
 
 # B = A[::2,-5:]
-# B = A[:,-5:]
+B = A[:,-5:]
 # print B
-# E = B[:6:2,:]
-
-E = A[:,-5:]
-
+E = B[:6:2,:]
 print E
 
 # F = B[-3:, :]

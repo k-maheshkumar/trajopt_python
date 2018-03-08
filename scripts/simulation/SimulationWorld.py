@@ -3,11 +3,10 @@ import pybullet as sim
 import time
 import numpy as np
 from scripts.Robot import Robot
-from munch import *
+from scripts.utils.utils import utils
 import os
 import PyKDL as kdl
 import itertools
-from scripts.utils.utils import Utils as utils
 import collections
 
 CYLINDER = sim.GEOM_CYLINDER
@@ -24,7 +23,7 @@ class SimulationWorld():
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
         else:
-            self.logger = logging.getLogger("Trajectory_Planner."+__name__)
+            self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
         self.gui = sim.connect(sim.GUI)
         # self.gui = sim.connect(sim.DIRECT)
@@ -73,10 +72,9 @@ class SimulationWorld():
         self.setup_joint_id_to_joint_name()
         self.collision_constraints = []
 
-        # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.50, radius=0.12,
-        #                                           position=[-0.17, -0.43, 0.9], mass=1)
-        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.35],
-                                             # position=[-0.17, -0.42, 0.9], mass=100)
+        # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.28, radius=0.1,
+        #                                           position=[-0.17, -0.22, 0.9], mass=1)
+        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.25],
                                              position=[0.28, -0.43, 0.9], mass=100)
         self.collision_constraints.append(self.table_id)
 
@@ -98,7 +96,6 @@ class SimulationWorld():
             #                'lbr_iiwa_joint_2': 1.4999975516996142}
 
             start_state = collections.OrderedDict()
-
 
             start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
             start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
@@ -229,22 +226,23 @@ class SimulationWorld():
                 group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
                 group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
                 duration = 20
-                samples = 20
+                samples = 5
                 full_arm = group1 + group2
                 # full_arm = group1_test
                 self.reset_joint_states(start_state)
                 self.step_simulation_for(2)
                 # time.sleep(1)
-                check_distance = 0.2
-                collision_safe_distance = 0.10
+                check_distance = 0.1
+                collision_safe_distance = 0.05
 
                 self.plan_trajectory(goal_state.keys(), goal_state, samples, duration,
-                                     collision_safe_distance=collision_safe_distance,
-                                     collision_check_distance=check_distance)
-                self.execute_trajectory()
+                                     collision_safe_distance=collision_safe_distance, collision_check_distance=check_distance)
+                # self.execute_trajectory()
+                # print self.robot.planner.get_trajectory().trajectory_by_name
                 # self.execute_trajectories(full_arm)
-                # import sys
-                # sys.exit()
+                print self.robot.planner.get_trajectory().trajectory_by_name
+                import sys
+                sys.exit()
 
     def get_link_states_at(self, trajectory, group):
         link_states = []
@@ -266,6 +264,55 @@ class SimulationWorld():
 
         return collision_infos
 
+    def get_jacobian_matrix(self, position_jacobian, trajectory_length, planning_group_length, time_step_count):
+        jaco1 = np.asarray([[[0] * planning_group_length] * 3] * (time_step_count - 1))
+        if len(jaco1):
+            jaco1 = np.hstack(jaco1)
+
+        jaco2 = np.asarray(
+            [[[0] * planning_group_length] * 3] * (trajectory_length - time_step_count))
+
+        if len(jaco1) > 0 and len(jaco2):
+            jaco2 = np.hstack(jaco2)
+            jacobian_matrix = np.hstack(
+                [jaco1, np.asarray(position_jacobian), jaco2])
+        elif len(jaco1) > 0 and len(jaco2) == 0:
+            # jacobian_matrix = np.vstack([jaco1, np.asarray(jac_t).reshape(1, 3, 7)])
+            jacobian_matrix = np.hstack([jaco1, np.asarray(position_jacobian)])
+        elif len(jaco1) == 0 and len(jaco2) > 0:
+            jacobian_matrix = np.vstack(
+                [np.asarray(position_jacobian).reshape(1, 3, 7), jaco2])
+            jacobian_matrix = np.hstack(jacobian_matrix)
+
+        return jacobian_matrix
+
+    def get_velocity_matrix(self, link_index, planning_group_length, time_step_count):
+        increase_resolution_matrix = []
+
+        velocity_matrix = np.zeros((planning_group_length * self.planning_samples,
+                                    self.planning_samples * planning_group_length))
+        np.fill_diagonal(velocity_matrix, -1.0)
+        i, j = np.indices(velocity_matrix.shape)
+        velocity_matrix[i == j - planning_group_length] = 1.0
+
+        # to slice zero last row
+        velocity_matrix.resize(velocity_matrix.shape[0] - planning_group_length, velocity_matrix.shape[1])
+
+        # print velocity_matrix
+
+        mat = velocity_matrix[((time_step_count - 2) * planning_group_length):, :]
+        # print mat
+
+        mat = mat[link_index::planning_group_length, :]
+        # print mat
+
+        mat = mat[:5:, :]
+
+        if len(mat):
+            increase_resolution_matrix.append(np.vstack(mat))
+
+        return increase_resolution_matrix
+
     def formulate_collision_infos(self, trajectory, group, distance=0.2):
 
         normal = []
@@ -273,249 +320,149 @@ class SimulationWorld():
         closest_pts = []
 
         jacobian_matrix = []
-        normal_T_times_jacobian = []
-        normal_T_times_jacobian1 = []
+        current_normal_T_times_jacobian = []
+        next_normal_T_times_jacobian = []
         increase_resolution_matrix = []
         start_state = self.get_current_states_for_given_joints(group)
         time_step_count = 0
         # increase_resolution_matrix = np.ones((1, (len(trajectory) * len(group)))).flatten()
 
-        for previous_time_step_of_trajectory, current_time_step_of_trajectory, next_time_step_of_trajectory in utils.iterate_with_previous_and_next(
-                trajectory):
+        for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
+            next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
             time_step_count += 1
-            current_time_step_of_trajectory = current_time_step_of_trajectory.reshape(
-                (current_time_step_of_trajectory.shape[0], 1))
+            # current_time_step_of_trajectory = current_time_step_of_trajectory.reshape((current_time_step_of_trajectory.shape[0], 1))
             # self.reset_joint_states_to(current_time_step_of_trajectory, group)
-
             if next_time_step_of_trajectory is not None:
+                current_robot_state = list(current_time_step_of_trajectory)
+                next_robot_state = list(next_time_step_of_trajectory)
+                zero_vec = [0.0] * len(current_robot_state)
+                current_link_states = self.get_link_states_at(current_time_step_of_trajectory, group)
                 next_link_states = self.get_link_states_at(next_time_step_of_trajectory, group)
-                robot_next_joint_positions = list(current_time_step_of_trajectory)
 
-            current_link_states = self.get_link_states_at(current_time_step_of_trajectory, group)
+                self.reset_joint_states_to(current_time_step_of_trajectory, group)
 
-            robot_current_joint_positions = list(current_time_step_of_trajectory)
-            zero_vec = [0.0] * len(robot_current_joint_positions)
+                for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
+                                                                                      current_link_states,
+                                                                                      next_link_states):
 
-            for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
-                                                                                  current_link_states,
-                                                                                  next_link_states):
+                    for constraint in self.collision_constraints:
+                        closest_points = sim.getClosestPoints(self.robot_id, constraint,
+                                                                         linkIndexA=link_index, distance=distance
+                                                                         )
+                        cast_closest_points = sim.getConvexSweepClosestPoints(self.robot_id, constraint,
+                                                          linkIndexA=link_index, distance=distance,
+                                                                         bodyAfromPosition=current_link_state[0],
+                                                                         bodyAfromOrientation=current_link_state[1],
+                                                                         # bodyAfromOrientation=[0, 0, 0, 1],
+                                                                         bodyAtoPosition=next_link_state[0],
+                                                                         bodyAtoOrientation=next_link_state[1],
+                                                                         # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                         )
 
-                for constraint in self.collision_constraints:
-                    closest_points = sim.getClosestPoints(self.robot_id, constraint,
-                                                          linkIndexA=link_index, distance=distance)
-                    if len(closest_points) > 0:
-                        if closest_points[0][8] < 0:
-                            # if link_index == self.end_effector_index:
-                            # current_link_state = sim.getLinkState(self.robot_id, link_index, computeLinkVelocity=1,
-                            #                               computeForwardKinematics=1)
-                            #
-                            # if len(next_time_step_of_trajectory):
-                            #     self.reset_joint_states_to(next_time_step_of_trajectory, group)
-                            #     next_link_state = sim.getLinkState(self.robot_id, link_index, computeLinkVelocity=1,
-                            #                                   computeForwardKinematics=1)
-                            if next_link_state is not None:
-                                # ray_test_result = sim.rayTest(current_link_state[0], next_link_state[0])
-                                ray_test_result = sim.rayTest(closest_points[0][7], next_link_state[0])
-                                # print ray_test_result[0][3]
-                            if len(ray_test_result):
-                                if True or ray_test_result[0][0] > -1:
-                                    hit_ratio = float(ray_test_result[0][2])
-                                    ray_normal = ray_test_result[0][4]
-                                    ray_hit_point = ray_test_result[0][3]
-                                    # link_position_in_world_frame_at_current_time_step = current_link_state[4]
-                                    # link_orentation_in_world_frame_at_current_time_step = current_link_state[5]
-                                    link_position_in_world_frame_at_current_time_step = current_link_state[4]
-                                    link_orentation_in_world_frame_at_current_time_step = current_link_state[5]
-                                    link_position_in_world_frame_at_current_time_step = np.asarray(link_position_in_world_frame_at_current_time_step) * hit_ratio \
-                                                                   + (1 - hit_ratio) * np.asarray(next_link_state[0])
-                                    # link_orentation_in_world_frame_at_current_time_step = np.asarray(link_orentation_in_world_frame_at_current_time_step) * hit_ratio \
-                                    #                                + (1 - hit_ratio) * np.asarray(next_link_state[1])
-                                    closest_point_on_link_in_world_frame_at_current_time_step = ray_hit_point
+                        if len(closest_points) > 0:
+                            closest_pt_on_A_at_t1 = closest_points[0][5]
+                            closest_pt_on_A_at_t_plus_11 = closest_points[0][5]
+                            closest_pt_on_B1 = closest_points[0][6]
+                            normal_1 = np.vstack(closest_points[0][7]).reshape(3, 1)
+                            dist1 = closest_points[0][8]
+                            fraction1 = 0
 
-                                    normal_vector = np.asarray(ray_normal).reshape(3, 1)
+                        if len(cast_closest_points) > 0:
 
-                                    p_0 = np.asarray(current_link_state[4])
-                                    p_1 = np.asarray(next_link_state[4])
-                                    # print hit_ratio, p_0, p_0 * hit_ratio
-                                    p_swept = hit_ratio * p_0 + (1 - hit_ratio) * p_1
+                            closest_pt_on_A_at_t = cast_closest_points[0][5]
+                            closest_pt_on_A_at_t_plus_1 = cast_closest_points[0][6]
+                            closest_pt_on_B = cast_closest_points[0][7]
+                            normal_ = np.vstack(cast_closest_points[0][8]).reshape(3, 1)
+                            normal_ = utils.normalize_vector(normal_)
+                            dist = cast_closest_points[0][9]
+                            fraction = cast_closest_points[0][10]
 
-                                    alpha = np.linalg.norm((p_1 - p_swept), np.inf)
+                            if dist < 0:
+                                if dist1 < 0:
+                                    print "-----------closest points--------------"
+                                    print "A(t)", closest_pt_on_A_at_t1
+                                    print "B", closest_pt_on_B1
+                                    print "normal", normal_1.T
+                                    print "Distance ", dist1
+                                    print "*************************************"
 
-                                    # temp1 = np.linalg.norm((p_1 - p_swept), np.inf)
-                                    alpha = alpha / (alpha + np.linalg.norm((p_0 - p_swept), np.inf))
+                                    print "-----------cast points--------------"
+                                    print "A(t)", closest_pt_on_A_at_t
+                                    print "A(t+1)", closest_pt_on_A_at_t_plus_1
+                                    print "B", closest_pt_on_B
+                                    print "normal", normal_.T
+                                    print "Distance ", dist
+                                    print "fraction ", fraction
+                                    print "*************************************"
+                                # if link_index == self.end_effector_index:
+                                # link_state = sim.getLinkState(self.robot_id, link_index, computeLinkVelocity=1,
+                                #                               computeForwardKinematics=1)
+                                current_link_position_in_world_frame = current_link_state[4]
+                                current_link_orentation_in_world_frame = current_link_state[5]
+                                current_closest_point_on_link_in_link_frame = self.get_point_in_local_frame(
+                                    current_link_position_in_world_frame, current_link_orentation_in_world_frame,
+                                    closest_pt_on_A_at_t)
 
-                                    # alpha = 1
-                                    # alpha = hit_ratio
+                                # print "closest_point_on_link_in_link_frame", closest_point_on_link_in_link_frame
+                                # print "closest_point_on_link_in_world_frame", closest_point_on_link_in_world_frame
+                                initial_signed_distance.append(dist)
+                                closest_pts.append(closest_pt_on_A_at_t)
+                                # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, closest_pt_on_A_at_t,
 
+                                current_position_jacobian, _ = sim.calculateJacobian(self.robot_id, link_index,
+                                                                     # closest_pt_on_A_at_t,
+                                                                     current_closest_point_on_link_in_link_frame,
+                                                                     current_robot_state,
+                                                                     zero_vec, zero_vec)
 
-                                    # print "point ", ray_test_result[0][3], closest_points[0][5]
-                                    # print "normal_vector ", ray_test_result[0][4], closest_points[0][7]
+                                current_state_jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian,
+                                                                                         len(trajectory),
+                                                                                         len(group),
+                                                                                         time_step_count)
 
-                                    # link_position_in_world_frame_at_current_time_step = current_link_state[4]
-                                    # link_orentation_in_world_frame_at_current_time_step = current_link_state[5]
-                                    # closest_point_on_link_in_world_frame_at_current_time_step = closest_points[0][5]
-                                    #
-                                    # normal_vector = np.asarray(closest_points[0][7]).reshape(3, 1)
+                                next_link_position_in_world_frame = next_link_state[4]
+                                next_link_orentation_in_world_frame = next_link_state[5]
+                                next_closest_point_on_link_in_link_frame = self.get_point_in_local_frame(
+                                    next_link_position_in_world_frame, next_link_orentation_in_world_frame,
+                                    closest_pt_on_A_at_t_plus_1)
 
-                                    # print "normal before ", normal_vector.T
-                                    # normal_vector *= alpha
-                                    # print "normal after ", normal_vector.T
+                                next_position_jacobian, _ = sim.calculateJacobian(self.robot_id, link_index,
+                                                                                     # closest_pt_on_A_at_t,
+                                                                                  next_closest_point_on_link_in_link_frame,
+                                                                                     current_robot_state,
+                                                                                     zero_vec, zero_vec)
 
-                                    closest_point_on_link_in_link_frame_at_current_time_step = self.get_point_in_local_frame(
-                                        link_position_in_world_frame_at_current_time_step, link_orentation_in_world_frame_at_current_time_step,
-                                        closest_point_on_link_in_world_frame_at_current_time_step)
+                                next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian,
+                                                                                         len(trajectory),
+                                                                                         len(group),
+                                                                                         time_step_count+1)
 
-                                    link_position_in_world_frame_at_next_time_step = next_link_state[4]
-                                    link_orentation_in_world_frame_at_next_time_step = next_link_state[5]
-                                    next_joint_state_in_world_frame_at_next_time_step = next_link_state[0]
-                                    next_joint_state_in_link_frame_at_next_time_step = self.get_point_in_local_frame(
-                                        link_position_in_world_frame_at_next_time_step,
-                                        link_orentation_in_world_frame_at_next_time_step,
-                                        next_joint_state_in_world_frame_at_next_time_step)
+                                jacobian_matrix.append(current_state_jacobian_matrix)
+                                # normal.append(np.asarray(closest_points[0][7]).reshape(3, 1))
+                                normal.append(normal_)
+                                current_normal_T_times_jacobian.append(np.matmul(normal_.T,
+                                                                         current_state_jacobian_matrix))
 
-                                    # print "closest_point_on_link_in_link_frame_at_current_time_step", closest_point_on_link_in_link_frame_at_current_time_step
-                                    # print "closest_point_on_link_in_world_frame_at_current_time_step", closest_point_on_link_in_world_frame_at_current_time_step
-                                    initial_signed_distance.append(closest_points[0][8])
-                                    closest_pts.append(closest_points[0][5])
-                                    # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, closest_points[0][5],
-
-
-
-                                    # for i in range(1, 3):
-                                    #     mat1 = [0] * (link_index - 1) + [1] + [0] * (len(group) - link_index)
-                                    #     mat2 = [0] * (link_index - 1) + [-1] + [0] * (len(group) - link_index)
-                                    #     mat = [[0] * len(group)] * (time_step_count-(i+1)) + [mat2] + [mat1] + [[0] * len(group)] * ((len(trajectory)) - (time_step_count) + (i-1))
-                                    #     # print "mat", link_index, time_step_count
-                                    # # print np.hstack(mat)
-                                    #     print mat
-                                    # mat = np.zeros((7  , len(group) * len(trajectory)))
-                                    # i, j = np.indices(mat.shape)
-                                    #
-                                    # # mat[i == j - link_index] = -1
-                                    # # mat[i == j - (link_index + len(trajectory))] = 1
-                                    #
-                                    # mat[i == j - (((time_step_count - 1) * self.planning_samples) + link_index)] = -1
-                                    # mat[i == j - ((link_index + (time_step_count ) * self.planning_samples))] = 1
-
-                                    velocity_matrix = np.zeros(
-                                        (len(group) * self.planning_samples, self.planning_samples * len(group)))
-                                    np.fill_diagonal(velocity_matrix, -1.0)
-                                    i, j = np.indices(velocity_matrix.shape)
-                                    velocity_matrix[i == j - len(group)] = 1.0
-
-                                    # to slice zero last row
-                                    velocity_matrix.resize(velocity_matrix.shape[0] - len(group),
-                                                           velocity_matrix.shape[1])
-
-                                    # print velocity_matrix
-
-                                    mat = velocity_matrix[((time_step_count - 2) * len(group)):, :]
-                                    # print mat
-
-                                    mat = mat[link_index::(len(group)), :]
-                                    # print mat
-
-                                    mat = mat[:5:, :]
-
-                                    # print "mat", link_index, time_step_count
-                                    # print mat.shape
-                                    # print np.vstack(mat)
-                                    # if len(mat):
-                                    #     increase_resolution_matrix.append(np.vstack(mat))
-
-                                    # res1 = np.asarray([[[0] * len(group)]] * (time_step_count - 1))
+                                next_normal_T_times_jacobian.append(np.matmul((1 - fraction) * normal_.T,
+                                                                                 next_state_jacobian_matrix))
+                                # print link_index
+                                # print res
 
 
-                                    jac_t, jac_r = sim.calculateJacobian(self.robot_id, link_index,
-                                                                         # closest_points[0][5],
-                                                                         closest_point_on_link_in_link_frame_at_current_time_step,
-                                                                         robot_current_joint_positions,
-                                                                         zero_vec, zero_vec)
-                                    jaco1 = np.asarray([[[0] * len(group)] * 3] * (time_step_count - 1))
-                                    if len(jaco1):
-                                        jaco1 = np.hstack(jaco1)
+                #     else:
+                #         jacobian.append(np.zeros((3, len(group))))
+                # else:
+                #     jacobian.append(np.zeros((3, len(group))))
 
-                                    jaco2 = np.asarray([[[0] * len(group)] * 3] * (len(trajectory) - (time_step_count)))
-
-                                    if len(jaco1) > 0 and len(jaco2):
-                                        jaco2 = np.hstack(jaco2)
-                                        current_state_jacobian = np.hstack(
-                                            [jaco1, np.asarray(jac_t), jaco2])
-                                    elif len(jaco1) > 0 and len(jaco2) == 0:
-                                        current_state_jacobian = np.vstack([jaco1, np.asarray(jac_t).reshape(1, 3, 7)])
-                                    elif len(jaco1) == 0 and len(jaco2) > 0:
-                                        current_state_jacobian = np.vstack([np.asarray(jac_t).reshape(1, 3, 7), jaco2])
-                                        current_state_jacobian = np.hstack(current_state_jacobian)
-
-                                    jac_t1, jac_r1 = sim.calculateJacobian(self.robot_id, link_index,
-                                                                           # closest_points[0][5],
-                                                                           closest_point_on_link_in_link_frame_at_current_time_step,
-                                                                           # next_joint_state_in_link_frame_at_next_time_step,
-                                                                           robot_next_joint_positions,
-                                                                           zero_vec, zero_vec)
-
-                                    jaco11 = np.asarray([[[0] * len(group)] * 3] * (time_step_count - 1))
-
-                                    jaco21 = np.asarray(
-                                        [[[0] * len(group)] * 3] * (len(trajectory) - (time_step_count)))
-
-                                    if len(jaco11) > 0 and len(jaco21):
-                                        jaco11 = np.hstack(jaco11)
-                                        jaco21 = np.hstack(jaco21)
-                                        next_state_jacobian = np.hstack(
-                                            [jaco11, np.asarray(jac_t), jaco21])
-                                    elif len(jaco11) > 0 and len(jaco21) == 0:
-                                        next_state_jacobian = np.vstack([jaco11, np.asarray(jac_t1).reshape(1, 3, 7)])
-                                    elif len(jaco11) == 0 and len(jaco21) > 0:
-                                        next_state_jacobian = np.vstack([np.asarray(jac_t).reshape(1, 3, 7), jaco21])
-                                        next_state_jacobian = np.hstack(next_state_jacobian)
-
-                                    # res1 = np.zeros((1, (time_step_count - 1))).flatten()
-
-                                    # if len(res1):
-                                    #     res1 = np.hstack(res1)
-                                    #
-                                    # # res2 = np.asarray([[[0] * len(group)]] * (len(trajectory) - (time_step_count)))
-                                    # res2 = np.zeros((1, (len(trajectory) - time_step_count))).flatten()
-                                    # if len(res2) > 0:
-                                    #     res2 = np.hstack(res2)
-                                    #     # res = np.hstack([res1, np.asarray([[[0] * len(group)]]), res2])
-                                    #     temp = np.ones((1, (len(trajectory) - time_step_count))).flatten()
-                                    #     # print res1.shape, res2.shape, temp.shape
-                                    #     res = np.hstack([res1, temp, res2])
-                                    # else:
-                                    #     res = np.hstack([res1, np.ones((1, (len(group))))])
-                                    #
-                                    # res = np.ones((1, (len(trajectory) * len(current_time_step_of_trajectory)))).flatten()
-                                    # print np.asarray(jac_t).shape
-                                    # print current_state_jacobian.shape, link_index, time_step_count - 1
-                                    jacobian_matrix.append(current_state_jacobian)
-                                    # normal.append(np.asarray(closest_points[0][7]).reshape(3, 1))
-                                    normal.append(np.vstack(closest_points[0][7]).reshape(3, 1))
-                                    normal_vector = utils.normalize_vector(normal_vector)
-                                    # print normal_vector.T, utils.normalize_vector(normal_vector).T
-                                    normal_T_times_jacobian.append(
-                                        np.matmul(alpha * normal_vector.T, current_state_jacobian))
-                                    normal_T_times_jacobian1.append(
-                                        np.matmul((1 - alpha) * normal_vector.T, next_state_jacobian))
-                                    # print link_index
-                                    # print res
-
-
-                                    #     else:
-                                    #         jacobian.append(np.zeros((3, len(group))))
-                                    # else:
-                                    #     jacobian.append(np.zeros((3, len(group))))
-
-                                    #
-                                    #         # jacobian = np.asarray(jac_t)
-                                    #         # normal = np.asarray(closest_points[0][7]).reshape(3, 1)
-                                    #
-                                    #         # normal_times_jacobian.append(np.matmul(np.asarray(normal).T, np.asarray(jacobian)))
-                                    #
-                                    #         # print np.asarray(jacobian).shape
-                                    # if len(jacobian) > 0:
-                                    #     jacobian_matrix.append(jacobian)
+            #
+            #         # jacobian = np.asarray(jac_t)
+            #         # normal = np.asarray(closest_points[0][7]).reshape(3, 1)
+            #
+            #         # normal_times_jacobian.append(np.matmul(np.asarray(normal).T, np.asarray(jacobian)))
+            #
+            #         # print np.asarray(jacobian).shape
+            # if len(jacobian) > 0:
+            #     jacobian_matrix.append(jacobian)
 
         if len(normal) > 0:
             normal = np.vstack(np.asarray(normal))
@@ -531,14 +478,15 @@ class SimulationWorld():
             # print "jacobian"
             # print jacobian_matrix.T
             # print jacobian_matrix.shape
-        if len(normal_T_times_jacobian) > 0:
-            normal_T_times_jacobian = np.vstack(normal_T_times_jacobian)
-            normal_T_times_jacobian1 = np.vstack(normal_T_times_jacobian)
-            # normal_T_times_jacobian += normal_T_times_jacobian1
-            # print "normal_T_times_jacobian", normal_T_times_jacobian.shape
-            # print "normal_T_times_jacobian1", normal_T_times_jacobian1.shape
-            # print "normal_T_times_jacobian"
-            # print normal_T_times_jacobian
+        if len(current_normal_T_times_jacobian) > 0:
+            current_normal_T_times_jacobian = np.vstack(current_normal_T_times_jacobian)
+            # print "current_normal_T_times_jacobian", current_normal_T_times_jacobian.shape
+
+        if len(next_normal_T_times_jacobian) > 0:
+            next_normal_T_times_jacobian = np.vstack(next_normal_T_times_jacobian)
+            # print "next_normal_T_times_jacobian", next_normal_T_times_jacobian.shape
+            # print "next_normal_T_times_jacobian"
+            # print next_normal_T_times_jacobian
         if len(increase_resolution_matrix) > 0:
             increase_resolution_matrix = np.vstack(increase_resolution_matrix)
             # print "increase_resolution_matrix", increase_resolution_matrix.shape
@@ -550,11 +498,11 @@ class SimulationWorld():
         # print "collision matrix", jacobian_matrix[ 0.  0.  0.  1.  0.]
         self.reset_joint_states(start_state, group)
 
-        # collision_infos = [initial_signed_distance, normal_T_times_jacobian]
+        # collision_infos = [initial_signed_distance, current_normal_T_times_jacobian]
 
         # constraints, lower_limit, upper_limit = self.robot.planner.problem.update_collision_infos(collision_infos)
 
-        return initial_signed_distance, normal_T_times_jacobian, normal_T_times_jacobian1, increase_resolution_matrix
+        return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian, increase_resolution_matrix
 
     def get_point_in_local_frame(self, frame_position, frame_orientation, point):
         # frame = kdl.Frame()
@@ -565,7 +513,7 @@ class SimulationWorld():
         frame = kdl.Frame(rotation, position)
         point = kdl.Vector(point[0], point[1], point[2])
 
-        point_on_frame = frame.Inverse() * point
+        point_on_frame =  frame.Inverse() * point
 
         return [point_on_frame[0], point_on_frame[1], point_on_frame[2]]
 
@@ -574,11 +522,9 @@ class SimulationWorld():
 
         self.robot.planner.trajectory.add_trajectory(trajectory)
         trajectory = np.split(new_trajectory, self.planning_samples)
-        collision_infos = self.get_collision_infos(trajectory, self.planning_group,
-                                                   distance=self.collision_check_distance)
+        collision_infos = self.get_collision_infos(trajectory, self.planning_group, distance=self.collision_check_distance)
 
-        constraints, lower_limit, upper_limit = self.robot.planner.problem_model.update_collision_infos(collision_infos,
-                                                                                                        self.collision_safe_distance)
+        constraints, lower_limit, upper_limit = self.robot.planner.problem_model.update_collision_infos(collision_infos, self.collision_safe_distance)
         if len(collision_infos[2]) > 0:
             self.robot.planner.update_prob()
         # initial_signed_distance = collision_infos[0]
@@ -589,15 +535,15 @@ class SimulationWorld():
 
         return constraints, lower_limit, upper_limit
 
-    def plan_trajectory(self, group, goal_state, samples, duration, solver_config=None, collision_safe_distance=None,
-                        collision_check_distance=0.2):
+
+    def plan_trajectory(self, group, goal_state, samples, duration, solver_config=None, collision_safe_distance=None, collision_check_distance=0.2):
         # self.collision_constraints = collections.OrderedDict()
         self.planning_group = group
         self.planning_samples = samples
         self.collision_safe_distance = collision_safe_distance
         self.collision_check_distance = collision_check_distance
         # if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
-        # self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
+            # self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
         #
         #     # print self.collision_constraints
         #     # print joint_name, jac_t
@@ -632,8 +578,7 @@ class SimulationWorld():
         sim.configureDebugVisualizer(sim.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
         sim.configureDebugVisualizer(sim.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
 
-        status, can_execute_trajectory = self.robot.calulate_trajecotory(
-            self.update_collsion_infos)  # callback function
+        status, can_execute_trajectory = self.robot.calulate_trajecotory(self.update_collsion_infos) # callback function
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
 
         # status, can_execute_trajectory = self.robot.calulate_trajecotory(None)
@@ -644,7 +589,7 @@ class SimulationWorld():
         current_state = collections.OrderedDict()
         for joint in joints:
             current_state[joint] = \
-                sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]
+            sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]
         return current_state
 
     def execute_trajectory(self):
@@ -687,6 +632,7 @@ class SimulationWorld():
         self.logger.info(status)
         return status
 
+
     def execute_trajectories(self, group):
         trajectories = self.robot.get_trajectory()
         sleep_time = trajectories.duration / float(trajectories.no_of_samples)
@@ -706,8 +652,8 @@ class SimulationWorld():
                 # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
                 # sim.stepSimulation()
                 self.step_simulation_for(sleep_time)
-                # time.sleep(sleep_time)
-                # sim.stepSimulation()
+            # time.sleep(sleep_time)
+            # sim.stepSimulation()
         # print trajectories.trajectory
         # for traj in trajectories.trajectory:
         #     for i in range(len(group)):
@@ -753,18 +699,6 @@ class SimulationWorld():
         # self.logger.info(status)
         return status
 
-    def reset_joints_to_random_states(self, joints, motor_dir=None):
-        if motor_dir is None:
-            # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
-            motor_dir = np.random.uniform(-1, 1, size=len(joints))
-        half_pi = 1.57079632679
-        for joint in joints:
-            for j in range(len(joints)):
-                sim.resetJointState(self.robot_id, self.joint_name_to_id[joint], motor_dir[j] * half_pi * (-(-1)**j))
-        status = "Reset joints to random pose is complete"
-        self.logger.info(status)
-        return status
-
     def reset_joint_states(self, joints, motor_dir=None):
         # if motor_dir is None:
         #     # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
@@ -789,6 +723,25 @@ class SimulationWorld():
         while time.time() < start + seconds:
             sim.stepSimulation()
 
+    def get_contact_points(self):
+        for i in range(sim.getNumJoints(self.robot_id)):
+            contact_points = sim.getClosestPoints(self.robot_id, self.box_id, linkIndexA=i, distance=4)
+            contact_points1 = sim.getContactPoints(self.robot_id, self.box_id, linkIndexA=i)
+
+            if len(contact_points) > 0 and len(contact_points1) > 0:
+                if contact_points[0][8] < 0:
+                    print "index ", i
+                    print "positionOnA ", contact_points[0][5]
+                    print "positionOnB ", contact_points[0][6]
+                    print "contactNormalOnB ", contact_points[0][7]
+                    print "contactDistance ", contact_points[0][8]
+
+                if contact_points1[0][8] < 0:
+                    print "index 1 ", i
+                    print "positionOnA 1 ", contact_points1[0][5]
+                    print "positionOnB 1 ", contact_points1[0][6]
+                    print "contactNormalOnB 1 ", contact_points1[0][7]
+                    print "contactDistance 1 ", contact_points1[0][8]
 
 
 if __name__ == "__main__":

@@ -1,4 +1,6 @@
 import yaml
+import numpy as np
+
 
 class ConfigParser:
 

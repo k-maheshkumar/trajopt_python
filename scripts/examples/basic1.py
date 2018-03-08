@@ -3,6 +3,8 @@ import json
 from easydict import EasyDict as edict
 from scripts.Planner.Planner import TrajectoryOptimizationPlanner
 import time
+import yaml
+
 
 class Example:
     def __init__(self, problem, verbose=False):
@@ -55,14 +57,16 @@ class Example:
 
     def calculate(self):
         self.plan.calculate_trajectory()
-
+        # print self.plan.display_problem()
 if __name__ == '__main__':
 
     problem = {}
-    with open('./problem.json') as json_data:
-        problem = edict(json.load(json_data))
+    with open('./problem.yaml') as json_data:
+        # problem = edict(json.load(json_data))
+        problem = edict(yaml.load(json_data))
 
-    example = Example(problem, verbose="DEBUG")
+    # example = Example(problem, verbose="DEBUG")
+    example = Example(problem, verbose=False)
     example.init()
 
     start = time.time()
@@ -71,6 +75,7 @@ if __name__ == '__main__':
     # plan.display_problem()
     # example.plan.display_problem()
     # print example.plan.get_trajectory().trajectory_by_name
+    print example.plan.get_trajectory().trajectory.T
     print("computation time: ", end - start)
 
 # # print request

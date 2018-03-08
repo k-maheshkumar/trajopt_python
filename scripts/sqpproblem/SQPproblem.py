@@ -4,7 +4,7 @@ import numpy as np
 from scripts.utils import yaml_paser as yaml
 import logging
 import os
-
+import collections
 
 '''
         minimize
@@ -32,7 +32,7 @@ class SQPProblem:
         self.status = "-1"
         self.norm_ = 1
 
-        self.solver_config = {}
+        self.solver_config = collections.OrderedDict()
 
         self.solver = []
 

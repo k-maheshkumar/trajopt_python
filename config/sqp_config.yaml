@@ -23,11 +23,6 @@ sqp:
   trust_bad_region_ratio: 0.25
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
-<<<<<<< HEAD
   trust_region_norm: "inf"
   trust_region_size: 1
-=======
-  trust_region_norm: inf
-  trust_region_size: 1.0
->>>>>>> f285e1f... changed robot default config params to default config file
   trust_shrink_ratio: 0.25

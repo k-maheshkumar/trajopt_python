@@ -2,7 +2,7 @@ import numpy as np
 from itertools import tee, islice, chain, izip
 
 
-class utils:
+class Utils:
 
     #  https://stackoverflow.com/questions/1011938/python-previous-and-next-values-inside-a-loop
     @classmethod

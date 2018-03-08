@@ -30,8 +30,7 @@ class SimulationWorld():
         # self.gui = sim.connect(sim.DIRECT)
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 0)
         home = os.path.expanduser('~')
-        # location_prefix = '/home/mahe/masterThesis/bullet3/data/'
-        # location_prefix = '/home/mahesh/libraries/bullet3/data/'
+
         location_prefix = home + '/masterThesis/bullet3/data/'
         # file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
 
@@ -324,16 +323,13 @@ class SimulationWorld():
         jacobian_matrix = []
         current_normal_T_times_jacobian = []
         next_normal_T_times_jacobian = []
-        increase_resolution_matrix = []
         start_state = self.get_current_states_for_given_joints(group)
         time_step_count = 0
-        # increase_resolution_matrix = np.ones((1, (len(trajectory) * len(group)))).flatten()
 
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
             next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
             time_step_count += 1
-            # current_time_step_of_trajectory = current_time_step_of_trajectory.reshape((current_time_step_of_trajectory.shape[0], 1))
-            # self.reset_joint_states_to(current_time_step_of_trajectory, group)
+
             if next_time_step_of_trajectory is not None:
                 current_robot_state = list(current_time_step_of_trajectory)
                 next_robot_state = list(next_time_step_of_trajectory)
@@ -348,9 +344,7 @@ class SimulationWorld():
                                                                                       next_link_states):
 
                     for constraint in self.collision_constraints:
-                        closest_points = sim.getClosestPoints(self.robot_id, constraint,
-                                                              linkIndexA=link_index, distance=distance
-                                                              )
+
                         cast_closest_points = sim.getConvexSweepClosestPoints(self.robot_id, constraint,
                                                                               linkIndexA=link_index, distance=distance,
                                                                               bodyAfromPosition=current_link_state[0],
@@ -362,13 +356,6 @@ class SimulationWorld():
                                                                               # bodyAtoOrientation=[0, 0, 0, 1],
                                                                               )
 
-                        if len(closest_points) > 0:
-                            closest_pt_on_A_at_t1 = closest_points[0][5]
-                            closest_pt_on_A_at_t_plus_11 = closest_points[0][5]
-                            closest_pt_on_B1 = closest_points[0][6]
-                            normal_1 = np.vstack(closest_points[0][7]).reshape(3, 1)
-                            dist1 = closest_points[0][8]
-                            fraction1 = 0
 
                         if len(cast_closest_points) > 0:
 
@@ -381,23 +368,14 @@ class SimulationWorld():
                             fraction = cast_closest_points[0][10]
 
                             if dist < 0:
-                                if dist1 < 0:
-                                    print "-----------closest points--------------"
-                                    print "A(t)", closest_pt_on_A_at_t1
-                                    print "B", closest_pt_on_B1
-                                    print "normal", normal_1.T
-                                    print "Distance ", dist1
-                                    print "*************************************"
-
-                                    print "-----------cast points--------------"
-                                    print "A(t)", closest_pt_on_A_at_t
-                                    print "A(t+1)", closest_pt_on_A_at_t_plus_1
-                                    print "B", closest_pt_on_B
-                                    print "normal", normal_.T
-                                    print "Distance ", dist
-                                    print "fraction ", fraction
-                                    print "*************************************"
-                                # if link_index == self.end_effector_index:
+                                # print "-----------cast points--------------"
+                                # print "A(t)", closest_pt_on_A_at_t
+                                # print "A(t+1)", closest_pt_on_A_at_t_plus_1
+                                # print "B", closest_pt_on_B
+                                # print "normal", normal_.T
+                                # print "Distance ", dist
+                                # print "fraction ", fraction
+                                # print "*************************************"
                                 link_state = sim.getLinkState(self.robot_id, link_index, computeLinkVelocity=1,
                                                               computeForwardKinematics=1)
                                 current_link_position_in_world_frame = link_state[4]
@@ -406,11 +384,8 @@ class SimulationWorld():
                                     current_link_position_in_world_frame, current_link_orentation_in_world_frame,
                                     closest_pt_on_A_at_t)
 
-                                # print "closest_point_on_link_in_link_frame", closest_point_on_link_in_link_frame
-                                # print "closest_point_on_link_in_world_frame", closest_point_on_link_in_world_frame
                                 initial_signed_distance.append(dist)
                                 closest_pts.append(closest_pt_on_A_at_t)
-                                # jac_t, jac_r = sim.calculateJacobian(self.robot_id, self.end_effector_index, closest_pt_on_A_at_t,
 
                                 current_position_jacobian, _ = sim.calculateJacobian(self.robot_id, link_index,
                                                                                      # closest_pt_on_A_at_t,
@@ -448,64 +423,20 @@ class SimulationWorld():
 
                                 next_normal_T_times_jacobian.append(np.matmul((1 - fraction) * normal_.T,
                                                                               next_state_jacobian_matrix))
-                                # print link_index
-                                # print res
 
-
-                                #     else:
-                                #         jacobian.append(np.zeros((3, len(group))))
-                                # else:
-                                #     jacobian.append(np.zeros((3, len(group))))
-
-                                #
-                                #         # jacobian = np.asarray(jac_t)
-                                #         # normal = np.asarray(closest_points[0][7]).reshape(3, 1)
-                                #
-                                #         # normal_times_jacobian.append(np.matmul(np.asarray(normal).T, np.asarray(jacobian)))
-                                #
-                                #         # print np.asarray(jacobian).shape
-                                # if len(jacobian) > 0:
-                                #     jacobian_matrix.append(jacobian)
-
-        if len(normal) > 0:
-            normal = np.vstack(np.asarray(normal))
-            # print "normal", normal.shape
 
         if len(initial_signed_distance) > 0:
             initial_signed_distance = np.vstack(np.asarray(initial_signed_distance))
-            # print "initial_signed_distance", initial_signed_distance.shape
 
-        if len(jacobian_matrix) > 0:
-            jacobian_matrix = np.vstack(jacobian_matrix)
-            # print "jacobian", jacobian_matrix.shape
-            # print "jacobian"
-            # print jacobian_matrix.T
-            # print jacobian_matrix.shape
         if len(current_normal_T_times_jacobian) > 0:
             current_normal_T_times_jacobian = np.vstack(current_normal_T_times_jacobian)
-            # print "current_normal_T_times_jacobian", current_normal_T_times_jacobian.shape
 
         if len(next_normal_T_times_jacobian) > 0:
             next_normal_T_times_jacobian = np.vstack(next_normal_T_times_jacobian)
-            # print "next_normal_T_times_jacobian", next_normal_T_times_jacobian.shape
-            # print "next_normal_T_times_jacobian"
-            # print next_normal_T_times_jacobian
-        if len(increase_resolution_matrix) > 0:
-            increase_resolution_matrix = np.vstack(increase_resolution_matrix)
-            # print "increase_resolution_matrix", increase_resolution_matrix.shape
-            # print "increase_resolution_matrix \n", increase_resolution_matrix
-        # print "initial_signed_distance", initial_signed_distance.shape
-        # print "initial", current_time_step_of_trajectory.shape
-        # print "initial_trajectory", np.asarray(trajectory.flatten()).shape
-        # print "collision matrix", jacobian_matrix.shape
-        # print "collision matrix", jacobian_matrix[ 0.  0.  0.  1.  0.]
+
         self.reset_joint_states(start_state, group)
 
-        # collision_infos = [initial_signed_distance, current_normal_T_times_jacobian]
-
-        # constraints, lower_limit, upper_limit = self.robot.planner.problem.update_collision_infos(collision_infos)
-
-        return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian, increase_resolution_matrix
+        return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian
 
     def get_point_in_local_frame(self, frame_position, frame_orientation, point):
         # frame = kdl.Frame()
@@ -532,11 +463,6 @@ class SimulationWorld():
                                                                                                         self.collision_safe_distance)
         if len(collision_infos[2]) > 0:
             self.robot.planner.update_prob()
-        # initial_signed_distance = collision_infos[0]
-        # normal = collision_infos[1]
-        # jacobian = collision_infos[2]
-        # normal_times_jacobian = np.matmul(normal.T, jacobian)
-        # lower_limit =
 
         return constraints, lower_limit, upper_limit
 
@@ -547,23 +473,6 @@ class SimulationWorld():
         self.planning_samples = samples
         self.collision_safe_distance = collision_safe_distance
         self.collision_check_distance = collision_check_distance
-        # if (lower_collision_limit is not None or lower_collision_limit != 0) and (upper_collision_limit is not None or upper_collision_limit != 0):
-        # self.get_collision_infos(group, lower_collision_limit, upper_collision_limit)
-        #
-        #     # print self.collision_constraints
-        #     # print joint_name, jac_t
-        #     # print self.jacobian_by_joint_name
-        #     # print np.asarray(self.jacobian_by_joint_name).shape
-        # else:
-        #     self.logger.debug("ignoring collision constraints . . . . ")
-        #
-        # status, can_execute_trajectory = self.robot.init_plan_trajectory(group=group,
-        #                                                                  current_state=self.get_current_states_for_given_joints(group),
-        #                                                                  goal_state=goal_state, samples=int(samples),
-        #                                                                  duration=int(duration),
-        #                                                                  collision_constraints=self.collision_constraints,
-        #                                                                  solver_config=solver_config)
-        # return status, can_execute_trajectory
 
         self.extract_ids_from_planning_group(group)
         self.robot.init_plan_trajectory(group=group, current_state=self.get_current_states_for_given_joints(group),
@@ -571,10 +480,7 @@ class SimulationWorld():
                                         duration=int(duration),
                                         # collision_constraints=self.collision_constraints,
                                         solver_config=solver_config)
-        # collision_infos = self.get_collision_infos(self.robot.get_trajectory().initial, group, distance=collision_check_distance)
-        # self.update_collsion_infos(self.robot.get_trajectory().initial.flatten())
 
-        # self.robot.planner.problem.update_collision_infos(collision_infos)
         sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 0)
         sim.configureDebugVisualizer(sim.COV_ENABLE_TINY_RENDERER, 0)
         sim.configureDebugVisualizer(sim.COV_ENABLE_GUI, 0)
@@ -610,29 +516,10 @@ class SimulationWorld():
                                           force=self.robot.model.joint_by_name[joint_name].limit.effort,
                                           positionGain=0.03,
                                           velocityGain=.5,
-                                          # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
+                                          maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
                                           )
-                # self.get_contact_points()
-            # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
-            # sim.stepSimulation()
+
             self.step_simulation_for(sleep_time)
-            # time.sleep(sleep_time)
-            # sim.stepSimulation()
-        # print trajectories.trajectory
-        # for traj in trajectories.trajectory:
-        #     for i in range(len(group)):
-        #         sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[group[i]],
-        #                                   controlMode=sim.POSITION_CONTROL,
-        #                                   targetPosition=traj[i], targetVelocity=0,
-        #                                   force=self.robot.model.joint_by_name[group[i]].limit.effort,
-        #                                   positionGain=0.03,
-        #                                   velocityGain=.5,
-        #                                   # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
-        #                                   )
-        #         # self.get_contact_points()
-        #     # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
-        #     time.sleep(trajectories.duration / float(trajectories.no_of_samples))
-        #     # sim.stepSimulation()
 
         status = "Trajectory execution has finished"
         self.logger.info(status)
@@ -653,27 +540,8 @@ class SimulationWorld():
                                               velocityGain=.5,
                                               # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
                                               )
-                    # self.get_contact_points()
-                # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
-                # sim.stepSimulation()
+
                 self.step_simulation_for(sleep_time)
-                # time.sleep(sleep_time)
-                # sim.stepSimulation()
-        # print trajectories.trajectory
-        # for traj in trajectories.trajectory:
-        #     for i in range(len(group)):
-        #         sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[group[i]],
-        #                                   controlMode=sim.POSITION_CONTROL,
-        #                                   targetPosition=traj[i], targetVelocity=0,
-        #                                   force=self.robot.model.joint_by_name[group[i]].limit.effort,
-        #                                   positionGain=0.03,
-        #                                   velocityGain=.5,
-        #                                   # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
-        #                                   )
-        #         # self.get_contact_points()
-        #     # time.sleep(trajectories.no_of_samples / float(trajectories.duration))
-        #     time.sleep(trajectories.duration / float(trajectories.no_of_samples))
-        #     # sim.stepSimulation()
 
         status = "Trajectory execution has finished"
         self.logger.info(status)

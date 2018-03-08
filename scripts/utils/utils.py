@@ -54,3 +54,12 @@ class Utils:
         for i in range(len(vector)):
             vector[i] =  vector[i] / vector_magnitude
         return vector
+
+    @classmethod
+    def __diagonal_block_mat_slicing(self, matrix):
+        shape = matrix[0].shape
+        length = len(matrix)
+        length_range = range(length)
+        out = np.zeros((length, shape[0], length, shape[1]), dtype=int)
+        out[length_range, :, length_range, :] = matrix
+        return out.reshape(np.asarray(shape) * length)

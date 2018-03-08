@@ -728,6 +728,15 @@ class SimulationWorld():
         # self.logger.info(status)
         return status
 
+    def reset_objects_to(self, object_id=None, position=None, orientation=None):
+        if object_id is None:
+            object_id = self.box_id
+        if position is None:
+            position = [0.28, -0.43, 0.98]
+        if orientation is None:
+            orientation = [0, 0, 0, 1]
+        sim.resetBasePositionAndOrientation(object_id, position, orientation)
+
     def get_joint_states(self, group):
         joint_states = sim.getJointStates(self.robot_id, [self.joint_name_to_id[joint_name] for joint_name in group])
         joint_positions = [state[0] for state in joint_states]

@@ -15,7 +15,7 @@ class Robot:
         self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
     def init_state(self):
-        state = collections.OrderedDict()
+        state = {}
         for joint in self.model.joints:
             state[joint.name] = {
                 "current_value": 0
@@ -33,20 +33,20 @@ class Robot:
         return self.planner.trajectory.initial
 
     def __replace_joints_in_model_with_map(self):
-        joints = collections.OrderedDict()
+        joints = {}
         for joint in self.model.joints:
             joints[joint.name] = joint
         del self.model.joints[:]
         self.model.joints = joints
 
     def __setup_get_joint_by_name(self):
-        joints = collections.OrderedDict()
+        joints = {}
         for joint in self.model.joints:
             joints[joint.name] = joint
         self.model.joint_by_name = joints
 
     def init_plan_trajectory(self, *args, **kwargs):
-        joints = collections.OrderedDict()
+        joints = {}
         status = "-1"
 
         if "group" in kwargs:
@@ -80,7 +80,7 @@ class Robot:
             collision_constraints = None
 
         if "current_state" in kwargs and "goal_state" in kwargs:
-            states = collections.OrderedDict()
+            states = {}
             for joint in self.model.joints:
                 for joint_in_group in joint_group:
                     if joint_in_group in self.state and joint_in_group in goal_state:

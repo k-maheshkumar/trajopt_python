@@ -5,7 +5,6 @@ from scripts.utils import yaml_paser as yaml
 import logging
 import os
 import time
-import collections
 
 '''
         minimize
@@ -35,7 +34,7 @@ class SQPsolver:
         self.status = "-1"
         self.norm_ = 1
 
-        self.solver_config = collections.OrderedDict()
+        self.solver_config = {}
 
         self.solver = []
 
@@ -147,10 +146,8 @@ class SQPsolver:
             self.ubG = np.hstack([self.ubG, -self.ubG])
 
     def is_constraints_satisfied(self, x_k, tolerance=1e-3):
-        cons1_cond = np.matmul(self.G, x_k) <= self.ubG
-        cons2_cond =  np.matmul(-self.G, x_k) >= self.lbG
-        # cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
-        # cons2_cond = np.isclose(np.matmul(-self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
+        cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
+        cons2_cond = np.isclose(np.matmul(-self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
         cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
         # return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
 
@@ -210,16 +207,17 @@ class SQPsolver:
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         if constraints is not None:
-            print upper_limit, constraints.shape, delta
+            # print upper_limit, constraints.shape, delta
             # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= constraints * p]
             # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
             # constraints = [cvxpy.norm(p, "inf") <= delta, - lower_limit >= cvxpy.matmul(constraints, p)]
             # constraints = [cvxpy.norm(p, "inf") <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
+            # print cvxpy.matmul(cvxpy.hstack([constraints, constraints]), cvxpy.hstack([p,p]))
             # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
-                           (cvxpy.matmul(constraints[0], p) +
-                           cvxpy.matmul(constraints[1][:, -(constraints[1].shape[1] - 7):], p[-(p.shape[0] - 7):])) <= upper_limit]
-
+            temp = np.hstack([constraints[0], constraints[1]])
+            print temp.shape
+            p1 = cvxpy.hstack([p, p])
+            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(temp, p1) <= upper_limit]
             # constraints = [cvxpy.norm(p, "inf") <= delta]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
@@ -318,15 +316,17 @@ class SQPsolver:
                 iteration_count += 1
                 # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
+                if callback_function is not None:
+                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
                     if callback_function is not None:
-                        constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
+                        # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                         if constraints is not None and lower_limit is not None and upper_limit is not None:
-                            dynamic_constraints_count = len(lower_limit)
+                            # dynamic_constraints_count = len(upper_limit)
                             # if dynamic_constraints_count > last_dynamic_constraints_count:
-                            # print "collision count increases. . . .. . ."
+                            #     print "collision count increases. . . .. . ."
                             # print x_k
-                            # x_k -= p_k
+                            #     x_k -= p_k
                             # print x_k
                             # penalty.value *= trust_expand_ratio
                             # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
@@ -518,4 +518,3 @@ class SQPsolver:
         self.logger.debug("solver status: " + self.status)
 
         return self.status, x_k
-

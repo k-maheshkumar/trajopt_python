@@ -13,7 +13,7 @@ sqp:
   min_model_improve: 1e-4
   min_trust_region_size: 1e-4
   min_x_redution: 1e-4
-  penalty_norm: 2
+  penalty_norm: 2.0
   solver:
   - ECOS
   - ECOS_BB

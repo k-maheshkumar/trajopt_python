@@ -24,20 +24,20 @@ class PlannerGui(QtGui.QMainWindow):
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
 
-        self.sqp_labels = collections.OrderedDict()
-        self.sqp_spin_box = collections.OrderedDict()
-        self.sqp_combo_box = collections.OrderedDict()
+        self.sqp_labels = {}
+        self.sqp_spin_box = {}
+        self.sqp_combo_box = {}
 
         self.sqp_config_group_box = QtGui.QGroupBox('SQP solver Parameters')
         self.sqp_config_form = QtGui.QFormLayout()
 
         self.sqp_config_scroll = QtGui.QScrollArea()
 
-        self.robot_config_params = collections.OrderedDict()
-        self.robot_config_labels = collections.OrderedDict()
-        self.robot_config_spin_box = collections.OrderedDict()
-        self.robot_config_combo_box = collections.OrderedDict()
-        self.robot_config_params_spin_box = collections.OrderedDict()
+        self.robot_config_params = {}
+        self.robot_config_labels = {}
+        self.robot_config_spin_box = {}
+        self.robot_config_combo_box = {}
+        self.robot_config_params_spin_box = {}
         self.robot_config_group_box = QtGui.QGroupBox('Robot Actions')
         self.simulation_action_group_box = QtGui.QGroupBox('Simulation')
 
@@ -47,14 +47,14 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.robot_config_form = QtGui.QFormLayout()
 
-        self.robot_action_buttons = collections.OrderedDict()
+        self.robot_action_buttons = {}
         self.robot_action_button_group = QtGui.QButtonGroup(self)
         self.robot_action_buttons["execute"] = QtGui.QPushButton('Execute')
         self.robot_action_buttons["plan"] = QtGui.QPushButton('Plan')
         self.robot_action_buttons["random_pose"] = QtGui.QPushButton('Random Pose')
         self.robot_action_buttons["plan_and_execute"] = QtGui.QPushButton('Plan and Execute')
 
-        self.simulation_action_buttons = collections.OrderedDict()
+        self.simulation_action_buttons = {}
 
         # self.start_simulation_button = QtGui.QPushButton('Start Simulation')
         self.simulation_action_buttons["start_simulation"] = QtGui.QPushButton('Start Simulation')
@@ -69,8 +69,8 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.simulation_scroll = QtGui.QScrollArea()
 
-        self.selected_robot_combo_value = collections.OrderedDict()
-        self.selected_robot_spin_value = collections.OrderedDict()
+        self.selected_robot_combo_value = {}
+        self.selected_robot_spin_value = {}
 
         self.statusBar = QtGui.QStatusBar()
 
@@ -320,7 +320,8 @@ class PlannerGui(QtGui.QMainWindow):
         # can_execute_trajectory = False
         if samples is not None and duration is not None \
                 and group is not None and goal_state is not None and self.sqp_config is not None:
-            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=int(samples),
+            # status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=int(samples),
+            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=goal_state.keys(), goal_state=goal_state, samples=int(samples),
                                                                                  duration=int(duration),
                                                                                  solver_config=self.sqp_config,
                                                                                  collision_safe_distance=collision_d_safe_limit,

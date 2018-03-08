@@ -9,7 +9,7 @@ class ProblemModelling:
         self.samples = -1
         self.no_of_joints = -1
         self.decimals_to_round = -1
-        self.joints = collections.OrderedDict()
+        self.joints = {}
         self.cost_matrix_P = []
         self.cost_matrix_q = []
         self.robot_constraints_matrix = []
@@ -38,7 +38,7 @@ class ProblemModelling:
         self.samples = -1
         self.no_of_joints = -1
         self.decimals_to_round = -1
-        self.joints = collections.OrderedDict()
+        self.joints = {}
         self.cost_matrix_P = []
         self.cost_matrix_q = []
         self.robot_constraints_matrix = []
@@ -219,9 +219,9 @@ class ProblemModelling:
                 initial_signed_distance = collision_infos[0]
                 normal_times_jacobian = collision_infos[1]
                 normal_times_jacobian1 = collision_infos[2]
-                resoultion_matrix = collision_infos[3]
-                if len(resoultion_matrix) > 0:
-                    self.update_constraints(resoultion_matrix)
+                # resoultion_matrix = collision_infos[3]
+                # if len(resoultion_matrix) > 0:
+                #     self.update_constraints(resoultion_matrix)
                 # print "befr", normal_times_jacobian.shape
                 if len(initial_signed_distance) > 0:
                     # print self.robot_constraints_matrix.shape

@@ -92,6 +92,7 @@ class Test_sqp_solver(unittest.TestCase):
             self.planner.calculate_trajectory()
             trajectory =  self.planner.get_trajectory().final.T
 
+
             self.assertEquals(np.isclose(actual_result, trajectory, atol=0.01).all(), True)
 
     def test_planning_from_file(self):

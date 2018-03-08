@@ -3,6 +3,7 @@ import json
 from easydict import EasyDict as edict
 from scripts.Planner.Planner import TrajectoryOptimizationPlanner
 import time
+from scripts.utils.yaml_paser import ConfigParser
 
 class Example:
     def __init__(self, problem, verbose=False):
@@ -54,14 +55,16 @@ class Example:
                   decimals_to_round=4, verbose=False)
 
     def calculate(self):
-        self.plan.calculate_trajectory()
+        # self.plan.calculate_trajectory()
+        print self.plan.display_problem()
 
 if __name__ == '__main__':
 
-    problem = {}
-    with open('./problem.json') as json_data:
-        problem = edict(json.load(json_data))
+    # problem = {}
+    # with open('./problem.json') as json_data:
+    #     problem = edict(json.load(json_data))
 
+    problem = edict(ConfigParser("./problem.yaml").config)
     example = Example(problem, verbose="DEBUG")
     example.init()
 

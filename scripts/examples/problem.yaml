@@ -1,4 +1,5 @@
 duration: 5
+samples: 3
 joints:
   lbr_iiwa_joint_1:
     collision_constraints:
@@ -280,4 +281,3 @@ joints:
 #    states:
 #      end: 1.5716145442929421
 #      start: 1.5708037563007493
-samples: 30

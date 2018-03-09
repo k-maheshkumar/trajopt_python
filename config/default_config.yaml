@@ -2,10 +2,10 @@ config:
   robot:
     config: "./robot_config_kukka_arm.yaml"
     default_paramaters:
-      safe_collision_distance: {"value": 0.1, "step": 0.01, "min": 0, "max": 5}
-      collision_check_distance: {"value": 0.2, "step": 0.01, "min": 0, "max": 5}
+      safe_collision_distance: {"value": 0.05, "step": 0.01, "min": 0, "max": 5}
+      collision_check_distance: {"value": 0.1, "step": 0.01, "min": 0, "max": 5}
       samples: {"value": 20, "step": 1, "min": 3, "max": 50}
-      duration: {"value": 20, "step": 1, "min": 3, "max": 50}
+      duration: {"value": 10, "step": 1, "min": 3, "max": 50}
   solver: "./sqp_config.yaml"
   world:
     sdf: "/home/mahe/MEGA/thesis/pycharm/trajPlanner/world/world.sdf"

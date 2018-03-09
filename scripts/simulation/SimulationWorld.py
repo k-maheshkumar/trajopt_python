@@ -2,7 +2,7 @@ import logging
 import pybullet as sim
 import time
 import numpy as np
-from scripts.Robot import Robot
+from scripts.interfaces.ISimulationWorldBase import ISimulationWorldBase
 from munch import *
 import os
 import PyKDL as kdl
@@ -10,12 +10,13 @@ import itertools
 from scripts.utils.utils import Utils as utils
 import collections
 
-CYLINDER = sim.GEOM_CYLINDER
-BOX = sim.GEOM_BOX
 
 
-class SimulationWorld():
-    def __init__(self, urdf_file=None):
+
+class SimulationWorld(ISimulationWorldBase):
+    def __init__(self, urdf_file=None, use_gui=False, use_real_time_simulation=False, fixed_time_step=0.01):
+        self.CYLINDER = sim.GEOM_CYLINDER
+        self.BOX = sim.GEOM_BOX
 
         if urdf_file is None:
             main_logger_name = "Trajectory_Planner"
@@ -26,31 +27,19 @@ class SimulationWorld():
         else:
             self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
-        self.gui = sim.connect(sim.GUI)
-        # self.gui = sim.connect(sim.DIRECT)
-        sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 0)
-        home = os.path.expanduser('~')
+        if use_gui:
+            self.gui = sim.connect(sim.GUI)
+        else:
+            self.gui = sim.connect(sim.DIRECT)
 
-        location_prefix = home + '/masterThesis/bullet3/data/'
-        # file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
 
-        if urdf_file is None:
-            urdf_file = location_prefix + "kuka_iiwa/model.urdf"
-        self.robot = Robot.Robot(urdf_file)
+        # self.robot = Robot.Robot(urdf_file)
+        self.robot = None
         self.robot_id = -1
-        self.table_id = -1
         self.joint_name_to_id = {}
-        self.no_of_joints = -1
         self.start_state_for_traj_planning = {}
         self.end_state_for_traj_planning = {}
 
-        pland_id = self.place_items_from_urdf(urdf_file=location_prefix + "plane.urdf",
-                                              position=[0, 0, 0.0])
-
-        self.table_id = self.place_items_from_urdf(urdf_file=location_prefix + "table/table.urdf",
-                                                   position=[0, 0, 0.0])
-
-        self.robot_id = self.place_items_from_urdf(urdf_file, position=[0, 0.25, 0.6])
 
         self.planning_group = []
         self.planning_group_ids = []
@@ -60,65 +49,14 @@ class SimulationWorld():
         self.collision_check_distance = 0.2
 
         self.end_effector_index = 6
-        use_real_time_simulation = 0
-        fixed_time_step = 0.01
+
         if use_real_time_simulation:
             sim.setRealTimeSimulation(use_real_time_simulation)
         else:
             sim.setTimeStep(fixed_time_step)
 
-        sim.setGravity(0, 0, -10)
         self.no_of_joints = sim.getNumJoints(self.robot_id)
-        self.setup_joint_id_to_joint_name()
         self.collision_constraints = []
-
-        # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.70, radius=0.12,
-        #                                           # position=[-0.17, -0.43, 0.9], mass=1)
-        #                                           position=[-0.50, 0.42, 0.9], mass=100)
-        self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
-                                             # position=[-0.17, -0.42, 0.9], mass=100)
-                                             position=[0.28, -0.43, 0.9], mass=100)
-        # self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
-        #                                      position=[-0.17, -0.42, 0.9], mass=100)
-                                             # position=[0.28, -0.43, 0.9], mass=100)
-        # self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
-        #                                      position=[-0.50, -0.42, 0.9], mass=100)
-                                             # position=[0.28, -0.43, 0.9], mass=100)
-        self.collision_constraints.append(self.table_id)
-
-        sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
-
-        if urdf_file is not None:
-            # start_state = {
-            #     'lbr_iiwa_joint_1': -1.570,
-            #     'lbr_iiwa_joint_2': 1.571,
-            #     'lbr_iiwa_joint_3': -1.570,
-            #     'lbr_iiwa_joint_4': -1.570,
-            #     'lbr_iiwa_joint_5': 1.571,
-            #     'lbr_iiwa_joint_6': 1.571,
-            #     'lbr_iiwa_joint_7': 1.571
-            # }
-            # start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
-            #                'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
-            #                'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
-            #                'lbr_iiwa_joint_2': 1.4999975516996142}
-
-            start_state = {}
-
-
-            start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
-            start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
-            start_state["lbr_iiwa_joint_3"] = -1.5762726255540713
-            start_state["lbr_iiwa_joint_4"] = -0.8666279970481103
-            start_state["lbr_iiwa_joint_5"] = 1.5855963769735366
-            start_state["lbr_iiwa_joint_6"] = 1.5770985888989753
-            start_state["lbr_iiwa_joint_7"] = 1.5704531145724918
-
-            self.reset_joint_states(start_state)
-            self.step_simulation_for(3)
-
-
-            # else:
 
     def setup_logger(self, main_logger_name, verbose=False, log_file=False):
 
@@ -153,6 +91,21 @@ class SimulationWorld():
         # add the handlers to the logger
         self.logger.addHandler(log_console_handler)
 
+    def toggle_rendering(self, enable):
+        sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, enable)
+
+    def toggle_rendering_while_planning(self, enable=1):
+        sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, enable)
+        sim.configureDebugVisualizer(sim.COV_ENABLE_TINY_RENDERER, enable)
+        sim.configureDebugVisualizer(sim.COV_ENABLE_GUI, enable)
+        sim.configureDebugVisualizer(sim.COV_ENABLE_SHADOWS, enable)
+        sim.configureDebugVisualizer(sim.COV_ENABLE_RGB_BUFFER_PREVIEW, enable)
+        sim.configureDebugVisualizer(sim.COV_ENABLE_DEPTH_BUFFER_PREVIEW, enable)
+        sim.configureDebugVisualizer(sim.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, enable)
+
+    def set_gravity(self, x=0, y=0, z=-10):
+        sim.setGravity(x, y, z)
+
     def create_constraint(self, shape, mass, position, size=None, radius=None, height=None, orientation=None):
         if position is not None:
             if radius is not None:
@@ -167,7 +120,7 @@ class SimulationWorld():
 
         return shape_id
 
-    def place_items_from_urdf(self, urdf_file, position, orientation=None, use_fixed_base=True):
+    def load_urdf(self, urdf_file, position, orientation=None, use_fixed_base=True):
 
         if orientation is None:
             urdf_id = sim.loadURDF(urdf_file, basePosition=position, useFixedBase=use_fixed_base)
@@ -177,82 +130,10 @@ class SimulationWorld():
 
         return urdf_id
 
-    def run_simulation(self):
-        iteration_count = 0
-        while 1:
-            if iteration_count < 1:
-                iteration_count += 1
-                # goal_state = {
-                #     'lbr_iiwa_joint_1': -2.0417782994426674,
-                #     'lbr_iiwa_joint_2': 0.9444594031189716,
-                #     'lbr_iiwa_joint_3': -1.591006403858707,
-                #     'lbr_iiwa_joint_4': -1.9222844444479184,
-                #     'lbr_iiwa_joint_5': 1.572303282659756,
-                #     'lbr_iiwa_joint_6': 1.5741716208788483,
-                #     'lbr_iiwa_joint_7': 1.5716145442929421
-                # }
-                # start_state = {
-                #     'lbr_iiwa_joint_1': -1.570,
-                #     'lbr_iiwa_joint_2': 1.571,
-                #     'lbr_iiwa_joint_3': -1.570,
-                #     'lbr_iiwa_joint_4': -1.570,
-                #     'lbr_iiwa_joint_5': 1.571,
-                #     'lbr_iiwa_joint_6': 1.571,
-                #     'lbr_iiwa_joint_7': 1.571
-                # }
-                start_state = {}
-                goal_state = {}
-                # start_state = {'lbr_iiwa_joint_5': 1.5855963769735366, 'lbr_iiwa_joint_4': -0.8666279970481103,
-                #                'lbr_iiwa_joint_7': 1.5704531145724918, 'lbr_iiwa_joint_6': 1.5770985888989753,
-                #                'lbr_iiwa_joint_1': -2.4823357809267463, 'lbr_iiwa_joint_3': -1.5762726255540713,
-                #                'lbr_iiwa_joint_2': 1.4999975516996142}
-                # goal_state = {'lbr_iiwa_joint_5': 1.5979105177314896, 'lbr_iiwa_joint_4': -0.5791571346767671,
-                #               'lbr_iiwa_joint_7': 1.5726221954434347, 'lbr_iiwa_joint_6': 1.5857854098720727,
-                #               'lbr_iiwa_joint_1': -0.08180533826032865, 'lbr_iiwa_joint_3': -1.5873548294514912,
-                #               'lbr_iiwa_joint_2': 1.5474152457596664}
+    def set_robot(self, robot):
+        if self.robot is None and robot is not None:
+            self.robot = robot
 
-                # startState = [-1.5708022241650113, 1.5711988957726704, -1.57079632679,
-                #               -1.5707784259568982, 1.5713463278825928, 1.5719498333358852, 1.5707901876998593]
-
-                start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
-                start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
-                start_state["lbr_iiwa_joint_3"] = -1.5762726255540713
-                start_state["lbr_iiwa_joint_4"] = -0.8666279970481103
-                start_state["lbr_iiwa_joint_5"] = 1.5855963769735366
-                start_state["lbr_iiwa_joint_6"] = 1.5770985888989753
-                start_state["lbr_iiwa_joint_7"] = 1.5704531145724918
-
-                goal_state["lbr_iiwa_joint_1"] = -0.08180533826032865
-                goal_state["lbr_iiwa_joint_2"] = 1.5474152457596664
-                goal_state["lbr_iiwa_joint_3"] = -1.5873548294514912
-                goal_state["lbr_iiwa_joint_4"] = -0.5791571346767671
-                goal_state["lbr_iiwa_joint_5"] = 1.5979105177314896
-                goal_state["lbr_iiwa_joint_6"] = 1.5857854098720727
-                goal_state["lbr_iiwa_joint_7"] = 1.5726221954434347
-
-                group1_test = ['lbr_iiwa_joint_1']
-
-                group1 = ['lbr_iiwa_joint_1', 'lbr_iiwa_joint_2', 'lbr_iiwa_joint_3']
-                group2 = ['lbr_iiwa_joint_4', 'lbr_iiwa_joint_5', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_7']
-                duration = 20
-                samples = 20
-                full_arm = group1 + group2
-                # full_arm = group1_test
-                self.reset_joint_states(start_state)
-                self.step_simulation_for(2)
-                # time.sleep(1)
-                check_distance = 0.2
-                collision_safe_distance = 0.10
-
-                self.plan_trajectory(goal_state.keys(), goal_state, samples, duration,
-                                     collision_safe_distance=collision_safe_distance,
-                                     collision_check_distance=check_distance)
-                print "if trajectory has collision: ", \
-                self.check_for_collision_in_trajectory(self.robot.get_trajectory().final, goal_state.keys(), collision_safe_distance)
-                self.execute_trajectory()
-                # self.execute_trajectories(full_arm)
-                # import sys
-                # sys.exit()
 
     def get_link_states_at(self, trajectory, group):
         link_states = []
@@ -267,7 +148,7 @@ class SimulationWorld():
         for joint in group:
             self.planning_group_ids.append(self.joint_name_to_id[joint])
 
-    def get_collision_infos(self, initial_trajectory, group, distance=0.20):
+    def get_collision_infos(self, initial_trajectory, group, distance=0.10):
 
         # print initial_trajectory
         collision_infos = self.formulate_collision_infos(initial_trajectory, group, distance)
@@ -295,33 +176,6 @@ class SimulationWorld():
             jacobian_matrix = np.hstack(jacobian_matrix)
 
         return jacobian_matrix
-
-    def get_velocity_matrix(self, link_index, planning_group_length, time_step_count):
-        increase_resolution_matrix = []
-
-        velocity_matrix = np.zeros((planning_group_length * self.planning_samples,
-                                    self.planning_samples * planning_group_length))
-        np.fill_diagonal(velocity_matrix, -1.0)
-        i, j = np.indices(velocity_matrix.shape)
-        velocity_matrix[i == j - planning_group_length] = 1.0
-
-        # to slice zero last row
-        velocity_matrix.resize(velocity_matrix.shape[0] - planning_group_length, velocity_matrix.shape[1])
-
-        # print velocity_matrix
-
-        mat = velocity_matrix[((time_step_count - 2) * planning_group_length):, :]
-        # print mat
-
-        mat = mat[link_index::planning_group_length, :]
-        # print mat
-
-        mat = mat[:5:, :]
-
-        if len(mat):
-            increase_resolution_matrix.append(np.vstack(mat))
-
-        return increase_resolution_matrix
 
     def formulate_collision_infos(self, trajectory, group, distance=0.2):
 
@@ -443,7 +297,7 @@ class SimulationWorld():
         if len(next_normal_T_times_jacobian) > 0:
             next_normal_T_times_jacobian = np.vstack(next_normal_T_times_jacobian)
 
-        self.reset_joint_states(start_state, group)
+        self.reset_joint_states(start_state)
 
         return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian
 
@@ -489,19 +343,9 @@ class SimulationWorld():
                                         duration=int(duration),
                                         # collision_constraints=self.collision_constraints,
                                         solver_config=solver_config)
-
-        sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 0)
-        sim.configureDebugVisualizer(sim.COV_ENABLE_TINY_RENDERER, 0)
-        sim.configureDebugVisualizer(sim.COV_ENABLE_GUI, 0)
-        sim.configureDebugVisualizer(sim.COV_ENABLE_SHADOWS, 0)
-        sim.configureDebugVisualizer(sim.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
-        sim.configureDebugVisualizer(sim.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
-        sim.configureDebugVisualizer(sim.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
-
-        status, can_execute_trajectory = self.robot.calulate_trajecotory(
-            self.update_collsion_infos)  # callback function
-        sim.configureDebugVisualizer(sim.COV_ENABLE_RENDERING, 1)
-
+        self.toggle_rendering_while_planning(False)
+        status, can_execute_trajectory = self.robot.calulate_trajecotory(self.update_collsion_infos)  # callback function
+        self.toggle_rendering_while_planning(True)
         # status, can_execute_trajectory = self.robot.calulate_trajecotory(None)
 
         return status, can_execute_trajectory
@@ -513,12 +357,12 @@ class SimulationWorld():
                 sim.getJointState(bodyUniqueId=self.robot_id, jointIndex=self.joint_name_to_id[joint])[0]
         return current_state
 
-    def execute_trajectory(self):
-        trajectories = self.robot.get_trajectory()
-        sleep_time = trajectories.duration / float(trajectories.no_of_samples)
+    def execute_trajectory(self, trajectory, step_time=None):
+        if step_time is None:
+            sleep_time = trajectory.duration / float(trajectory.no_of_samples)
 
-        for i in range(int(trajectories.no_of_samples)):
-            for joint_name, corresponding_trajectory in trajectories.trajectory_by_name.items():
+        for i in range(int(trajectory.no_of_samples)):
+            for joint_name, corresponding_trajectory in trajectory.trajectory_by_name.items():
                 sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[joint_name],
                                           controlMode=sim.POSITION_CONTROL,
                                           targetPosition=corresponding_trajectory[i], targetVelocity=0,
@@ -534,8 +378,7 @@ class SimulationWorld():
         self.logger.info(status)
         return status
 
-    def execute_trajectories(self, group):
-        trajectories = self.robot.get_trajectory()
+    def execute_trajectories(self, group, trajectories):
         sleep_time = trajectories.duration / float(trajectories.no_of_samples)
 
         for i in range(int(trajectories.no_of_samples)):
@@ -552,19 +395,23 @@ class SimulationWorld():
 
                 self.step_simulation_for(sleep_time)
 
-        status = "Trajectory execution has finished"
+        status = "Trajectories execution has finished"
         self.logger.info(status)
         return status
 
-    def plan_and_execute_trajectory(self, group, goal_state, samples, duration, solver_config=None):
+    def plan_and_execute_trajectory(self, group, goal_state, samples, duration, solver_config=None,
+                                    collision_safe_distance=0.05, collision_check_distance=0.1):
         status = "-1"
-        status, can_execute_trajectory = self.plan_trajectory(group, goal_state, samples, duration, solver_config=None)
+        status, can_execute_trajectory = self.plan_trajectory(group, goal_state, samples, duration,
+                                                              solver_config=solver_config,
+                                                              collision_safe_distance=collision_safe_distance,
+                                                              collision_check_distance=collision_check_distance)
         status += " and "
         status += self.execute_trajectory()
 
         return status, can_execute_trajectory
 
-    def check_for_collision_in_trajectory(self, trajectory, group, distance=0.05):
+    def check_for_collision_in_trajectory(self, trajectory, group, collision_safe_distance=0.05):
         collision = False
         start_state = self.get_current_states_for_given_joints(group)
 
@@ -584,7 +431,8 @@ class SimulationWorld():
                     for constraint in self.collision_constraints:
 
                         cast_closest_points = sim.getConvexSweepClosestPoints(self.robot_id, constraint,
-                                                                              linkIndexA=link_index, distance=distance,
+                                                                              linkIndexA=link_index,
+                                                                              distance=collision_safe_distance,
                                                                               bodyAfromPosition=current_link_state[0],
                                                                               bodyAfromOrientation=current_link_state[
                                                                                   1],
@@ -604,16 +452,16 @@ class SimulationWorld():
             if collision:
                 break
 
-        self.reset_joint_states(start_state, group)
+        self.reset_joint_states(start_state)
 
         return collision
 
     def setup_joint_id_to_joint_name(self):
-        for i in range(self.no_of_joints):
+        for i in range(sim.getNumJoints(self.robot_id)):
             joint_info = sim.getJointInfo(self.robot_id, i)
             self.joint_name_to_id[joint_info[1].decode('UTF-8')] = joint_info[0]
 
-    def reset_joint_states_to(self, trajectory, joints, motor_dir=None):
+    def reset_joint_states_to(self, trajectory, joints):
         if len(trajectory) == len(joints):
             for i in range(len(trajectory)):
                 sim.resetJointState(self.robot_id, self.joint_name_to_id[joints[i]], trajectory[i])
@@ -625,10 +473,9 @@ class SimulationWorld():
         # self.logger.info(status)
         return status
 
-    def reset_joints_to_random_states(self, joints, motor_dir=None):
-        if motor_dir is None:
-            # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
-            motor_dir = np.random.uniform(-1, 1, size=len(joints))
+    def reset_joints_to_random_states(self, joints):
+
+        motor_dir = np.random.uniform(-1, 1, size=len(joints))
         half_pi = 1.57079632679
         for joint in joints:
             for j in range(len(joints)):
@@ -637,21 +484,14 @@ class SimulationWorld():
         self.logger.info(status)
         return status
 
-    def reset_joint_states(self, joints, motor_dir=None):
-        # if motor_dir is None:
-        #     # motor_dir = [-1, -1, -1, 1, 1, 1, 1]
-        #     motor_dir = np.random.uniform(-1, 1, size=len(joints))
-        # half_pi = 1.57079632679
+    def reset_joint_states(self, joints):
         for joint in joints:
-            for j in range(len(joints)):
-                sim.resetJointState(self.robot_id, self.joint_name_to_id[joint], joints[joint])
+            sim.resetJointState(self.robot_id, self.joint_name_to_id[joint], joints[joint])
         status = "Reset joints to start pose is complete"
         # self.logger.info(status)
         return status
 
-    def reset_objects_to(self, object_id=None, position=None, orientation=None):
-        if object_id is None:
-            object_id = self.box_id
+    def reset_objects_to(self, object_id, position=None, orientation=None):
         if position is None:
             position = [0.28, -0.43, 0.98]
         if orientation is None:

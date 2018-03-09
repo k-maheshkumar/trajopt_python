@@ -23,6 +23,7 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_default_config_params = self.config["robot"]["default_paramaters"]
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
+        simulation.set_robot(self.robot_config["urdf"])
 
         self.sqp_labels = {}
         self.sqp_spin_box = {}

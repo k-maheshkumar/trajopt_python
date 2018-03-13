@@ -67,6 +67,7 @@ class Robot:
             else:
                 decimals_to_round = 5
         else:
+            solver_config = None
             decimals_to_round = 5
 
         if "current_state" in kwargs:
@@ -74,10 +75,22 @@ class Robot:
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
 
-        if "collision_constraints" in kwargs:
-            collision_constraints = kwargs["collision_constraints"]
+        if "collision_safe_distance" in kwargs:
+            collision_safe_distance = kwargs["collision_safe_distance"]
         else:
-            collision_constraints = None
+            collision_safe_distance = 0.05
+        if "verbose" in kwargs:
+            verbose = kwargs["verbose"]
+        else:
+            verbose = False
+
+        if verbose:
+            main_logger_name = "Trajectory_Planner"
+            # verbose = False
+            self.logger = logging.getLogger(main_logger_name)
+            self.setup_logger(main_logger_name, verbose)
+        # else:
+        #     self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
         if "current_state" in kwargs and "goal_state" in kwargs:
             states = {}
@@ -92,9 +105,10 @@ class Robot:
                             "limit": joint.limit,
                         })
         if len(joints):
-            self.planner.init(joints=joints, samples=samples, duration=duration, joint_group=joint_group,
-                              solver=solver, solver_config=solver_config, solver_class=1,
-                              decimals_to_round=decimals_to_round, verbose=True)
+            self.planner.init(joints=joints, samples=samples, duration=duration,
+                              joint_group=joint_group, collision_safe_distance=collision_safe_distance,
+                              solver=solver, solver_config=solver_config,
+                              solver_class=1, decimals_to_round=decimals_to_round, verbose=verbose)
 
     def calulate_trajecotory(self, callback_function=None):
         status, can_execute_trajectory = "No trajectory has been found", False
@@ -108,3 +122,36 @@ class Robot:
         for key, value in self.state.items():
             if key in current_state:
                 self.state[key]["current_value"] = current_state[key]
+
+    def setup_logger(self, main_logger_name, verbose=False, log_file=False):
+
+        # creating a formatter
+        formatter = logging.Formatter('-%(asctime)s - %(name)s - %(levelname)-8s: %(message)s')
+
+        # create console handler with a debug log level
+        log_console_handler = logging.StreamHandler()
+        if log_file:
+            # create file handler which logs info messages
+            logger_file_handler = logging.FileHandler(main_logger_name + '.log', 'w', 'utf-8')
+            logger_file_handler.setLevel(logging.INFO)
+            # setting handler format
+            logger_file_handler.setFormatter(formatter)
+            # add the file logging handlers to the logger
+            self.logger.addHandler(logger_file_handler)
+
+        if verbose == "WARN":
+            self.logger.setLevel(logging.WARN)
+            log_console_handler.setLevel(logging.WARN)
+
+        elif verbose == "INFO" or verbose is True:
+            self.logger.setLevel(logging.INFO)
+            log_console_handler.setLevel(logging.INFO)
+
+        elif verbose == "DEBUG":
+            self.logger.setLevel(logging.DEBUG)
+            log_console_handler.setLevel(logging.DEBUG)
+
+        # setting console handler format
+        log_console_handler.setFormatter(formatter)
+        # add the handlers to the logger
+        self.logger.addHandler(log_console_handler)

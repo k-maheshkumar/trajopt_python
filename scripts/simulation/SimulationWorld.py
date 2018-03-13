@@ -149,10 +149,9 @@ class SimulationWorld(ISimulationWorldBase):
             self.planning_group_ids.append(self.joint_name_to_id[joint])
 
     def get_collision_infos(self, initial_trajectory, group, distance=0.10):
-
         # print initial_trajectory
+        self.extract_ids_from_planning_group(group)
         collision_infos = self.formulate_collision_infos(initial_trajectory, group, distance)
-
         return collision_infos
 
     def get_jacobian_matrix(self, position_jacobian, trajectory_length, planning_group_length, time_step_count):
@@ -207,7 +206,6 @@ class SimulationWorld(ISimulationWorldBase):
                                                                                       next_link_states):
 
                     for constraint in self.collision_constraints:
-
                         cast_closest_points = sim.getConvexSweepClosestPoints(self.robot_id, constraint,
                                                                               linkIndexA=link_index, distance=distance,
                                                                               bodyAfromPosition=current_link_state[0],
@@ -314,8 +312,8 @@ class SimulationWorld(ISimulationWorldBase):
 
         return [point_on_frame[0], point_on_frame[1], point_on_frame[2]]
 
-    def update_collsion_infos(self, new_trajectory, delta_trajectory=None):
-        trajectory = np.array((np.split(new_trajectory, self.planning_samples)))
+    def update_collsion_infos(self, no_of_samples, new_trajectory, delta_trajectory=None):
+        trajectory = np.array((np.split(new_trajectory, no_of_samples)))
 
         self.robot.planner.trajectory.add_trajectory(trajectory)
         trajectory = np.split(new_trajectory, self.planning_samples)
@@ -411,25 +409,36 @@ class SimulationWorld(ISimulationWorldBase):
 
         return status, can_execute_trajectory
 
+    def is_given_robot_state_has_collision(self, robot_current_state_position,
+                                           robot_current_state_orientation=[0, 0, 0, 1], collision_safe_distance=0.05):
+        cast_closest_points = sim.getClosestPoints(self.robot_id, distance=collision_safe_distance
+                                                              )
+
+        if len(cast_closest_points) > 0:
+            dist = cast_closest_points[0][9]
+            if dist < 0:
+                return True
+        return False
+
     def check_for_collision_in_trajectory(self, trajectory, group, collision_safe_distance=0.05):
         collision = False
         start_state = self.get_current_states_for_given_joints(group)
-
+        distance = 10
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
             next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
 
             if next_time_step_of_trajectory is not None:
-                current_link_states = self.get_link_states_at(current_time_step_of_trajectory, group)
                 next_link_states = self.get_link_states_at(next_time_step_of_trajectory, group)
+            current_link_states = self.get_link_states_at(current_time_step_of_trajectory, group)
 
-                self.reset_joint_states_to(current_time_step_of_trajectory, group)
+            self.reset_joint_states_to(current_time_step_of_trajectory, group)
 
-                for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
-                                                                                      current_link_states,
-                                                                                      next_link_states):
+            for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
+                                                                                  current_link_states,
+                                                                                  next_link_states):
 
-                    for constraint in self.collision_constraints:
-
+                for constraint in self.collision_constraints:
+                    if next_link_state is not None:
                         cast_closest_points = sim.getConvexSweepClosestPoints(self.robot_id, constraint,
                                                                               linkIndexA=link_index,
                                                                               distance=collision_safe_distance,
@@ -443,12 +452,18 @@ class SimulationWorld(ISimulationWorldBase):
                                                                               )
 
                         if len(cast_closest_points) > 0:
-                            dist = cast_closest_points[0][9]
-                            if dist < 0:
-                                collision = True
-                                break
-                    if collision:
+                            distance = cast_closest_points[0][9]
+                    else:
+                        closest_points = sim.getClosestPoints(self.robot_id, constraint,
+                                                              linkIndexA=link_index, distance=collision_safe_distance)
+                        if len(closest_points) > 0:
+                            distance = cast_closest_points[0][8]
+
+                    if distance < 0:
+                        collision = True
                         break
+                if collision:
+                    break
             if collision:
                 break
 

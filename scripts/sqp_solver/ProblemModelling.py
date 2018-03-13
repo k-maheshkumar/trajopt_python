@@ -24,8 +24,8 @@ class ProblemModelling:
         self.velocity_upper_limits = []
         self.initial_guess = []
         self.collision_constraints = None
-        self.lower_safe_distance_threshold = 0.5
-        self.upper_safe_distance_threshold = 2
+        self.collision_safe_distance = 0.05
+        self.collision_check_distance = 0.1
 
         main_logger_name = "Trajectory_Planner"
         # verbose = "DEBUG"
@@ -57,8 +57,8 @@ class ProblemModelling:
         self.no_of_joints = len(joints)
         self.joints = joints
         self.decimals_to_round = decimals_to_round
-        self.lower_safe_distance_threshold = lower_safe_distance_threshold
-        self.upper_safe_distance_threshold = upper_safe_distance_threshold
+        self.collision_safe_distance = lower_safe_distance_threshold
+        self.collision_check_distance = upper_safe_distance_threshold
         if "collision_constraints" in self.joints:
             self.collision_constraints = self.joints["collision_constraints"]
         self.fill_cost_matrix()
@@ -163,7 +163,7 @@ class ProblemModelling:
         self.initial_guess = (np.asarray(self.initial_guess).T).flatten()
 
     def update_collision_infos(self, collision_infos, safety_limit=0.5):
-        self.lower_safe_distance_threshold = safety_limit
+        self.collision_safe_distance = safety_limit
         current_state_normal_times_jacobian, lower_collision_limit, upper_collision_limit = None, None, None
         if collision_infos is not None:
             if len(collision_infos) > 0:
@@ -173,9 +173,9 @@ class ProblemModelling:
 
                 if len(initial_signed_distance) > 0:
 
-                    np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
-                    lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.upper_safe_distance_threshold)
-                    upper_collision_limit = initial_signed_distance - self.lower_safe_distance_threshold
+                    np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
+                    lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
+                    upper_collision_limit = initial_signed_distance - self.collision_safe_distance
                     lower_collision_limit = lower_collision_limit.flatten()
                     upper_collision_limit = upper_collision_limit.flatten()
         return np.asarray([current_state_normal_times_jacobian, next_state_normal_times_jacobian]), \

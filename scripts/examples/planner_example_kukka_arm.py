@@ -1,7 +1,8 @@
 from scripts.simulation.SimulationWorld import SimulationWorld
 import os
 from scripts.Robot import Robot
-
+from scripts.utils.utils import Utils as utils
+import numpy as np
 
 class PlannerExample:
     def __init__(self):
@@ -13,6 +14,7 @@ class PlannerExample:
         self.robot = Robot.Robot(urdf_file)
 
         self.world = SimulationWorld(urdf_file, use_gui=True)
+        # self.world = SimulationWorld(urdf_file, use_gui=False)
         self.world.set_gravity(0, 0, -10)
         self.world.toggle_rendering(0)
         self.world.set_robot(self.robot)
@@ -23,9 +25,8 @@ class PlannerExample:
                                         position=[0, 0, 0.0])
 
         self.world.robot_id = self.world.load_urdf(urdf_file, position=[0, 0.25, 0.6])
-        # self.cylinder_id = self.create_constraint(shape=CYLINDER, height=0.70, radius=0.12,
-        #                                           # position=[-0.17, -0.43, 0.9], mass=1)
-        #                                           position=[-0.50, 0.42, 0.9], mass=100)
+        # self.cylinder_id = self.world.create_constraint(shape=self.world.CYLINDER,
+        #                                                 height=0.70, radius=0.12, position=[0.50, 0.30, 0.9], mass=100)
         self.box_id = self.world.create_constraint(shape=self.world.BOX, size=[0.1, 0.2, 0.45],
                                              # position=[-0.17, -0.42, 0.9], mass=100)
                                              position=[0.28, -0.43, 0.9], mass=100)
@@ -65,25 +66,43 @@ class PlannerExample:
                 goal_state["lbr_iiwa_joint_6"] = 1.5857854098720727
                 goal_state["lbr_iiwa_joint_7"] = 1.5726221954434347
 
-                duration = 20
+                duration = 10
                 samples = 20
                 self.world.reset_joint_states(start_state)
                 self.world.step_simulation_for(2)
-                check_distance = 0.2
-                collision_safe_distance = 0.10
+                check_distance = 0.1
+                collision_safe_distance = 0.02
+                group = goal_state.keys()
+                self.robot.init_plan_trajectory(group=group,
+                                                current_state=self.world.get_current_states_for_given_joints(group),
+                                                goal_state=goal_state, samples=int(samples),
+                                                duration=int(duration), collision_safe_distance=collision_safe_distance,
+                                                verbose=True)
+                self.world.toggle_rendering_while_planning(False)
+
+                self.robot.calulate_trajecotory(self.world.get_collision_infos)
+
+                print ("if trajectory has collision: ", \
+                self.world.check_for_collision_in_trajectory(self.robot.get_trajectory().final, goal_state.keys(),
+                                                           collision_safe_distance))
+
+                self.world.toggle_rendering_while_planning(True)
+
+                # self.robot.get_trajectory().final = \
+                #     np.asarray(utils.interpolate_list(self.robot.planner.get_trajectory().final.T, 10)).T.tolist()
+                self.world.execute_trajectory(self.robot.planner.get_trajectory())
+
                 # self.world.plan_trajectory(goal_state.keys(), goal_state, samples, duration,
                 #                      collision_safe_distance=collision_safe_distance,
                 #                      collision_check_distance=check_distance)
-                self.robot.plan_trajectory(goal_state.keys(),
-                                           self.world.get_current_states_for_given_joints(goal_state.keys()),
-                                           goal_state, samples, duration,
-                                     collision_safe_distance=collision_safe_distance,
-                                     collision_check_distance=check_distance,solver_config=None,
-                                           callback_funtion=self.world.update_collsion_infos)
-                print ("if trajectory has collision: ", \
-                self.world.check_for_collision_in_trajectory(self.world.robot.get_trajectory().final, goal_state.keys(),
-                                                           collision_safe_distance))
-                self.world.execute_trajectory(self.robot.planner.get_trajectory())
+                #
+                # print ("if trajectory has collision: ", \
+                # self.world.check_for_collision_in_trajectory(self.world.robot.get_trajectory().final, goal_state.keys(),
+                #                                            collision_safe_distance))
+                # # self.robot.get_trajectory().final = \
+                # #     np.asarray(utils.interpolate_list(self.robot.planner.get_trajectory().final.T, 10)).T.tolist()
+                # self.world.execute_trajectory(self.robot.planner.get_trajectory())
+
                 # import sys
                 # sys.exit()
 

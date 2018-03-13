@@ -63,3 +63,15 @@ class Utils:
         out = np.zeros((length, shape[0], length, shape[1]), dtype=int)
         out[length_range, :, length_range, :] = matrix
         return out.reshape(np.asarray(shape) * length)
+
+    @classmethod
+    def interpolate_list(cls, input_list, samples=3):
+        new_list = []
+        for prev_elt, current_elt, next_elt in cls.iterate_with_previous_and_next(input_list):
+            if next_elt is not None:
+                if type(current_elt) is list:
+                    cls.interpolate_list(current_elt, samples)
+                new_list += cls.interpolate(current_elt, next_elt, samples).tolist()
+        print input_list
+        print new_list
+        return new_list

@@ -34,12 +34,12 @@ class Test_Problem_Modelling(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     start = time.time()
                     self.model.init(self.problem.joints, sample, duration,
-                                    lower_safe_distance_threshold=0.5, upper_safe_distance_threshold=2)
+                                    collision_safe_distance=0.5, collision_check_distance=2)
                 end = time.time()
             else:
                 start = time.time()
                 self.model.init(self.problem.joints, sample, duration,
-                                lower_safe_distance_threshold=0.5, upper_safe_distance_threshold=2)
+                                collision_safe_distance=0.5, collision_check_distance=2)
                 end = time.time()
             init_time = end - start
             print ("Initialization for samples: %f, duration: %f completed in %f" %(sample, duration, init_time))

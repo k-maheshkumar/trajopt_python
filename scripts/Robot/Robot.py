@@ -6,6 +6,7 @@ from scripts.Robot.Planner import TrajectoryPlanner
 
 class Robot:
     def __init__(self, urdf_file):
+        self.id = -1
         self.model = URDF.from_xml_file(urdf_file)
         self.__setup_get_joint_by_name()
         self.state = self.init_state()
@@ -77,6 +78,12 @@ class Robot:
             collision_safe_distance = kwargs["collision_safe_distance"]
         else:
             collision_safe_distance = 0.05
+
+        if "collision_check_distance" in kwargs:
+            collision_check_distance = kwargs["collision_check_distance"]
+        else:
+            collision_check_distance = 0.1
+
         if "verbose" in kwargs:
             verbose = kwargs["verbose"]
         else:
@@ -104,7 +111,9 @@ class Robot:
                         })
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
-                              joint_group=joint_group, collision_safe_distance=collision_safe_distance,
+                              joint_group=joint_group,
+                              collision_safe_distance=collision_safe_distance,
+                              collision_check_distance=collision_check_distance,
                               solver=solver, solver_config=solver_config,
                               solver_class=1, decimals_to_round=decimals_to_round, verbose=verbose)
 

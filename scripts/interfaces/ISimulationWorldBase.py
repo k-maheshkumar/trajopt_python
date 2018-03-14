@@ -25,17 +25,19 @@ class ISimulationWorldBase(object):
     def load_urdf(self, urdf_file, position, orientation, use_fixed_base):
         """interface to load urdf into the scene"""
     @abc.abstractmethod
-    def get_link_states_at(self, trajectory, group):
-        """given a trajectory and planning group, this method should list of link states
+    def get_link_states_at(self, robot_id, trajectory, group):
+        """given a trajectory and planning group along with the robot id, this method should list of link states
         corresponding to each time step of the trajectory"""
         return
 
     @abc.abstractmethod
-    def get_collision_infos(self, trajectory, group, distance=0.10):
-        """given a trajectory (lists of list), planning group and distance to check for the collision, this method
-          should return the collision infos such as initial distance between the robot link, array of
-          matmul(current_time_step_normal_from_collision_object.T, position_jacobian(current_time_step_closest_point_on_link), and
-          array of matmul(next_time_step_normal_from_collision_object.T, position_jacobian(next_time_step_closest_point_on_link)"""
+    def get_collision_infos(self, robot_id, trajectory, group, distance=0.10):
+        """given a trajectory (lists of list), planning group and distance to check for the collision
+        along with the robot id, this method should return the collision infos such as initial distance
+        between the robot link, array of matmul(current_time_step_normal_from_collision_object.T,
+         position_jacobian(current_time_step_closest_point_on_link), and
+         array of matmul(next_time_step_normal_from_collision_object.T,
+         position_jacobian(next_time_step_closest_point_on_link)"""
 
     @abc.abstractmethod
     def get_point_in_local_frame(self, frame_position, frame_orientation, point):
@@ -61,11 +63,11 @@ class ISimulationWorldBase(object):
         return
 
     @abc.abstractmethod
-    def execute_trajectory(self, trajectory, step_time):
-        """should execute the given trajectoy"""
+    def execute_trajectory(self, robot, trajectory, step_time):
+        """should execute the given trajectoy for a given robot"""
 
     @abc.abstractmethod
-    def execute_trajectories(self, group, trajectories):
+    def execute_trajectories(self, robot, group, trajectories):
         """same as executetrajectories, but input is list of trajectory"""
 
     @abc.abstractmethod
@@ -75,9 +77,9 @@ class ISimulationWorldBase(object):
 
 
     @abc.abstractmethod
-    def check_for_collision_in_trajectory(self, trajectory, group, collision_safe_distance=0.05):
-        """given a trajectory, planning group and collision safe distance, this method return true if there is a
-        collision in the trajectory else returns false"""
+    def check_for_collision_in_trajectory(self, robot_id, trajectory, group, collision_safe_distance=0.05):
+        """given a trajectory, planning group and collision safe distance  along with the robot id,
+        this method return true if there is a collision in the trajectory else returns false"""
 
 
     @abc.abstractmethod
@@ -92,13 +94,13 @@ class ISimulationWorldBase(object):
 
 
     @abc.abstractmethod
-    def reset_joints_to_random_states(self, joints):
+    def reset_joints_to_random_states(self, robot_id, joints):
         """interface to reset given joints to the random valid pose"""
         return
 
     @abc.abstractmethod
-    def get_joint_states(self, group):
-        """given a planning group, this method should return the current joint states"""
+    def get_joint_states(self, robot_id, group):
+        """given a planning group  along with the robot id, this method should return the current joint states"""
 
 
     @abc.abstractmethod

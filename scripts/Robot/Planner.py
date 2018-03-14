@@ -9,7 +9,7 @@ from scripts.sqp_solver import SQPsolver
 from scripts.sqpproblem import SQPproblem
 import collections
 
-class TrajectoryOptimizationPlanner:
+class TrajectoryPlanner:
 
     def __init__(self, *args, **kwargs):
         self.sqp = {}

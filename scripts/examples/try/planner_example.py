@@ -1,9 +1,11 @@
 import logging
-import yaml
-from easydict import EasyDict as edict
-from scripts.Planner.Planner import TrajectoryOptimizationPlanner
 import time
+import yaml
+
 import numpy as np
+from easydict import EasyDict as edict
+
+from scripts.Robot.Planner import TrajectoryPlanner
 
 
 class Example:
@@ -15,7 +17,7 @@ class Example:
         self.logger = logging.getLogger(main_logger_name)
         self.setup_logger(main_logger_name, verbose)
         self.problem = problem
-        self.planner = TrajectoryOptimizationPlanner()
+        self.planner = TrajectoryPlanner()
 
     def setup_logger(self, main_logger_name, verbose=False, log_file=False):
 

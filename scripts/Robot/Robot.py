@@ -1,17 +1,15 @@
-from urdf_parser_py.urdf import URDF
-from scripts.Planner import Planner as planner
-import time
-from easydict import EasyDict as edict
-import collections
 import logging
 
+from easydict import EasyDict as edict
+from urdf_parser_py.urdf import URDF
+from scripts.Robot.Planner import TrajectoryPlanner
 
 class Robot:
     def __init__(self, urdf_file):
         self.model = URDF.from_xml_file(urdf_file)
         self.__setup_get_joint_by_name()
         self.state = self.init_state()
-        self.planner = planner.TrajectoryOptimizationPlanner()
+        self.planner = TrajectoryPlanner()
         self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
     def init_state(self):

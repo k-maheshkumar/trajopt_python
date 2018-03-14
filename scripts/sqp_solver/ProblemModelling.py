@@ -9,7 +9,7 @@ class ProblemModelling:
         self.samples = -1
         self.no_of_joints = -1
         self.decimals_to_round = -1
-        self.joints = {}
+        self.joints = collections.OrderedDict()
         self.cost_matrix_P = []
         self.cost_matrix_q = []
         self.robot_constraints_matrix = []
@@ -27,18 +27,15 @@ class ProblemModelling:
         self.collision_safe_distance = 0.05
         self.collision_check_distance = 0.1
 
-        main_logger_name = "Trajectory_Planner"
-        # verbose = "DEBUG"
-        verbose = False
-        self.logger = logging.getLogger(main_logger_name)
-        self.setup_logger(main_logger_name, verbose)
 
-    def init(self, joints, no_of_samples, duration, decimals_to_round=5, lower_safe_distance_threshold=0.5, upper_safe_distance_threshold=2):
+        self.logger = logging.getLogger(__name__)
+
+    def init(self, joints, no_of_samples, duration, decimals_to_round=5, collision_safe_distance=0.05, collision_check_distance=0.1):
         self.duration = -1
         self.samples = -1
         self.no_of_joints = -1
         self.decimals_to_round = -1
-        self.joints = {}
+        self.joints = collections.OrderedDict()
         self.cost_matrix_P = []
         self.cost_matrix_q = []
         self.robot_constraints_matrix = []
@@ -57,8 +54,8 @@ class ProblemModelling:
         self.no_of_joints = len(joints)
         self.joints = joints
         self.decimals_to_round = decimals_to_round
-        self.collision_safe_distance = lower_safe_distance_threshold
-        self.collision_check_distance = upper_safe_distance_threshold
+        self.collision_safe_distance = collision_safe_distance
+        self.collision_check_distance = collision_check_distance
         if "collision_constraints" in self.joints:
             self.collision_constraints = self.joints["collision_constraints"]
         self.fill_cost_matrix()
@@ -67,11 +64,6 @@ class ProblemModelling:
         self.fill_robot_constraints_matrix()
         self.fill_velocity_limits()
 
-        main_logger_name = "Trajectory_Planner"
-        # verbose = "DEBUG"
-        verbose = False
-        self.logger = logging.getLogger(main_logger_name)
-        self.setup_logger(main_logger_name, verbose)
 
     def fill_cost_matrix(self):
 
@@ -114,7 +106,6 @@ class ProblemModelling:
     def fill_velocity_limits(self):
         start_and_goal_lower_limits = []
         start_and_goal_upper_limits = []
-
         for joint in self.joints:
             if type(joint) is dict:
                 max_vel = self.joints[joint]["limit"]["velocity"]
@@ -122,10 +113,10 @@ class ProblemModelling:
                 joint_lower_limit = self.joints[joint]["limit"]["lower"]
                 joint_upper_limit = self.joints[joint]["limit"]["upper"]
             else:
-                max_vel = self.joints[joint].limit.velocity
-                min_vel = -self.joints[joint].limit.velocity
-                joint_lower_limit = self.joints[joint].limit.lower
-                joint_upper_limit = self.joints[joint].limit.upper
+                max_vel = self.joints[joint]["limit"].velocity
+                min_vel = -self.joints[joint]["limit"].velocity
+                joint_lower_limit = self.joints[joint]["limit"].lower
+                joint_upper_limit = self.joints[joint]["limit"].upper
 
 
             min_vel = min_vel * self.duration / float(self.samples - 1)
@@ -209,38 +200,6 @@ class ProblemModelling:
     def formulate_collision_constraints(self, initial_singed_distance, normal, jacbian, safe_distance):
         pass
 
-    def setup_logger(self, main_logger_name, verbose=False, log_file=False):
-
-        # creating a formatter
-        formatter = logging.Formatter('-%(asctime)s - %(name)s - %(levelname)-8s: %(message)s')
-
-        # create console handler with a debug log level
-        log_console_handler = logging.StreamHandler()
-        if log_file:
-            # create file handler which logs info messages
-            logger_file_handler = logging.FileHandler(main_logger_name + '.log', 'w', 'utf-8')
-            logger_file_handler.setLevel(logging.INFO)
-            # setting handler format
-            logger_file_handler.setFormatter(formatter)
-            # add the file logging handlers to the logger
-            self.logger.addHandler(logger_file_handler)
-
-        if verbose == "WARN":
-            self.logger.setLevel(logging.WARN)
-            log_console_handler.setLevel(logging.WARN)
-
-        elif verbose == "INFO" or verbose is True:
-            self.logger.setLevel(logging.INFO)
-            log_console_handler.setLevel(logging.INFO)
-
-        elif verbose == "DEBUG":
-            self.logger.setLevel(logging.DEBUG)
-            log_console_handler.setLevel(logging.DEBUG)
-
-        # setting console handler format
-        log_console_handler.setFormatter(formatter)
-        # add the handlers to the logger
-        self.logger.addHandler(log_console_handler)
 
 
 

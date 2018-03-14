@@ -1,7 +1,7 @@
 import logging
 import json
 from easydict import EasyDict as edict
-from scripts.Planner.Planner import TrajectoryOptimizationPlanner
+from scripts.TrajectoryOptimizationPlanner.Planner import OptimizationPlanner
 import time
 from scripts.utils.yaml_paser import ConfigParser
 
@@ -14,7 +14,7 @@ class Example:
         self.logger = logging.getLogger(main_logger_name)
         self.setup_logger(main_logger_name, verbose)
         self.problem = problem
-        self.plan = TrajectoryOptimizationPlanner()
+        self.plan = OptimizationPlanner()
 
     def setup_logger(self, main_logger_name, verbose=False, log_file=False):
 

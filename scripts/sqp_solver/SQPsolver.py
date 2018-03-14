@@ -5,6 +5,8 @@ from scripts.utils import yaml_paser as yaml
 import logging
 import os
 import time
+from scripts.utils.utils import Utils as utils
+import collections
 
 '''
         minimize
@@ -19,7 +21,7 @@ import time
 
 
 class SQPsolver:
-    def __init__(self):
+    def __init__(self, logger_name=__name__, verbose=False, log_file=False):
         self.P = []
         self.G = []
         self.A = []
@@ -34,14 +36,16 @@ class SQPsolver:
         self.status = "-1"
         self.norm_ = 1
 
-        self.solver_config = {}
+        self.solver_config = collections.OrderedDict()
 
         self.solver = []
 
         self.penalty_norm = 1
         self.trust_region_norm = np.inf
 
-        self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+        logger_name = logger_name + __name__
+        self.logger = logging.getLogger(logger_name)
+        utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
     def init(self, **kwargs):
         if "P" in kwargs:
@@ -215,7 +219,7 @@ class SQPsolver:
             # print cvxpy.matmul(cvxpy.hstack([constraints, constraints]), cvxpy.hstack([p,p]))
             # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
             temp = np.hstack([constraints[0], constraints[1]])
-            print temp.shape
+            # print temp.shape
             p1 = cvxpy.hstack([p, p])
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(temp, p1) <= upper_limit]
             # constraints = [cvxpy.norm(p, "inf") <= delta]

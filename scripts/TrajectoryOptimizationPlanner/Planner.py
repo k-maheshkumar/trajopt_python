@@ -8,11 +8,13 @@ from scripts.Robot import Trajectory
 from scripts.sqp_solver import SQPsolver
 from scripts.sqpproblem import SQPproblem
 import collections
+from scripts.utils.utils import Utils as utils
 
-class TrajectoryOptimizationPlanner:
 
-    def __init__(self, *args, **kwargs):
-        self.sqp = {}
+class OptimizationPlanner:
+
+    def __init__(self, logger_name=__name__, verbose=False, log_file=False):
+        self.sqp = collections.OrderedDict()
         self.P = []
         self.G = []
         self.A = []
@@ -26,7 +28,7 @@ class TrajectoryOptimizationPlanner:
         self.initial_guess = []
         self.solver_status = []
         self.joint_names = []
-        self.problem = {}
+        self.problem = collections.OrderedDict()
         self.max_penalty = -1
         self.delta_max = -1
         self.joints = -1
@@ -45,15 +47,17 @@ class TrajectoryOptimizationPlanner:
         self.solver_config = None
         self.trajectory = Trajectory.Trajectory()
         self.problem_model = model.ProblemModelling()
-        self.sqp_solver = None
-        self.planner_group = None
+        self.sqp_solver = SQPsolver.SQPsolver(logger_name, verbose, log_file)
+        # self.planning_groups = collections.OrderedDict()
+        self.planning_groups = collections.OrderedDict()
+        self.current_planner_group = None
         self.callback_function_to_get_collision_infos = None
 
-        self.verbose = False
-        self.logger = logging.getLogger("Trajectory_Planner."+__name__)
-
+        logger_name = logger_name + __name__
+        self.logger = logging.getLogger(logger_name)
+        utils.setup_logger(self.logger, logger_name, verbose, log_file)
     def __clear_all_data(self):
-        self.sqp = {}
+        self.sqp = collections.OrderedDict()
         self.P = []
         self.G = []
         self.A = []
@@ -98,12 +102,12 @@ class TrajectoryOptimizationPlanner:
                     self.delta_max = self.problem["max_delta"]
                 else:
                     self.delta_max = 5
-                if "lower_safe_distance_threshold" in self.problem:
-                    self.lower_safe_distance_threshold = self.problem["lower_safe_distance_threshold"]
-                if "upper_safe_distance_threshold" in self.problem:
-                    self.upper_safe_distance_threshold = self.problem["upper_safe_distance_threshold"]
+                if "collision_safe_distance" in self.problem:
+                    self.collision_safe_distance = self.problem["collision_safe_distance"]
+                if "collision_check_distance" in self.problem:
+                    self.collision_check_distance = self.problem["collision_check_distance"]
                 if "joint_group" in self.problem:
-                    self.planner_group = self.problem["joint_group"]
+                    self.current_planner_group = self.problem["joint_group"]
 
             if "joints" in kwargs:
                 self.joints = kwargs["joints"]
@@ -127,24 +131,15 @@ class TrajectoryOptimizationPlanner:
 
 
             if "joint_group" in kwargs:
-                self.planner_group = kwargs["joint_group"]
+                self.current_planner_group = kwargs["joint_group"]
 
             if "collision_safe_distance" in kwargs:
                 self.collision_safe_distance = float(kwargs["collision_safe_distance"])
             if "collision_check_distance" in kwargs:
                 self.collision_check_distance = float(kwargs["collision_check_distance"])
 
-            if "solver_class" in kwargs:
-                self.solver_class = kwargs["solver_class"]
-
             if "solver_config" in kwargs:
                 self.solver_config = kwargs["solver_config"]
-
-            if self.solver_class:
-                self.sqp_solver = SQPsolver.SQPsolver()
-            else:
-                self.sqp_solver = SQPproblem.SQPProblem()
-
 
             self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
                               self.collision_safe_distance, self.collision_check_distance)
@@ -153,8 +148,8 @@ class TrajectoryOptimizationPlanner:
                                  lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,
                                  A=self.problem_model.start_and_goal_matrix, b=self.problem_model.start_and_goal_limits,
                                  initial_guess=self.problem_model.initial_guess, solver_config=self.solver_config)
-            self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
-                                 , self.problem_model.samples, self.problem_model.duration, self.planner_group)
+            self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples))),
+                                 self.problem_model.samples, self.problem_model.duration, self.current_planner_group)
             # self.trajectory.init(np.array(self.problem_model.initial_guess), self.problem_model.samples, self.problem_model.duration)
 
 
@@ -165,12 +160,11 @@ class TrajectoryOptimizationPlanner:
     def display_problem(self):
         self.sqp_solver.display_problem()
 
-    def calculate_trajectory(self, initial_guess= None, callback_function=None):
+    def calculate_trajectory(self, robot_id, initial_guess=None, callback_function=None):
         can_execute_trajectory = False
-        self.callback_function_to_get_collision_infos = callback_function
         self.logger.info("getting trajectory")
         start = time.time()
-        self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, self.callback_function_from_solver)
+        self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
         self.trajectory.update(trajectory, self.joints.keys())
@@ -194,8 +188,8 @@ class TrajectoryOptimizationPlanner:
         trajectory = np.split(new_trajectory, self.no_of_samples)
         self.trajectory.add_trajectory(trajectory)
 
-        collision_infos = self.callback_function_to_get_collision_infos(trajectory, self.planner_group,
-                                                   distance=self.collision_check_distance)
+        collision_infos = self.callback_function_to_get_collision_infos(trajectory, self.current_planner_group,
+                                                                        distance=self.collision_check_distance)
 
         if len(collision_infos[2]) > 0:
             constraints, lower_limit, upper_limit = \

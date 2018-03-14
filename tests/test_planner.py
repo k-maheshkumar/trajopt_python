@@ -6,7 +6,7 @@ from easydict import EasyDict as edict
 import yaml
 import numpy as np
 
-from scripts.Planner import Planner as planner
+from scripts.TrajectoryOptimizationPlanner import Planner as planner
 from scripts.cvxpy_optimizer.solver_cvxpy import ConvexOptimizer
 from collections import defaultdict
 import cvxpy
@@ -26,7 +26,7 @@ class Test_sqp_solver(unittest.TestCase):
     def setUpClass(cls):
         with open("problem_1_joint.yaml", 'r') as config:
             cls.problem = edict(yaml.load(config))
-        cls.planner = planner.TrajectoryOptimizationPlanner()
+        cls.planner = planner.OptimizationPlanner()
         cls.cvx_optimizer = ConvexOptimizer()
 
         np.random.seed(0)

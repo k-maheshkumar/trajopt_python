@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 
-from scripts.Planner import Planner as planner
+from scripts.TrajectoryOptimizationPlanner import Planner as planner
 
 # __all__ = [pybullet, math, datetime]
 
@@ -147,10 +147,10 @@ def spline_interpolate(y_points, x):
 
 def updatePoses():
 
-    plan = planner.TrajectoryOptimizationPlanner(request, "SCS")
+    plan = planner.OptimizationPlanner(request, "SCS")
     # sp.displayProblem()
     result, jointPoses = plan.get_trajectory(None)
-    plan1 = planner.TrajectoryOptimizationPlanner(request1, "SCS")
+    plan1 = planner.OptimizationPlanner(request1, "SCS")
     # sp.displayProblem()
     result1, jointPoses1 = plan1.get_trajectory(None)
 

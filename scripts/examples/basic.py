@@ -3,7 +3,7 @@ import time
 import cvxpy
 import numpy as np
 
-from scripts.Planner import Planner as planner
+from scripts.TrajectoryOptimizationPlanner import Planner as planner
 
 request = {
     "samples" : 5,
@@ -58,7 +58,7 @@ request = {
 }
 
 temp = 1
-plan = planner.TrajectoryOptimizationPlanner(problem=request, solver="SCS", solver_class=temp)
+plan = planner.OptimizationPlanner(problem=request, solver="SCS", solver_class=temp)
 start = time.time()
 # sp.displayProblem()
 # x_0 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])

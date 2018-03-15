@@ -1,16 +1,17 @@
 import logging
-
+from scripts.utils.utils import Utils as utils
 from easydict import EasyDict as edict
 from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
 
 class Robot:
-    def __init__(self, urdf_file):
+    def __init__(self, urdf_file, logger_name=__name__, verbose=False, log_file=False):
         self.id = -1
         self.model = URDF.from_xml_file(urdf_file)
         self.__setup_get_joint_by_name()
-        self.planner = TrajectoryPlanner()
-        self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+        self.planner = TrajectoryPlanner(logger_name, verbose, log_file)
+        self.logger = logging.getLogger(logger_name + __name__)
+        utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
     def get_trajectory(self):
         return self.planner.trajectory

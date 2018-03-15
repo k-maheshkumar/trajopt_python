@@ -2,9 +2,11 @@ import copy
 import cvxpy
 import numpy as np
 from scripts.utils import yaml_paser as yaml
+from scripts.utils.utils import Utils as utils
 import logging
 import os
 import time
+
 
 '''
         minimize
@@ -19,7 +21,7 @@ import time
 
 
 class SQPsolver:
-    def __init__(self):
+    def __init__(self, main_logger_name=__name__, verbose=False, log_file=False):
         self.P = []
         self.G = []
         self.A = []
@@ -41,7 +43,8 @@ class SQPsolver:
         self.penalty_norm = 1
         self.trust_region_norm = np.inf
 
-        self.logger = logging.getLogger("Trajectory_Planner." + __name__)
+        self.logger = logging.getLogger(main_logger_name + __name__)
+        utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
     def init(self, **kwargs):
         if "P" in kwargs:

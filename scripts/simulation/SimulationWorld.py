@@ -14,18 +14,13 @@ import collections
 
 
 class SimulationWorld(ISimulationWorldBase):
-    def __init__(self, urdf_file=None, use_gui=False, use_real_time_simulation=False, fixed_time_step=0.01):
+    def __init__(self, urdf_file=None, use_gui=False, use_real_time_simulation=False, fixed_time_step=0.01,
+                 logger_name=__name__, verbose=False, log_file=False):
         self.CYLINDER = sim.GEOM_CYLINDER
         self.BOX = sim.GEOM_BOX
 
-        if urdf_file is None:
-            main_logger_name = "Trajectory_Planner"
-            verbose = "DEBUG"
-            # verbose = False
-            self.logger = logging.getLogger(main_logger_name)
-            self.setup_logger(main_logger_name, verbose)
-        else:
-            self.logger = logging.getLogger("Trajectory_Planner."+__name__)
+        self.logger = logging.getLogger(logger_name + __name__)
+        utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
         if use_gui:
             self.gui = sim.connect(sim.GUI)

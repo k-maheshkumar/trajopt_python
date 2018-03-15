@@ -13,7 +13,7 @@ class PlannerExample:
 
         urdf_file = location_prefix + "kuka_iiwa/model.urdf"
 
-        self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=True)
+        self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=True, verbose="DEBUG", log_file=True)
         # self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=False)
 
         self.planner.world.set_gravity(0, 0, -10)
@@ -64,6 +64,8 @@ class PlannerExample:
         print("is trajectory free from collision: ", status)
         self.planner.execute_trajectory()
         self.planner.world.step_simulation_for(5)
+        import sys
+        sys.exit(0)
 
 
 def main():

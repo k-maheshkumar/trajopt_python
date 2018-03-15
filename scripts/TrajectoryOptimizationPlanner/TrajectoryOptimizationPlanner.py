@@ -1,16 +1,22 @@
 from scripts.simulation.SimulationWorld import SimulationWorld
 from scripts.Robot.Robot import Robot
 import numpy as np
-import logging
 import scripts.utils.yaml_paser as yaml
+from scripts.utils.utils import Utils as utils
+import logging
 
 class TrajectoryOptimizationPlanner():
-    def __init__(self, urdf_file, use_gui=False):
-        self.robot = Robot(urdf_file)
-        self.world = SimulationWorld(urdf_file, use_gui)
+    def __init__(self, urdf_file, use_gui=False, verbose=False, log_file=False):
+        main_logger_name = "Trajectory_Planner"
+        self.logger = logging.getLogger(main_logger_name)
+        utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
+
+        self.robot = Robot(urdf_file, main_logger_name, verbose, log_file)
+        self.world = SimulationWorld(urdf_file, use_gui, logger_name=main_logger_name, verbose=verbose, log_file=log_file)
         self.world.toggle_rendering(0)
         self.robot.id = self.world.load_robot(urdf_file, position=[0, 0.25, 0.6])
         self.load_configs()
+
 
     def load_configs(self):
         file_path_prefix = '../../config/'

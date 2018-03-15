@@ -3,6 +3,7 @@ import os
 from scripts.Robot import Robot
 from scripts.utils.utils import Utils as utils
 import numpy as np
+from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
 
 class PlannerExample:
     def __init__(self):
@@ -11,36 +12,22 @@ class PlannerExample:
         location_prefix = home + '/masterThesis/bullet3/data/'
 
         urdf_file = location_prefix + "kuka_iiwa/model.urdf"
-        self.robot = Robot.Robot(urdf_file)
 
-        self.world = SimulationWorld(urdf_file, use_gui=True)
-        # self.world = SimulationWorld(urdf_file, use_gui=False)
-        self.world.set_gravity(0, 0, -10)
-        self.world.toggle_rendering(0)
-        self.world.set_robot(self.robot)
-        self.world.load_urdf(urdf_file=location_prefix + "plane.urdf",
-                             position=[0, 0, 0.0])
+        self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=True)
+        # self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=False)
 
-        table_id = self.world.load_urdf(urdf_file=location_prefix + "table/table.urdf",
-                                        position=[0, 0, 0.0])
+        self.planner.world.set_gravity(0, 0, -10)
+        self.planner.world.toggle_rendering(0)
+        plane_id = self.planner.load_from_urdf(urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
-        self.world.robot_id = self.world.load_urdf(urdf_file, position=[0, 0.25, 0.6])
-        # self.cylinder_id = self.world.create_constraint(shape=self.world.CYLINDER,
-        #                                                 height=0.70, radius=0.12, position=[0.50, 0.30, 0.9], mass=100)
-        self.box_id = self.world.create_constraint(shape=self.world.BOX, size=[0.1, 0.2, 0.45],
-                                             # position=[-0.17, -0.42, 0.9], mass=100)
-                                             position=[0.28, -0.43, 0.9], mass=100)
-        # self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
-        #                                      position=[-0.17, -0.42, 0.9], mass=100)
-        # position=[0.28, -0.43, 0.9], mass=100)
-        # self.box_id = self.create_constraint(shape=BOX, size=[0.1, 0.2, 0.45],
-        #                                      position=[-0.50, -0.42, 0.9], mass=100)
-        # position=[0.28, -0.43, 0.9], mass=100)
+        table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
 
-        self.world.collision_constraints.append(table_id)
-        self.world.toggle_rendering(1)
-        self.world.setup_joint_id_to_joint_name()
-        self.world.step_simulation_for(0.01)
+        self.box_id = self.planner.add_constraint(shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
+                                                  position=[0.28, -0.43, 0.9], mass=100)
+
+
+        self.planner.world.toggle_rendering(1)
+        self.planner.world.step_simulation_for(0.01)
 
     def run_simulation(self):
         iteration_count = 0
@@ -68,43 +55,22 @@ class PlannerExample:
 
                 duration = 10
                 samples = 20
-                self.world.reset_joint_states(start_state)
-                self.world.step_simulation_for(2)
-                check_distance = 0.1
-                collision_safe_distance = 0.02
+                self.planner.world.reset_joint_states(self.planner.robot.id, start_state)
+                self.planner.world.step_simulation_for(0.2)
+                collision_check_distance = 0.15
+                collision_safe_distance = 0.1
                 group = goal_state.keys()
-                self.robot.init_plan_trajectory(group=group,
-                                                current_state=self.world.get_current_states_for_given_joints(group),
-                                                goal_state=goal_state, samples=int(samples),
-                                                duration=int(duration), collision_safe_distance=collision_safe_distance,
-                                                verbose=True)
-                self.world.toggle_rendering_while_planning(False)
 
-                self.robot.calulate_trajecotory(self.world.get_collision_infos)
+                status, trajectory = self.planner.get_trajectory(group, goal_state=goal_state, samples=samples, duration=duration,
+                     collision_safe_distance=collision_safe_distance,
+                     collision_check_distance=collision_check_distance)
+                print("if trajectory has collision: ", status)
+                self.planner.execute_trajectory()
 
-                print ("if trajectory has collision: ", \
-                self.world.check_for_collision_in_trajectory(self.robot.get_trajectory().final, goal_state.keys(),
-                                                           collision_safe_distance))
-
-                self.world.toggle_rendering_while_planning(True)
-
-                # self.robot.get_trajectory().final = \
-                #     np.asarray(utils.interpolate_list(self.robot.planner.get_trajectory().final.T, 10)).T.tolist()
-                self.world.execute_trajectory(self.robot.planner.get_trajectory())
-
-                # self.world.plan_trajectory(goal_state.keys(), goal_state, samples, duration,
-                #                      collision_safe_distance=collision_safe_distance,
-                #                      collision_check_distance=check_distance)
-                #
-                # print ("if trajectory has collision: ", \
-                # self.world.check_for_collision_in_trajectory(self.world.robot.get_trajectory().final, goal_state.keys(),
-                #                                            collision_safe_distance))
-                # # self.robot.get_trajectory().final = \
-                # #     np.asarray(utils.interpolate_list(self.robot.planner.get_trajectory().final.T, 10)).T.tolist()
-                # self.world.execute_trajectory(self.robot.planner.get_trajectory())
-
-                # import sys
-                # sys.exit()
+                if not status:
+                    self.planner.world.step_simulation_for(2)
+                    import sys
+                    sys.exit()
 
 if __name__ == '__main__':
     example = PlannerExample()

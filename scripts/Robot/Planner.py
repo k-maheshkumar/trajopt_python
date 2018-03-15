@@ -46,7 +46,7 @@ class TrajectoryPlanner:
         self.trajectory = Trajectory.Trajectory()
         self.problem_model = model.ProblemModelling()
         self.sqp_solver = None
-        self.planner_group = None
+        self.current_planning_joint_group = None
         self.callback_function_to_get_collision_infos = None
 
         self.verbose = False
@@ -98,12 +98,12 @@ class TrajectoryPlanner:
                     self.delta_max = self.problem["max_delta"]
                 else:
                     self.delta_max = 5
-                if "lower_safe_distance_threshold" in self.problem:
-                    self.lower_safe_distance_threshold = self.problem["lower_safe_distance_threshold"]
-                if "upper_safe_distance_threshold" in self.problem:
-                    self.upper_safe_distance_threshold = self.problem["upper_safe_distance_threshold"]
+                if "collision_safe_distance" in self.problem:
+                    self.collision_safe_distance = self.problem["collision_safe_distance"]
+                if "collision_check_distance" in self.problem:
+                    self.collision_check_distance = self.problem["collision_check_distance"]
                 if "joint_group" in self.problem:
-                    self.planner_group = self.problem["joint_group"]
+                    self.current_planning_joint_group = self.problem["joint_group"]
 
             if "joints" in kwargs:
                 self.joints = kwargs["joints"]
@@ -127,7 +127,7 @@ class TrajectoryPlanner:
 
 
             if "joint_group" in kwargs:
-                self.planner_group = kwargs["joint_group"]
+                self.current_planning_joint_group = kwargs["joint_group"]
 
             if "collision_safe_distance" in kwargs:
                 self.collision_safe_distance = float(kwargs["collision_safe_distance"])
@@ -154,7 +154,7 @@ class TrajectoryPlanner:
                                  A=self.problem_model.start_and_goal_matrix, b=self.problem_model.start_and_goal_limits,
                                  initial_guess=self.problem_model.initial_guess, solver_config=self.solver_config)
             self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
-                                 , self.problem_model.samples, self.problem_model.duration, self.planner_group)
+                                 , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
             # self.trajectory.init(np.array(self.problem_model.initial_guess), self.problem_model.samples, self.problem_model.duration)
 
 
@@ -167,10 +167,9 @@ class TrajectoryPlanner:
 
     def calculate_trajectory(self, initial_guess= None, callback_function=None):
         can_execute_trajectory = False
-        self.callback_function_to_get_collision_infos = callback_function
         self.logger.info("getting trajectory")
         start = time.time()
-        self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, self.callback_function_from_solver)
+        self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
         self.trajectory.update(trajectory, self.joints.keys())
@@ -194,8 +193,8 @@ class TrajectoryPlanner:
         trajectory = np.split(new_trajectory, self.no_of_samples)
         self.trajectory.add_trajectory(trajectory)
 
-        collision_infos = self.callback_function_to_get_collision_infos(trajectory, self.planner_group,
-                                                   distance=self.collision_check_distance)
+        collision_infos = self.callback_function_to_get_collision_infos(trajectory, self.current_planning_joint_group,
+                                                                        distance=self.collision_check_distance)
 
         if len(collision_infos[2]) > 0:
             constraints, lower_limit, upper_limit = \

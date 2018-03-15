@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import tee, islice, chain, izip, cycle
 import math
-
+import logging
 
 class Utils:
 
@@ -75,3 +75,37 @@ class Utils:
         print input_list
         print new_list
         return new_list
+
+    @classmethod
+    def setup_logger(self, logger, main_logger_name, verbose=False, log_file=False):
+
+        # creating a formatter
+        formatter = logging.Formatter('-%(asctime)s - %(name)s - %(levelname)-8s: %(message)s')
+
+        # create console handler with a debug log level
+        log_console_handler = logging.StreamHandler()
+        if log_file:
+            # create file handler which logs info messages
+            logger_file_handler = logging.FileHandler(main_logger_name + '.log', 'w', 'utf-8')
+            logger_file_handler.setLevel(logging.INFO)
+            # setting handler format
+            logger_file_handler.setFormatter(formatter)
+            # add the file logging handlers to the logger
+            logger.addHandler(logger_file_handler)
+
+        if verbose == "WARN":
+            logger.setLevel(logging.WARN)
+            log_console_handler.setLevel(logging.WARN)
+
+        elif verbose == "INFO" or verbose is True:
+            logger.setLevel(logging.INFO)
+            log_console_handler.setLevel(logging.INFO)
+
+        elif verbose == "DEBUG":
+            logger.setLevel(logging.DEBUG)
+            log_console_handler.setLevel(logging.DEBUG)
+
+        # setting console handler format
+        log_console_handler.setFormatter(formatter)
+        # add the handlers to the logger
+        logger.addHandler(log_console_handler)

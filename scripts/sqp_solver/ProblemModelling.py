@@ -33,7 +33,7 @@ class ProblemModelling:
         self.logger = logging.getLogger(main_logger_name)
         self.setup_logger(main_logger_name, verbose)
 
-    def init(self, joints, no_of_samples, duration, decimals_to_round=5, lower_safe_distance_threshold=0.5, upper_safe_distance_threshold=2):
+    def init(self, joints, no_of_samples, duration, decimals_to_round=5, collision_safe_distance=0.05, collision_check_distance=0.1):
         self.duration = -1
         self.samples = -1
         self.no_of_joints = -1
@@ -57,8 +57,8 @@ class ProblemModelling:
         self.no_of_joints = len(joints)
         self.joints = joints
         self.decimals_to_round = decimals_to_round
-        self.collision_safe_distance = lower_safe_distance_threshold
-        self.collision_check_distance = upper_safe_distance_threshold
+        self.collision_safe_distance = collision_safe_distance
+        self.collision_check_distance = collision_check_distance
         if "collision_constraints" in self.joints:
             self.collision_constraints = self.joints["collision_constraints"]
         self.fill_cost_matrix()

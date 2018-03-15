@@ -421,8 +421,8 @@ class SimulationWorld(ISimulationWorldBase):
                 return True
         return False
 
-    def check_for_collision_in_trajectory(self, robot_id, trajectory, group, collision_safe_distance=0.05):
-        collision = False
+    def is_trajectory_collision_free(self, robot_id, trajectory, group, collision_safe_distance=0.05):
+        collision = True
         start_state = self.get_current_states_for_given_joints(robot_id, group)
         distance = 10
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
@@ -461,7 +461,7 @@ class SimulationWorld(ISimulationWorldBase):
                             distance = cast_closest_points[0][8]
 
                     if distance < 0:
-                        collision = True
+                        collision = False
                         break
                 if collision:
                     break

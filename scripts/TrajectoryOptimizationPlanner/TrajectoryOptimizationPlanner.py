@@ -39,19 +39,42 @@ class TrajectoryOptimizationPlanner():
 
         self.robot.calulate_trajecotory(self.callback_function_from_solver)
 
-        status = self.world.check_for_collision_in_trajectory(self.robot.id, self.robot.get_trajectory().final,
-                                                                    goal_state.keys(),
-                                                                    collision_safe_distance)
+        status = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
+                                                         goal_state.keys(),
+                                                         collision_safe_distance)
 
         self.world.toggle_rendering_while_planning(True)
 
         return status, self.robot.planner.get_trajectory()
+
+    def plan_trajectory(self, planning_group, goal_state, samples=20, duration=10,
+                        collision_safe_distance=0.1,
+                       collision_check_distance=0.05, solver_config=None):
+        current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, planning_group)
+        self.robot.init_plan_trajectory(group=planning_group, current_state=current_robot_state,
+                                        goal_state=goal_state, samples=samples, duration=duration,
+                                        collision_safe_distance=collision_safe_distance,
+                                        collision_check_distance=collision_check_distance,
+                                        solver_config=solver_config)
+        self.world.toggle_rendering_while_planning(False)
+
+        status, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
+
+        can_execute_trajectory = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
+                                                                         goal_state.keys(),
+                                                                         collision_safe_distance)
+
+        self.world.toggle_rendering_while_planning(True)
+
+        return status, can_execute_trajectory
 
     def execute_trajectory(self):
 
         # self.robot.get_trajectory().final = \
         #     np.asarray(utils.interpolate_list(self.robot.planner.get_trajectory().final.T, 10)).T.tolist()
         self.world.execute_trajectory(self.robot, self.robot.planner.get_trajectory())
+
+        return "Trajectory execution completed"
 
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
         constraints, lower_limit, upper_limit = None, None, None

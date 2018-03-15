@@ -5,7 +5,7 @@ from scripts.simulation.SimulationWorld import SimulationWorld
 if __name__ == '__main__':
     simulation = SimulationWorld()
     app = QtGui.QApplication(sys.argv)
-    window = TrajPlanner.PlannerGui(verbose="DEBUG", file_log=False, simulation=simulation)
+    window = TrajPlanner.PlannerGui(verbose="DEBUG", file_log=False, planner=simulation)
     window.show()
     sys.exit(app.exec_())
 

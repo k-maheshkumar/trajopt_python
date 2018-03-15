@@ -9,21 +9,8 @@ class Robot:
         self.id = -1
         self.model = URDF.from_xml_file(urdf_file)
         self.__setup_get_joint_by_name()
-        self.state = self.init_state()
         self.planner = TrajectoryPlanner()
         self.logger = logging.getLogger("Trajectory_Planner." + __name__)
-
-    def init_state(self):
-        state = {}
-        for joint in self.model.joints:
-            state[joint.name] = {
-                "current_value": 0
-            }
-        state = edict(state)
-        return state
-
-    def get_state(self):
-        return self.state
 
     def get_trajectory(self):
         return self.planner.trajectory
@@ -70,7 +57,8 @@ class Robot:
             decimals_to_round = 5
 
         if "current_state" in kwargs:
-            self.update_robot_state(kwargs["current_state"])
+            current_state = kwargs["current_state"]
+
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
 
@@ -101,8 +89,8 @@ class Robot:
             states = {}
             for joint in self.model.joints:
                 for joint_in_group in joint_group:
-                    if joint_in_group in self.state and joint_in_group in goal_state:
-                        states[joint_in_group] = {"start": self.state[joint_in_group]["current_value"],
+                    if joint_in_group in current_state and joint_in_group in goal_state:
+                        states[joint_in_group] = {"start": current_state[joint_in_group],
                                                   "end": goal_state[joint_in_group]}
                     if joint.name == joint_in_group and joint.limit is not None:
                         joints[joint.name] = edict({
@@ -125,40 +113,4 @@ class Robot:
     # def get_robot_trajectory(self):
     #     return self.planner.trajectory.get_trajectory()
 
-    def update_robot_state(self, current_state):
-        for key, value in self.state.items():
-            if key in current_state:
-                self.state[key]["current_value"] = current_state[key]
 
-    def setup_logger(self, main_logger_name, verbose=False, log_file=False):
-
-        # creating a formatter
-        formatter = logging.Formatter('-%(asctime)s - %(name)s - %(levelname)-8s: %(message)s')
-
-        # create console handler with a debug log level
-        log_console_handler = logging.StreamHandler()
-        if log_file:
-            # create file handler which logs info messages
-            logger_file_handler = logging.FileHandler(main_logger_name + '.log', 'w', 'utf-8')
-            logger_file_handler.setLevel(logging.INFO)
-            # setting handler format
-            logger_file_handler.setFormatter(formatter)
-            # add the file logging handlers to the logger
-            self.logger.addHandler(logger_file_handler)
-
-        if verbose == "WARN":
-            self.logger.setLevel(logging.WARN)
-            log_console_handler.setLevel(logging.WARN)
-
-        elif verbose == "INFO" or verbose is True:
-            self.logger.setLevel(logging.INFO)
-            log_console_handler.setLevel(logging.INFO)
-
-        elif verbose == "DEBUG":
-            self.logger.setLevel(logging.DEBUG)
-            log_console_handler.setLevel(logging.DEBUG)
-
-        # setting console handler format
-        log_console_handler.setFormatter(formatter)
-        # add the handlers to the logger
-        self.logger.addHandler(log_console_handler)

@@ -45,6 +45,8 @@ robot:
         ["lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
       full_body: [*right_arm, *left_arm]
       full_body1: [*right_arm1, *left_arm1]
+      full_arm: ['lbr_iiwa_joint_5', 'lbr_iiwa_joint_4', 'lbr_iiwa_joint_7', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_1', 'lbr_iiwa_joint_3', 'lbr_iiwa_joint_2']
+
     joint_configurations:
       home:
         lbr_iiwa_joint_1: -2.055
@@ -87,7 +89,7 @@ robot:
         lbr_iiwa_joint_4: -0.5791571346767671
         lbr_iiwa_joint_5: 1.5979105177314896
         lbr_iiwa_joint_6: 1.5857854098720727
-        lbr_iiwa_joint_7: .5726221954434347
+        lbr_iiwa_joint_7: 1.5726221954434347
       place:
         lbr_iiwa_joint_1: -2.4823357809267463
         lbr_iiwa_joint_2: 1.4999975516996142

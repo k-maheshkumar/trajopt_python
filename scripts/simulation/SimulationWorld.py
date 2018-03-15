@@ -124,6 +124,17 @@ class SimulationWorld(ISimulationWorldBase):
 
         return urdf_id
 
+    def load_robot(self, urdf_file, position, orientation=None, use_fixed_base=True):
+
+        if orientation is None:
+            robot_id = sim.loadURDF(urdf_file, basePosition=position, useFixedBase=use_fixed_base)
+        else:
+            robot_id = sim.loadURDF(urdf_file, basePosition=position,
+                                   baseOrientation=orientation, useFixedBase=use_fixed_base)
+
+        self.setup_joint_id_to_joint_name(robot_id)
+
+        return robot_id
 
     def get_link_states_at(self, robot_id, trajectory, group):
         link_states = []
@@ -258,7 +269,7 @@ class SimulationWorld(ISimulationWorldBase):
                                 next_position_jacobian, _ = sim.calculateJacobian(robot_id, link_index,
                                                                                   # closest_pt_on_A_at_t,
                                                                                   next_closest_point_on_link_in_link_frame,
-                                                                                  current_robot_state,
+                                                                                  next_robot_state,
                                                                                   zero_vec, zero_vec)
 
                                 next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian,
@@ -410,8 +421,8 @@ class SimulationWorld(ISimulationWorldBase):
                 return True
         return False
 
-    def check_for_collision_in_trajectory(self, robot_id, trajectory, group, collision_safe_distance=0.05):
-        collision = False
+    def is_trajectory_collision_free(self, robot_id, trajectory, group, collision_safe_distance=0.05):
+        collision = True
         start_state = self.get_current_states_for_given_joints(robot_id, group)
         distance = 10
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
@@ -450,7 +461,7 @@ class SimulationWorld(ISimulationWorldBase):
                             distance = cast_closest_points[0][8]
 
                     if distance < 0:
-                        collision = True
+                        collision = False
                         break
                 if collision:
                     break

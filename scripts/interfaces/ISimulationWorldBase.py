@@ -77,7 +77,7 @@ class ISimulationWorldBase(object):
 
 
     @abc.abstractmethod
-    def check_for_collision_in_trajectory(self, robot_id, trajectory, group, collision_safe_distance=0.05):
+    def is_trajectory_collision_free(self, robot_id, trajectory, group, collision_safe_distance=0.05):
         """given a trajectory, planning group and collision safe distance  along with the robot id,
         this method return true if there is a collision in the trajectory else returns false"""
 

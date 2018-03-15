@@ -2,6 +2,8 @@ import numpy as np
 from itertools import tee, islice, chain, izip, cycle
 import math
 import logging
+from collections import namedtuple
+
 
 class Utils:
 

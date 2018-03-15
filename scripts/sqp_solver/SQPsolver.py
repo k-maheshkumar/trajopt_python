@@ -5,6 +5,7 @@ from scripts.utils import yaml_paser as yaml
 import logging
 import os
 import time
+import collections
 
 '''
         minimize
@@ -34,7 +35,7 @@ class SQPsolver:
         self.status = "-1"
         self.norm_ = 1
 
-        self.solver_config = {}
+        self.solver_config = collections.OrderedDict()
 
         self.solver = []
 

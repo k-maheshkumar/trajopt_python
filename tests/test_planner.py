@@ -7,6 +7,7 @@ import yaml
 import numpy as np
 
 from scripts.cvxpy_optimizer.solver_cvxpy import ConvexOptimizer
+from scripts.Robot.Planner import TrajectoryPlanner
 from collections import defaultdict
 import cvxpy
 import random
@@ -25,7 +26,7 @@ class Test_sqp_solver(unittest.TestCase):
     def setUpClass(cls):
         with open("problem_1_joint.yaml", 'r') as config:
             cls.problem = edict(yaml.load(config))
-        cls.planner = Planner.TrajectoryOptimizationPlanner()
+        cls.planner = TrajectoryPlanner()
         cls.cvx_optimizer = ConvexOptimizer()
 
         np.random.seed(0)

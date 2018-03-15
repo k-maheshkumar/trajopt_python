@@ -2,14 +2,14 @@ from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 from pylab import *
-
+from scripts.utils.dict import DefaultOrderedDict
 
 class Trajectory:
     def __init__(self):
         self.__trajectory = -1
         self.__no_of_samples = -1
         self.__duration = -1
-        self.__trajectory_by_joint_name = defaultdict(list)
+        self.__trajectory_by_joint_name = DefaultOrderedDict(list)
         self.__initial = None
         self.__trajectories = []
         self.__final = None

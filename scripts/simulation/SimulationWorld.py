@@ -32,9 +32,9 @@ class SimulationWorld(ISimulationWorldBase):
         else:
             self.gui = sim.connect(sim.DIRECT)
 
-        self.joint_name_to_id = {}
-        self.start_state_for_traj_planning = {}
-        self.end_state_for_traj_planning = {}
+        self.joint_name_to_id = collections.OrderedDict()
+        self.start_state_for_traj_planning = collections.OrderedDict()
+        self.end_state_for_traj_planning = collections.OrderedDict()
 
 
         self.planning_group = []
@@ -269,7 +269,7 @@ class SimulationWorld(ISimulationWorldBase):
                                 next_position_jacobian, _ = sim.calculateJacobian(robot_id, link_index,
                                                                                   # closest_pt_on_A_at_t,
                                                                                   next_closest_point_on_link_in_link_frame,
-                                                                                  current_robot_state,
+                                                                                  next_robot_state,
                                                                                   zero_vec, zero_vec)
 
                                 next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian,
@@ -330,7 +330,7 @@ class SimulationWorld(ISimulationWorldBase):
 
     def plan_trajectory(self, group, goal_state, samples, duration, solver_config=None, collision_safe_distance=None,
                         collision_check_distance=0.2):
-        # self.collision_constraints = {}
+        # self.collision_constraints = collections.OrderedDict()
         self.planning_group = group
         self.planning_samples = samples
         self.collision_safe_distance = collision_safe_distance
@@ -350,7 +350,7 @@ class SimulationWorld(ISimulationWorldBase):
         return status, can_execute_trajectory
 
     def get_current_states_for_given_joints(self, robot_id, joints):
-        current_state = {}
+        current_state = collections.OrderedDict()
         for joint in joints:
             current_state[joint] = \
                 sim.getJointState(bodyUniqueId=robot_id, jointIndex=self.joint_name_to_id[joint])[0]

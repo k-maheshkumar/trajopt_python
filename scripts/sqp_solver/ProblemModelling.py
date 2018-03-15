@@ -9,7 +9,7 @@ class ProblemModelling:
         self.samples = -1
         self.no_of_joints = -1
         self.decimals_to_round = -1
-        self.joints = {}
+        self.joints = collections.OrderedDict()
         self.cost_matrix_P = []
         self.cost_matrix_q = []
         self.robot_constraints_matrix = []
@@ -38,7 +38,8 @@ class ProblemModelling:
         self.samples = -1
         self.no_of_joints = -1
         self.decimals_to_round = -1
-        self.joints = {}
+        self.joints = collections.OrderedDict()
+        self.joints = collections.OrderedDict()
         self.cost_matrix_P = []
         self.cost_matrix_q = []
         self.robot_constraints_matrix = []
@@ -122,10 +123,10 @@ class ProblemModelling:
                 joint_lower_limit = self.joints[joint]["limit"]["lower"]
                 joint_upper_limit = self.joints[joint]["limit"]["upper"]
             else:
-                max_vel = self.joints[joint].limit.velocity
-                min_vel = -self.joints[joint].limit.velocity
-                joint_lower_limit = self.joints[joint].limit.lower
-                joint_upper_limit = self.joints[joint].limit.upper
+                max_vel = self.joints[joint]["limit"].velocity
+                min_vel = -self.joints[joint]["limit"].velocity
+                joint_lower_limit = self.joints[joint]["limit"].lower
+                joint_upper_limit = self.joints[joint]["limit"].upper
 
 
             min_vel = min_vel * self.duration / float(self.samples - 1)

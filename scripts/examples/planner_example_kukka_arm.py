@@ -1,8 +1,6 @@
 from scripts.simulation.SimulationWorld import SimulationWorld
 import os
-from scripts.Robot import Robot
-from scripts.utils.utils import Utils as utils
-import numpy as np
+import collections
 from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
 
 class PlannerExample:
@@ -13,8 +11,8 @@ class PlannerExample:
 
         urdf_file = location_prefix + "kuka_iiwa/model.urdf"
 
-        self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=True)
-        # self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=False)
+        # self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=True)
+        self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=False)
 
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
@@ -34,8 +32,8 @@ class PlannerExample:
         while 1:
             if iteration_count < 1:
                 iteration_count += 1
-                start_state = {}
-                goal_state = {}
+                start_state = collections.OrderedDict()
+                goal_state = collections.OrderedDict()
 
                 start_state["lbr_iiwa_joint_1"] = -2.4823357809267463
                 start_state["lbr_iiwa_joint_2"] = 1.4999975516996142
@@ -58,19 +56,19 @@ class PlannerExample:
                 self.planner.world.reset_joint_states(self.planner.robot.id, start_state)
                 self.planner.world.step_simulation_for(0.2)
                 collision_check_distance = 0.1
-                collision_safe_distance = 0.05
+                collision_safe_distance = 0.02
                 group = goal_state.keys()
 
                 status, trajectory = self.planner.get_trajectory(group, goal_state=goal_state, samples=samples, duration=duration,
                      collision_safe_distance=collision_safe_distance,
                      collision_check_distance=collision_check_distance)
                 print("if trajectory has collision: ", status)
-                self.planner.execute_trajectory()
+                # self.planner.execute_trajectory()
 
                 if not status:
                     self.planner.world.step_simulation_for(2)
-                    import sys
-                    sys.exit()
+                import sys
+                sys.exit()
 
 if __name__ == '__main__':
     example = PlannerExample()

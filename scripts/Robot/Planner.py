@@ -12,7 +12,7 @@ import collections
 class TrajectoryPlanner:
 
     def __init__(self, *args, **kwargs):
-        self.sqp = {}
+        self.sqp = collections.OrderedDict()
         self.P = []
         self.G = []
         self.A = []
@@ -26,7 +26,7 @@ class TrajectoryPlanner:
         self.initial_guess = []
         self.solver_status = []
         self.joint_names = []
-        self.problem = {}
+        self.problem = collections.OrderedDict()
         self.max_penalty = -1
         self.delta_max = -1
         self.joints = -1
@@ -53,7 +53,7 @@ class TrajectoryPlanner:
         self.logger = logging.getLogger("Trajectory_Planner."+__name__)
 
     def __clear_all_data(self):
-        self.sqp = {}
+        self.sqp = collections.OrderedDict()
         self.P = []
         self.G = []
         self.A = []

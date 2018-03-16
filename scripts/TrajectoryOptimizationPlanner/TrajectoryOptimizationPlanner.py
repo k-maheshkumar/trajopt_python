@@ -56,12 +56,17 @@ class TrajectoryOptimizationPlanner():
         if "group" in kwargs:
             group = self.robot_config["joints_groups"][kwargs["group"]]
         if "start_state" in kwargs:
-            start_state = self.robot_config["joint_configurations"][kwargs["start_state"]]
+            start_state = kwargs["start_state"]
+            if type(start_state) is not dict:
+                start_state = self.robot_config["joint_configurations"][start_state]
+
             self.world.reset_joint_states(self.robot.id, start_state)
             self.world.step_simulation_for(0.2)
 
         if "goal_state" in kwargs:
-            goal_state = self.robot_config["joint_configurations"][kwargs["goal_state"]]
+            goal_state = kwargs["goal_state"]
+            if type(goal_state) is not dict:
+                goal_state = self.robot_config["joint_configurations"][goal_state]
         if "samples" in kwargs:
             samples = kwargs["samples"]
         else:

@@ -499,7 +499,7 @@ class SimulationWorld():
                 sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[joint_name],
                                           controlMode=sim.POSITION_CONTROL,
                                           targetPosition=corresponding_trajectory[i], targetVelocity=0,
-                                          force=self.robot.model.joint_by_name[joint_name].limit.effort,
+                                          force=self.robot.model.joint_map[joint_name].limit.effort,
                                           positionGain=0.03,
                                           velocityGain=.5,
                                           # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
@@ -541,7 +541,7 @@ class SimulationWorld():
                     sim.setJointMotorControl2(bodyIndex=self.robot_id, jointIndex=self.joint_name_to_id[joint_name],
                                               controlMode=sim.POSITION_CONTROL,
                                               targetPosition=corresponding_trajectory[i], targetVelocity=0,
-                                              force=self.robot.model.joint_by_name[joint_name].limit.effort,
+                                              force=self.robot.model.joint_map[joint_name].limit.effort,
                                               positionGain=0.03,
                                               velocityGain=.5,
                                               # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)

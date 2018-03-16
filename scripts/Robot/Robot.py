@@ -3,15 +3,21 @@ from scripts.utils.utils import Utils as utils
 from easydict import EasyDict as edict
 from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
+from collections import OrderedDict
 
 class Robot:
-    def __init__(self, urdf_file, logger_name=__name__, verbose=False, log_file=False):
+    def __init__(self, logger_name=__name__, verbose=False, log_file=False):
         self.id = -1
-        self.model = URDF.from_xml_file(urdf_file)
-        self.__setup_get_joint_by_name()
+        self.model = None
         self.planner = TrajectoryPlanner(logger_name, verbose, log_file)
         self.logger = logging.getLogger(logger_name + __name__)
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
+
+    def load_robot_model(self, urdf_file=None):
+        if urdf_file is not None:
+            self.model = URDF.from_xml_file(urdf_file)
+        else:
+            self.model = URDF.from_parameter_server()
 
     def get_trajectory(self):
         return self.planner.trajectory
@@ -19,21 +25,8 @@ class Robot:
     def get_initial_trajectory(self):
         return self.planner.trajectory.initial
 
-    def __replace_joints_in_model_with_map(self):
-        joints = {}
-        for joint in self.model.joints:
-            joints[joint.name] = joint
-        del self.model.joints[:]
-        self.model.joints = joints
-
-    def __setup_get_joint_by_name(self):
-        joints = {}
-        for joint in self.model.joints:
-            joints[joint.name] = joint
-        self.model.joint_by_name = joints
-
     def init_plan_trajectory(self, *args, **kwargs):
-        joints = {}
+        joints = OrderedDict()
         status = "-1"
 
         if "group" in kwargs:
@@ -86,18 +79,18 @@ class Robot:
         # else:
         #     self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
-        if "current_state" in kwargs and "goal_state" in kwargs:
-            states = {}
-            for joint in self.model.joints:
-                for joint_in_group in joint_group:
-                    if joint_in_group in current_state and joint_in_group in goal_state:
-                        states[joint_in_group] = {"start": current_state[joint_in_group],
-                                                  "end": goal_state[joint_in_group]}
-                    if joint.name == joint_in_group and joint.limit is not None:
-                        joints[joint.name] = edict({
-                            "states": states[joint_in_group],
-                            "limit": joint.limit,
-                        })
+        if "current_state" in kwargs and "goal_state" in kwargs and joint_group is not None:
+            states = OrderedDict()
+            for joint_in_group in joint_group:
+                if joint_in_group in self.model.joint_map and joint_in_group in current_state \
+                        and joint_in_group in goal_state:
+                    if self.model.joint_map[joint_in_group].type != "fixed":
+
+                        states[joint_in_group] = OrderedDict([("start", current_state[joint_in_group]),
+                                                              ("end", goal_state[joint_in_group])])
+
+                        joints[joint_in_group] = OrderedDict([("states", states[joint_in_group]),
+                                                              ("limit", self.model.joint_map[joint_in_group].limit)])
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,

@@ -11,8 +11,13 @@ class PlannerExample:
         location_prefix = home + '/masterThesis/bullet3/data/'
 
         urdf_file = location_prefix + "kuka_iiwa/model.urdf"
+        config = {
+            "use_gui": True, "verbose": False, "log_file": False,
+            "robot_config": "robot_config_kukka_arm.yaml"
 
-        self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=True)
+        }
+
+        self.planner = TrajectoryOptimizationPlanner(**config)
         # self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=False)
 
         self.planner.world.set_gravity(0, 0, -10)

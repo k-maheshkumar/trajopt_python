@@ -1,6 +1,6 @@
 config:
   robot:
-    config: "./robot_config_kukka_arm.yaml"
+    config: "./robot_config_don_bot.yaml"
     default_paramaters:
       safe_collision_distance: {"value": 0.05, "step": 0.01, "min": 0, "max": 5}
       collision_check_distance: {"value": 0.1, "step": 0.01, "min": 0, "max": 5}

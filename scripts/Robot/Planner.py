@@ -5,13 +5,13 @@ from scripts.utils.utils import Utils as utils
 import scripts.sqp_solver.ProblemModelling as model
 from scripts.Robot import Trajectory
 from scripts.sqp_solver import SQPsolver
-from scripts.sqpproblem import SQPproblem
-import collections
+from collections import OrderedDict
+
 
 class TrajectoryPlanner:
 
     def __init__(self, main_logger_name=__name__, verbose=False, log_file=False):
-        self.sqp = {}
+        self.sqp = OrderedDict()
         self.P = []
         self.G = []
         self.A = []
@@ -25,7 +25,7 @@ class TrajectoryPlanner:
         self.initial_guess = []
         self.solver_status = []
         self.joint_names = []
-        self.problem = {}
+        self.problem = OrderedDict()
         self.max_penalty = -1
         self.delta_max = -1
         self.joints = -1
@@ -53,7 +53,7 @@ class TrajectoryPlanner:
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
     def __clear_all_data(self):
-        self.sqp = {}
+        self.sqp = OrderedDict()
         self.P = []
         self.G = []
         self.A = []

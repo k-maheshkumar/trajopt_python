@@ -6,7 +6,7 @@ from scripts.utils.utils import Utils as utils
 import logging
 import os
 import time
-
+from collections import OrderedDict
 
 '''
         minimize
@@ -36,7 +36,7 @@ class SQPsolver:
         self.status = "-1"
         self.norm_ = 1
 
-        self.solver_config = {}
+        self.solver_config = OrderedDict()
 
         self.solver = []
 
@@ -220,7 +220,7 @@ class SQPsolver:
             temp = np.hstack([constraints[0], constraints[1]])
             print temp.shape
             p1 = cvxpy.hstack([p, p])
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(temp, p1) <= upper_limit]
+            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, upper_limit <= cvxpy.matmul(temp, p1)]
             # constraints = [cvxpy.norm(p, "inf") <= delta]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]

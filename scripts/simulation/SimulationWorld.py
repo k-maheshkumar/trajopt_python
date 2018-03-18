@@ -275,7 +275,7 @@ class SimulationWorld(ISimulationWorldBase):
                                 jacobian_matrix.append(current_state_jacobian_matrix)
                                 # normal.append(np.asarray(closest_points[0][7]).reshape(3, 1))
                                 normal.append(normal_)
-                                current_normal_T_times_jacobian.append(np.matmul(normal_.T,
+                                current_normal_T_times_jacobian.append(np.matmul(fraction * normal_.T,
                                                                                  current_state_jacobian_matrix))
 
                                 next_normal_T_times_jacobian.append(np.matmul((1 - fraction) * normal_.T,

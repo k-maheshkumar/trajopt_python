@@ -5,32 +5,24 @@ from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
 
 class Robot:
-    def __init__(self, urdf_file, logger_name=__name__, verbose=False, log_file=False):
+    def __init__(self, logger_name=__name__, verbose=False, log_file=False):
         self.id = -1
-        self.model = URDF.from_xml_file(urdf_file)
-        self.__setup_get_joint_by_name()
+        self.model = None
         self.planner = TrajectoryPlanner(logger_name, verbose, log_file)
         self.logger = logging.getLogger(logger_name + __name__)
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
+
+    def load_robot_model(self, urdf_file=None):
+        if urdf_file is not None:
+            self.model = URDF.from_xml_file(urdf_file)
+        else:
+            self.model = URDF.from_parameter_server()
 
     def get_trajectory(self):
         return self.planner.trajectory
 
     def get_initial_trajectory(self):
         return self.planner.trajectory.initial
-
-    def __replace_joints_in_model_with_map(self):
-        joints = {}
-        for joint in self.model.joints:
-            joints[joint.name] = joint
-        del self.model.joints[:]
-        self.model.joints = joints
-
-    def __setup_get_joint_by_name(self):
-        joints = {}
-        for joint in self.model.joints:
-            joints[joint.name] = joint
-        self.model.joint_by_name = joints
 
     def init_plan_trajectory(self, *args, **kwargs):
         joints = {}

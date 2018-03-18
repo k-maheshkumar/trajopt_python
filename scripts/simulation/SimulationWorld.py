@@ -1,21 +1,47 @@
 import logging
 import pybullet as sim
+import pybullet_data
 import time
 import numpy as np
 from scripts.interfaces.ISimulationWorldBase import ISimulationWorldBase
-from munch import *
-import os
 import PyKDL as kdl
 import itertools
 from scripts.utils.utils import Utils as utils
-import collections
-
-
 
 
 class SimulationWorld(ISimulationWorldBase):
-    def __init__(self, urdf_file=None, use_gui=False, use_real_time_simulation=False, fixed_time_step=0.01,
-                 logger_name=__name__, verbose=False, log_file=False):
+    def __init__(self, **kwargs):
+
+        if "use_gui" in kwargs:
+            use_gui = kwargs["use_gui"]
+        else:
+            use_gui = False
+
+        if "verbose" in kwargs:
+            verbose = kwargs["verbose"]
+        else:
+            verbose = False
+
+        if "log_file" in kwargs:
+            log_file = kwargs["log_file"]
+        else:
+            log_file = False
+
+        if "use_real_time_simulation" in kwargs:
+            use_real_time_simulation = kwargs["use_real_time_simulation"]
+        else:
+            use_real_time_simulation = False
+
+        if "fixed_time_step" in kwargs:
+            fixed_time_step = kwargs["fixed_time_step"]
+        else:
+            fixed_time_step = 0.01
+
+        if "logger_name" in kwargs:
+            logger_name = kwargs["logger_name"]
+        else:
+            logger_name = __name__
+
         self.CYLINDER = sim.GEOM_CYLINDER
         self.BOX = sim.GEOM_BOX
 
@@ -23,9 +49,12 @@ class SimulationWorld(ISimulationWorldBase):
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
         if use_gui:
-            self.gui = sim.connect(sim.GUI)
+            self.gui = sim.connect(sim.GUI_SERVER)
         else:
             self.gui = sim.connect(sim.DIRECT)
+
+        sim.setAdditionalSearchPath(pybullet_data.getDataPath())
+
 
         self.joint_name_to_id = {}
         self.start_state_for_traj_planning = {}
@@ -360,10 +389,10 @@ class SimulationWorld(ISimulationWorldBase):
                 sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
                                           controlMode=sim.POSITION_CONTROL,
                                           targetPosition=corresponding_trajectory[i], targetVelocity=0,
-                                          force=robot.model.joint_by_name[joint_name].limit.effort,
+                                          force=robot.model.joint_map[joint_name].limit.effort,
                                           positionGain=0.03,
                                           velocityGain=.5,
-                                          maxVelocity=float(robot.model.joint_by_name[joint_name].limit.velocity)
+                                          maxVelocity=float(robot.model.joint_map[joint_name].limit.velocity)
                                           )
 
             self.step_simulation_for(sleep_time)
@@ -381,10 +410,10 @@ class SimulationWorld(ISimulationWorldBase):
                     sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
                                               controlMode=sim.POSITION_CONTROL,
                                               targetPosition=corresponding_trajectory[i], targetVelocity=0,
-                                              force=robot.model.joint_by_name[joint_name].limit.effort,
+                                              force=robot.model.joint_map[joint_name].limit.effort,
                                               positionGain=0.03,
                                               velocityGain=.5,
-                                              # maxVelocity=float(self.robot.model.joint_by_name[joint_name].limit.velocity)
+                                              # maxVelocity=float(self.robot.model.joint_map[joint_name].limit.velocity)
                                               )
 
                 self.step_simulation_for(sleep_time)

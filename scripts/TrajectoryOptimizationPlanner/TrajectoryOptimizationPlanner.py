@@ -4,22 +4,38 @@ import numpy as np
 import scripts.utils.yaml_paser as yaml
 from scripts.utils.utils import Utils as utils
 import logging
+import os
 
 class TrajectoryOptimizationPlanner():
-    def __init__(self, urdf_file, use_gui=False, verbose=False, log_file=False):
-        main_logger_name = "Trajectory_Planner"
+    def __init__(self, **kwargs):
+
+        if "logger_name" in kwargs:
+            main_logger_name = kwargs["logger_name"]
+        else:
+            main_logger_name = "Trajectory_Planner"
+
+        if "verbose" in kwargs:
+            verbose = kwargs["verbose"]
+        else:
+            verbose = False
+
+        if "log_file" in kwargs:
+            log_file = kwargs["log_file"]
+        else:
+            log_file = False
+
+        if "robot_config" in kwargs:
+            robot_config = kwargs["robot_config"]
+
         self.logger = logging.getLogger(main_logger_name)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
-
-        self.robot = Robot(urdf_file, main_logger_name, verbose, log_file)
-        self.world = SimulationWorld(urdf_file, use_gui, logger_name=main_logger_name, verbose=verbose, log_file=log_file)
+        self.robot = Robot(main_logger_name, verbose, log_file)
+        self.world = SimulationWorld(**kwargs)
         self.world.toggle_rendering(0)
-        self.robot.id = self.world.load_robot(urdf_file, position=[0, 0.25, 0.6])
-        self.load_configs()
+        self.load_configs(robot_config)
 
-
-    def load_configs(self):
-        file_path_prefix = '../../config/'
+    def load_configs(self, config_file=None):
+        file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
         self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
         self.config = self.default_config.get_by_key("config")
 
@@ -27,10 +43,19 @@ class TrajectoryOptimizationPlanner():
 
         self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
         self.sqp_config = self.sqp_yaml.get_by_key("sqp")
-        robot_config_file = file_path_prefix + self.config["robot"]["config"]
+        if config_file is not None:
+            robot_config_file = file_path_prefix + config_file
+        else:
+            robot_config_file = file_path_prefix + self.config["robot"]["config"]
         self.robot_default_config_params = self.config["robot"]["default_paramaters"]
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
+
+    def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=True):
+        self.robot.id = self.world.load_robot(urdf_file, position, orientation, use_fixed_base)
+        self.robot.load_robot_model(urdf_file)
+
+        return self.robot.id
 
     def load_from_urdf(self, urdf_file, position, orientation=None, use_fixed_base=True):
         urdf_id = self.world.load_urdf(urdf_file, position, orientation, use_fixed_base)
@@ -54,7 +79,9 @@ class TrajectoryOptimizationPlanner():
     def get_trajectory(self, **kwargs):
 
         if "group" in kwargs:
-            group = self.robot_config["joints_groups"][kwargs["group"]]
+            group = kwargs["group"]
+            if type(group) is str:
+                group = self.robot_config["joints_groups"][kwargs["group"]]
         if "start_state" in kwargs:
             start_state = kwargs["start_state"]
             if type(start_state) is not dict:

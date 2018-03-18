@@ -1,5 +1,6 @@
 import os
 from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
+from collections import OrderedDict
 
 class PlannerExample:
     def __init__(self):
@@ -57,6 +58,23 @@ class PlannerExample:
         start_state = "place"
         goal_state = "pick"
         group = "full_arm"
+
+        # start_state = [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
+        #              1.5855963769735366, 1.5770985888989753, 1.5704531145724918]
+
+        # goal_state = [-0.08180533826032865, 1.5474152457596664, -1.5873548294514912, -0.5791571346767671,
+        #               1.5979105177314896, 1.5857854098720727, 1.5726221954434347]
+        #
+        # goal_state1 = OrderedDict()
+        # goal_state1["lbr_iiwa_joint_1"] = -0.08180533826032865
+        # goal_state1["lbr_iiwa_joint_2"] = 1.5474152457596664
+        # goal_state1["lbr_iiwa_joint_3"] = -1.5873548294514912
+        # goal_state1["lbr_iiwa_joint_4"] = -0.5791571346767671
+        # goal_state1["lbr_iiwa_joint_5"] = 1.5979105177314896
+        # goal_state1["lbr_iiwa_joint_6"] = 1.5857854098720727
+        # goal_state1["lbr_iiwa_joint_7"] = 1.5726221954434347
+        #
+        # group = goal_state1.keys()
 
         duration = 10
         samples = 20

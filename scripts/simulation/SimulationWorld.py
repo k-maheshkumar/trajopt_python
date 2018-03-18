@@ -63,6 +63,7 @@ class SimulationWorld(ISimulationWorldBase):
 
         self.planning_group = []
         self.planning_group_ids = []
+        self.joint_ids = []
 
         self.planning_samples = 0
         self.collision_safe_distance = 0.4
@@ -157,6 +158,7 @@ class SimulationWorld(ISimulationWorldBase):
                                    baseOrientation=orientation, useFixedBase=use_fixed_base)
 
         self.setup_joint_id_to_joint_name(robot_id)
+        self.joint_ids = [i for i in range(sim.getNumJoints(robot_id))]
 
         return robot_id
 
@@ -168,6 +170,35 @@ class SimulationWorld(ISimulationWorldBase):
                                      computeForwardKinematics=1)
             link_states.append(state)
         return link_states
+
+    def get_joint_states_at(self, robot_id, trajectory, group):
+        self.reset_joint_states_to(robot_id, trajectory, group)
+        joint_ids = [self.joint_name_to_id[joint] for joint in group]
+        joint_states = sim.getJointStates(robot_id, joint_ids)
+        joint_positions = [state[0] for state in joint_states]
+        joint_velocities = [state[1] for state in joint_states]
+        joint_torques = [state[3] for state in joint_states]
+        return joint_positions, joint_velocities, joint_torques
+
+    def get_joint_and_link_states_at(self, robot_id, trajectory, group):
+        link_states = []
+        joint_states = {}
+        self.reset_joint_states_to(robot_id, trajectory, group)
+
+        for joint_name in self.joint_name_to_id:
+            joint_states[joint_name] = sim.getJointState(robot_id, self.joint_name_to_id[joint_name])
+
+            if joint_name in group:
+                state = sim.getLinkState(robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
+                                     computeForwardKinematics=1)
+
+                link_states.append(state)
+
+        joint_positions = [joint_states[state][0] for state in joint_states]
+        joint_velocities = [joint_states[state][1] for state in joint_states]
+        joint_torques = [joint_states[state][3] for state in joint_states]
+
+        return [joint_positions, joint_velocities, joint_torques], link_states
 
     def extract_ids_from_planning_group(self, group):
         for joint in group:
@@ -218,13 +249,15 @@ class SimulationWorld(ISimulationWorldBase):
             time_step_count += 1
 
             if next_time_step_of_trajectory is not None:
-                current_robot_state = list(current_time_step_of_trajectory)
-                next_robot_state = list(next_time_step_of_trajectory)
+                next_robot_state, next_link_states\
+                    = self.get_joint_and_link_states_at(robot_id, next_time_step_of_trajectory, group)
+                current_robot_state, current_link_states\
+                    = self.get_joint_and_link_states_at(robot_id, current_time_step_of_trajectory, group)
+                current_robot_state = current_robot_state[0]
+                next_robot_state = next_robot_state[0]
                 zero_vec = [0.0] * len(current_robot_state)
-                current_link_states = self.get_link_states_at(robot_id, current_time_step_of_trajectory, group)
-                next_link_states = self.get_link_states_at(robot_id, next_time_step_of_trajectory, group)
 
-                self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
+                # self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
 
                 for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
                                                                                       current_link_states,

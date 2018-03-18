@@ -114,7 +114,6 @@ class ProblemModelling:
     def fill_velocity_limits(self):
         start_and_goal_lower_limits = []
         start_and_goal_upper_limits = []
-
         for joint in self.joints:
             if type(joint) is dict:
                 max_vel = self.joints[joint]["limit"]["velocity"]
@@ -122,10 +121,10 @@ class ProblemModelling:
                 joint_lower_limit = self.joints[joint]["limit"]["lower"]
                 joint_upper_limit = self.joints[joint]["limit"]["upper"]
             else:
-                max_vel = self.joints[joint].limit.velocity
-                min_vel = -self.joints[joint].limit.velocity
-                joint_lower_limit = self.joints[joint].limit.lower
-                joint_upper_limit = self.joints[joint].limit.upper
+                max_vel = self.joints[joint]["limit"].velocity
+                min_vel = -self.joints[joint]["limit"].velocity
+                joint_lower_limit = self.joints[joint]["limit"].lower
+                joint_upper_limit = self.joints[joint]["limit"].upper
 
 
             min_vel = min_vel * self.duration / float(self.samples - 1)

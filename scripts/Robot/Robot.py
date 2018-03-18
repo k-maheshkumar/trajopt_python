@@ -1,6 +1,5 @@
 import logging
 from scripts.utils.utils import Utils as utils
-from easydict import EasyDict as edict
 from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
 
@@ -80,16 +79,18 @@ class Robot:
 
         if "current_state" in kwargs and "goal_state" in kwargs:
             states = {}
-            for joint in self.model.joints:
-                for joint_in_group in joint_group:
-                    if joint_in_group in current_state and joint_in_group in goal_state:
+
+            for joint_in_group in joint_group:
+                if joint_in_group in current_state and joint_in_group in goal_state and \
+                                joint_in_group in self.model.joint_map:
+                    if self.model.joint_map[joint_in_group].type != "fixed":
                         states[joint_in_group] = {"start": current_state[joint_in_group],
                                                   "end": goal_state[joint_in_group]}
-                    if joint.name == joint_in_group and joint.limit is not None:
-                        joints[joint.name] = edict({
+                        joints[joint_in_group] = {
                             "states": states[joint_in_group],
-                            "limit": joint.limit,
-                        })
+                            "limit": self.model.joint_map[joint_in_group].limit,
+                        }
+
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,

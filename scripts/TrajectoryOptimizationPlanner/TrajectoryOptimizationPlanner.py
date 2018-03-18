@@ -56,12 +56,17 @@ class TrajectoryOptimizationPlanner():
         if "group" in kwargs:
             group = self.robot_config["joints_groups"][kwargs["group"]]
         if "start_state" in kwargs:
-            start_state = self.robot_config["joint_configurations"][kwargs["start_state"]]
-            self.world.reset_joint_states(self.robot.id, start_state)
+            start_state = kwargs["start_state"]
+            # if type(start_state) is not dict:
+            #     start_state = self.robot_config["joint_configurations"][start_state]
+
+            self.world.reset_joint_states(self.robot.id, group, start_state)
             self.world.step_simulation_for(0.2)
 
         if "goal_state" in kwargs:
-            goal_state = self.robot_config["joint_configurations"][kwargs["goal_state"]]
+            goal_state = kwargs["goal_state"]
+            # if type(goal_state) is not dict:
+            #     goal_state = self.robot_config["joint_configurations"][goal_state]
         if "samples" in kwargs:
             samples = kwargs["samples"]
         else:
@@ -84,15 +89,15 @@ class TrajectoryOptimizationPlanner():
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance)
-        self.world.toggle_rendering_while_planning(False)
+        # self.world.toggle_rendering_while_planning(False)
         #
         self.robot.calulate_trajecotory(self.callback_function_from_solver)
         #
         status = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
-                                                         goal_state.keys(),
+                                                         group,
                                                          collision_safe_distance)
 
-        self.world.toggle_rendering_while_planning(True)
+        # self.world.toggle_rendering_while_planning(True)
 
         return status, self.robot.planner.get_trajectory()
 
@@ -105,7 +110,7 @@ class TrajectoryOptimizationPlanner():
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance,
                                         solver_config=solver_config)
-        self.world.toggle_rendering_while_planning(False)
+        # self.world.toggle_rendering_while_planning(False)
 
         status, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
 
@@ -113,7 +118,7 @@ class TrajectoryOptimizationPlanner():
                                                                          goal_state.keys(),
                                                                          collision_safe_distance)
 
-        self.world.toggle_rendering_while_planning(True)
+        # self.world.toggle_rendering_while_planning(True)
 
         return status, can_execute_trajectory
 
@@ -127,7 +132,11 @@ class TrajectoryOptimizationPlanner():
 
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
         constraints, lower_limit, upper_limit = None, None, None
+        # self.robot.planner.display_problem()
+        # print "dgnl", new_trajectory
+        new_trajectory = new_trajectory[:self.robot.planner.no_of_samples * self.robot.planner.num_of_joints]
         trajectory = np.split(new_trajectory, self.robot.planner.no_of_samples)
+        # print "nbfnb", trajectory
         self.robot.planner.trajectory.add_trajectory(trajectory)
 
         collision_infos = self.world.get_collision_infos(self.robot.id, trajectory, self.robot.planner.current_planning_joint_group,
@@ -136,6 +145,7 @@ class TrajectoryOptimizationPlanner():
         if len(collision_infos[2]) > 0:
             constraints, lower_limit, upper_limit = \
                 self.robot.planner.problem_model.update_collision_infos(collision_infos, self.robot.planner.collision_safe_distance)
-            self.robot.planner.update_prob()
+
+        self.robot.planner.update_prob()
 
         return constraints, lower_limit, upper_limit

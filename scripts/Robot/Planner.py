@@ -28,7 +28,7 @@ class TrajectoryPlanner:
         self.problem = {}
         self.max_penalty = -1
         self.delta_max = -1
-        self.joints = -1
+        self.joints = []
         self.num_of_joints = -1
         self.solver = -1
         self.solver =  -1
@@ -63,6 +63,8 @@ class TrajectoryPlanner:
         self.lbG = []
         self.ubG = []
         self.b = []
+
+        self.joints = []
 
         self.initial_guess = []
         self.solver_status = []
@@ -142,17 +144,31 @@ class TrajectoryPlanner:
 
             self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
                               self.collision_safe_distance, self.collision_check_distance)
+            # self.sqp_solver.init(P=np.hstack([self.problem_model.cost_matrix_P, self.problem_model.cost_matrix_P]),
+            #                      q=np.hstack([self.problem_model.cost_matrix_q, self.problem_model.cost_matrix_q]),
+            #                      G=np.hstack([self.problem_model.robot_constraints_matrix,
+            #                                   self.problem_model.robot_constraints_matrix]),
+            #                      lbG=np.hstack([self.problem_model.constraints_lower_limits]),
+            #                      ubG=np.hstack([self.problem_model.constraints_upper_limits]),
+            #                      A=np.hstack([self.problem_model.start_and_goal_matrix,
+            #                                   self.problem_model.start_and_goal_matrix]),
+            #                      b=np.hstack([self.problem_model.start_and_goal_limits]),
+            #                      initial_guess=np.hstack([self.problem_model.initial_guess,
+            #                                               self.problem_model.initial_guess]),
+            #                      solver_config=self.solver_config)
             self.sqp_solver.init(P=self.problem_model.cost_matrix_P, q=self.problem_model.cost_matrix_q,
                                  G=self.problem_model.robot_constraints_matrix,
                                  lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,
                                  A=self.problem_model.start_and_goal_matrix, b=self.problem_model.start_and_goal_limits,
-                                 initial_guess=self.problem_model.initial_guess, solver_config=self.solver_config)
-            self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
+                                 initial_guess=self.problem_model.initial_guess,
+                                 solver_config=self.solver_config)
+            self.trajectory.init(np.array((np.split(self.problem_model.initial_guess[: self.num_of_joints * self.no_of_samples], self.no_of_samples)))
                                  , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
             # self.trajectory.init(np.array(self.problem_model.initial_guess), self.problem_model.samples, self.problem_model.duration)
 
 
     def update_prob(self):
+
         self.sqp_solver.update_prob(G=self.problem_model.robot_constraints_matrix,
                                     lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits)
 
@@ -165,8 +181,8 @@ class TrajectoryPlanner:
         start = time.time()
         self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
-        trajectory = np.array((np.split(trajectory, self.no_of_samples)))
-        self.trajectory.update(trajectory, self.joints.keys())
+        trajectory = np.array((np.split(trajectory[: self.num_of_joints * self.no_of_samples], self.no_of_samples)))
+        self.trajectory.update(trajectory, self.current_planning_joint_group)
         self.trajectory.plot_trajectories()
         status = "-1"
         if self.solver_status == "Solved":
@@ -184,6 +200,7 @@ class TrajectoryPlanner:
 
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
         constraints, lower_limit, upper_limit = None, None, None
+
         trajectory = np.split(new_trajectory, self.no_of_samples)
         self.trajectory.add_trajectory(trajectory)
 

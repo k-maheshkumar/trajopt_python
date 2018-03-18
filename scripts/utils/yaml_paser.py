@@ -7,8 +7,8 @@ class ConfigParser:
     def __init__(self, file_path):
         self.file_name = file_path
         with open(file_path, 'r') as config:
-            # self.config = yaml.load(config, Loader=yamlordereddictloader.Loader)
-            self.config = yaml.load(config)
+            self.config = yaml.load(config, Loader=yamlordereddictloader.Loader)
+            # self.config = yaml.load(config)
             # print self.config
         self.flatten_nested_list(self.config)
     def flatten_nested_list(self, input):

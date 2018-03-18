@@ -57,9 +57,9 @@ class Example:
                   decimals_to_round=4, verbose=False)
 
     def calculate(self):
-        # self.plan.calculate_trajectory()
         print self.plan.display_problem()
-
+        self.plan.calculate_trajectory()
+        print self.plan.get_trajectory().trajectory
 if __name__ == '__main__':
 
     # problem = {}
@@ -67,6 +67,7 @@ if __name__ == '__main__':
     #     problem = edict(json.load(json_data))
 
     problem = edict(ConfigParser("./problem.yaml").config)
+    print problem
     example = Example(problem, verbose="DEBUG")
     example.init()
 

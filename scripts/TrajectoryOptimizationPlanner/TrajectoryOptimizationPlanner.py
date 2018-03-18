@@ -84,16 +84,22 @@ class TrajectoryOptimizationPlanner():
                 group = self.robot_config["joints_groups"][kwargs["group"]]
         if "start_state" in kwargs:
             start_state = kwargs["start_state"]
-            if type(start_state) is not dict:
+            if type(start_state) is str:
                 start_state = self.robot_config["joint_configurations"][start_state]
 
-            self.world.reset_joint_states(self.robot.id, start_state)
+            if type(start_state)is dict:
+                start_state = start_state.values()
+
+            self.world.reset_joint_states(self.robot.id, start_state, group)
             self.world.step_simulation_for(0.2)
 
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
-            if type(goal_state) is not dict:
+            if type(goal_state) is str:
                 goal_state = self.robot_config["joint_configurations"][goal_state]
+
+            if type(goal_state)is dict:
+                goal_state = goal_state.values()
         if "samples" in kwargs:
             samples = kwargs["samples"]
         else:
@@ -121,7 +127,7 @@ class TrajectoryOptimizationPlanner():
         self.robot.calulate_trajecotory(self.callback_function_from_solver)
         #
         status = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
-                                                         goal_state.keys(),
+                                                         group,
                                                          collision_safe_distance)
 
         self.world.toggle_rendering_while_planning(True)

@@ -166,7 +166,7 @@ class TrajectoryPlanner:
         self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
-        self.trajectory.update(trajectory, self.joints.keys())
+        self.trajectory.update(trajectory, self.current_planning_joint_group)
         self.trajectory.plot_trajectories()
         status = "-1"
         if self.solver_status == "Solved":

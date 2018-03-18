@@ -2,6 +2,7 @@ import logging
 from scripts.utils.utils import Utils as utils
 from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
+import itertools
 
 class Robot:
     def __init__(self, logger_name=__name__, verbose=False, log_file=False):
@@ -24,7 +25,6 @@ class Robot:
         return self.planner.trajectory.initial
 
     def init_plan_trajectory(self, *args, **kwargs):
-        joints = {}
         status = "-1"
 
         if "group" in kwargs:
@@ -50,9 +50,12 @@ class Robot:
 
         if "current_state" in kwargs:
             current_state = kwargs["current_state"]
+            # current_state = OrderedDict(zip(joint_group, current_state))
 
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
+            # goal_state = OrderedDict(zip(joint_group, goal_state))
+
 
         if "collision_safe_distance" in kwargs:
             collision_safe_distance = kwargs["collision_safe_distance"]
@@ -78,18 +81,40 @@ class Robot:
         #     self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
         if "current_state" in kwargs and "goal_state" in kwargs:
-            states = {}
+            if type(current_state) is dict and type(current_state) is dict:
+                states = {}
+                joints = {}
+                for joint_in_group in joint_group:
+                    if joint_in_group in current_state and joint_in_group in goal_state and \
+                                    joint_in_group in self.model.joint_map:
+                        if self.model.joint_map[joint_in_group].type != "fixed":
+                            states[joint_in_group] = {"start": current_state[joint_in_group],
+                                                      "end": goal_state[joint_in_group]}
+                            joints[joint_in_group] = {
+                                "states": states[joint_in_group],
+                                "limit": self.model.joint_map[joint_in_group].limit,
+                            }
+            elif type(current_state) is list and type(current_state) is list:
+                print "gmfdlmg"
+                print current_state
+                print goal_state
+                print joint_group
+                joints = []
+                assert len(current_state) == len(goal_state) == len(joint_group)
+                for joint, current_state, next_state in itertools.izip(joint_group, current_state, goal_state):
+                    if joint in self.model.joint_map:
+                        joints.append([current_state, next_state, self.model.joint_map[joint].limit])
+                # for joint_in_group in joint_group:
+                #     if joint_in_group in current_state and joint_in_group in goal_state and \
+                #                     joint_in_group in self.model.joint_map:
+                #         if self.model.joint_map[joint_in_group].type != "fixed":
+                #             states[joint_in_group] = {"start": current_state[joint_in_group],
+                #                                       "end": goal_state[joint_in_group]}
+                #             joints[joint_in_group] = {
+                #                 "states": states[joint_in_group],
+                #                 "limit": self.model.joint_map[joint_in_group].limit,
+                #             }
 
-            for joint_in_group in joint_group:
-                if joint_in_group in current_state and joint_in_group in goal_state and \
-                                joint_in_group in self.model.joint_map:
-                    if self.model.joint_map[joint_in_group].type != "fixed":
-                        states[joint_in_group] = {"start": current_state[joint_in_group],
-                                                  "end": goal_state[joint_in_group]}
-                        joints[joint_in_group] = {
-                            "states": states[joint_in_group],
-                            "limit": self.model.joint_map[joint_in_group].limit,
-                        }
 
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,

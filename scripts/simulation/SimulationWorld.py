@@ -353,7 +353,7 @@ class SimulationWorld(ISimulationWorldBase):
         if len(next_normal_T_times_jacobian) > 0:
             next_normal_T_times_jacobian = np.vstack(next_normal_T_times_jacobian)
 
-        self.reset_joint_states(robot_id, start_state)
+        self.reset_joint_states(robot_id, start_state, group)
 
         return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian
 
@@ -406,11 +406,10 @@ class SimulationWorld(ISimulationWorldBase):
 
         return status, can_execute_trajectory
 
-    def get_current_states_for_given_joints(self, robot_id, joints):
-        current_state = {}
-        for joint in joints:
-            current_state[joint] = \
-                sim.getJointState(bodyUniqueId=robot_id, jointIndex=self.joint_name_to_id[joint])[0]
+    def get_current_states_for_given_joints(self, robot_id, group):
+        current_state = []
+        for joint in group:
+            current_state.append(sim.getJointState(bodyUniqueId=robot_id, jointIndex=self.joint_name_to_id[joint])[0])
         return current_state
 
     def execute_trajectory(self, robot, trajectory, step_time=None):
@@ -525,7 +524,7 @@ class SimulationWorld(ISimulationWorldBase):
             if collision:
                 break
 
-        self.reset_joint_states(robot_id, start_state)
+        self.reset_joint_states(robot_id, start_state, group)
 
         return collision
 
@@ -557,9 +556,10 @@ class SimulationWorld(ISimulationWorldBase):
         self.logger.info(status)
         return status
 
-    def reset_joint_states(self, robot_id, joints):
-        for joint in joints:
-            sim.resetJointState(robot_id, self.joint_name_to_id[joint], joints[joint])
+    def reset_joint_states(self, robot_id, joints, group):
+        assert len(joints) == len(group)
+        for i in range(len(group)):
+            sim.resetJointState(robot_id, self.joint_name_to_id[group[i]], joints[i])
         status = "Reset joints to start pose is complete"
         # self.logger.info(status)
         return status

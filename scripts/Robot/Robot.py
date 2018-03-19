@@ -95,10 +95,6 @@ class Robot:
                                 "limit": self.model.joint_map[joint_in_group].limit,
                             }
             elif type(current_state) is list and type(current_state) is list:
-                print "gmfdlmg"
-                print current_state
-                print goal_state
-                print joint_group
                 joints = []
                 assert len(current_state) == len(goal_state) == len(joint_group)
                 for joint, current_state, next_state in itertools.izip(joint_group, current_state, goal_state):

@@ -123,8 +123,11 @@ class SQPsolver:
         print (self.lb)
         print ("ub")
         print (self.ub)
+        print ("initial guess")
+        print self.initial_guess
 
     def update_prob(self, G=None, lbG=None, ubG=None, A=None, b=None):
+
         if G is not None:
             self.G = G
         if lbG is not None:
@@ -210,18 +213,18 @@ class SQPsolver:
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         if constraints is not None:
-            # print upper_limit, constraints.shape, delta
-            # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= constraints * p]
-            # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
-            # constraints = [cvxpy.norm(p, "inf") <= delta, - lower_limit >= cvxpy.matmul(constraints, p)]
-            # constraints = [cvxpy.norm(p, "inf") <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
-            # print cvxpy.matmul(cvxpy.hstack([constraints, constraints]), cvxpy.hstack([p,p]))
-            # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
-            temp = np.hstack([constraints[0], constraints[1]])
-            print temp.shape
-            p1 = cvxpy.hstack([p, p])
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(temp, p1) <= upper_limit]
-            # constraints = [cvxpy.norm(p, "inf") <= delta]
+            # print lower_limit, delta
+            if constraints.shape[1] == 2 * p.shape[0]:
+                p1 = cvxpy.hstack([p, p])
+            else:
+                p1 = p
+            if lower_limit is not None and upper_limit is not None:
+                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+                               lower_limit <= cvxpy.matmul(constraints, p1), cvxpy.matmul(constraints, p1) <= upper_limit]
+            elif lower_limit is None:
+                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,cvxpy.matmul(constraints, p1) <= upper_limit]
+            elif upper_limit is None:
+                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, lower_limit <= cvxpy.matmul(constraints, p1)]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
@@ -314,6 +317,8 @@ class SQPsolver:
 
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value
+            trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 1.5)
+
             self.logger.debug("penalty " + str(penalty.value))
             while iteration_count < max_iteration:
                 iteration_count += 1
@@ -324,7 +329,7 @@ class SQPsolver:
                 while trust_box_size >= min_trust_box_size:
                     if callback_function is not None:
                         # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
-                        if constraints is not None and lower_limit is not None and upper_limit is not None:
+                        if constraints is not None:
                             # dynamic_constraints_count = len(upper_limit)
                             # if dynamic_constraints_count > last_dynamic_constraints_count:
                             #     print "collision count increases. . . .. . ."
@@ -450,7 +455,7 @@ class SQPsolver:
 
                 # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
                 # trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 0.5)
-
+                # trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 1.5);
 
                 # else:
                 #     is_converged = False

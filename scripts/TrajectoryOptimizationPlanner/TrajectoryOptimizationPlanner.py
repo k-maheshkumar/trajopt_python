@@ -5,6 +5,7 @@ import scripts.utils.yaml_paser as yaml
 from scripts.utils.utils import Utils as utils
 import logging
 import os
+from collections import OrderedDict
 
 class TrajectoryOptimizationPlanner():
     def __init__(self, **kwargs):
@@ -87,7 +88,7 @@ class TrajectoryOptimizationPlanner():
             if type(start_state) is str:
                 start_state = self.robot_config["joint_configurations"][start_state]
 
-            if type(start_state)is dict:
+            if type(start_state)is dict or type(start_state) is OrderedDict:
                 start_state = start_state.values()
 
             self.world.reset_joint_states(self.robot.id, start_state, group)
@@ -98,7 +99,7 @@ class TrajectoryOptimizationPlanner():
             if type(goal_state) is str:
                 goal_state = self.robot_config["joint_configurations"][goal_state]
 
-            if type(goal_state)is dict:
+            if type(goal_state)is dict or type(goal_state) is OrderedDict:
                 goal_state = goal_state.values()
         if "samples" in kwargs:
             samples = kwargs["samples"]
@@ -165,6 +166,8 @@ class TrajectoryOptimizationPlanner():
 
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
         constraints, lower_limit, upper_limit = None, None, None
+        new_trajectory = new_trajectory[:self.robot.planner.no_of_samples * self.robot.planner.num_of_joints]
+
         trajectory = np.split(new_trajectory, self.robot.planner.no_of_samples)
         self.robot.planner.trajectory.add_trajectory(trajectory)
 

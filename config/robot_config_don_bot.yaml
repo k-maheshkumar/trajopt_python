@@ -1,0 +1,35 @@
+robot:
+    urdf: "/home/mahesh/catkin_ws/src/iai_robots/iai_donbot_description/robots/donbot2.urdf"
+    joints_groups:
+      right_arm: &right_arm
+        ["ur5_shoulder_pan_joint", "ur5_shoulder_lift_joint", "ur5_shoulder_lift_joint"]
+      left_arm: &left_arm
+        ["ur5_wrist_1_joint", "ur5_wrist_2_joint", "ur5_wrist_3_joint", "ur5_ee_fixed_joint"]
+      full_arm: ['ur5_shoulder_pan_joint', 'ur5_shoulder_lift_joint', 'ur5_shoulder_lift_joint', 'ur5_wrist_1_joint', 'ur5_wrist_2_joint', 'ur5_wrist_3_joint', 'ur5_ee_fixed_joint']
+
+    joint_configurations:
+      home:
+        ur5_shoulder_pan_joint: -2.055
+        ur5_shoulder_lift_joint: 0.944
+        ur5_elbow_joint: -1.591
+        ur5_wrist_1_joint: -1.922
+        ur5_wrist_2_joint: 1.572
+        ur5_wrist_3_joint: 1.574
+        ur5_ee_fixed_joint: 1.571
+
+      pick:
+        ur5_shoulder_pan_joint: -0.08180533826032865
+        ur5_shoulder_lift_joint: 1.5474152457596664
+        ur5_elbow_joint: -1.5873548294514912
+        ur5_wrist_1_joint: -0.5791571346767671
+        ur5_wrist_2_joint: 1.5979105177314896
+        ur5_wrist_3_joint: 1.5857854098720727
+        ur5_ee_fixed_joint: 1.5726221954434347
+      place:
+        ur5_shoulder_pan_joint: -2.4823357809267463
+        ur5_shoulder_lift_joint: 1.4999975516996142
+        ur5_elbow_joint: -1.5762726255540713
+        ur5_wrist_1_joint: -0.8666279970481103
+        ur5_wrist_2_joint: 1.5855963769735366
+        ur5_wrist_3_joint: 1.5770985888989753
+        ur5_ee_fixed_joint: 1.5704531145724918

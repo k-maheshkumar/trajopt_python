@@ -1,8 +1,7 @@
 import logging
 import time
-
 import numpy as np
-
+from scripts.utils.utils import Utils as utils
 import scripts.sqp_solver.ProblemModelling as model
 from scripts.Robot import Trajectory
 from scripts.sqp_solver import SQPsolver
@@ -11,7 +10,7 @@ import collections
 
 class TrajectoryPlanner:
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, main_logger_name=__name__, verbose=False, log_file=False):
         self.sqp = {}
         self.P = []
         self.G = []
@@ -48,9 +47,10 @@ class TrajectoryPlanner:
         self.sqp_solver = None
         self.current_planning_joint_group = None
         self.callback_function_to_get_collision_infos = None
+        self.sqp_solver = SQPsolver.SQPsolver(main_logger_name, verbose, log_file)
 
-        self.verbose = False
-        self.logger = logging.getLogger("Trajectory_Planner."+__name__)
+        self.logger = logging.getLogger(main_logger_name + __name__)
+        utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
     def __clear_all_data(self):
         self.sqp = {}
@@ -140,12 +140,6 @@ class TrajectoryPlanner:
             if "solver_config" in kwargs:
                 self.solver_config = kwargs["solver_config"]
 
-            if self.solver_class:
-                self.sqp_solver = SQPsolver.SQPsolver()
-            else:
-                self.sqp_solver = SQPproblem.SQPProblem()
-
-
             self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
                               self.collision_safe_distance, self.collision_check_distance)
             self.sqp_solver.init(P=self.problem_model.cost_matrix_P, q=self.problem_model.cost_matrix_q,
@@ -172,7 +166,7 @@ class TrajectoryPlanner:
         self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
-        self.trajectory.update(trajectory, self.joints.keys())
+        self.trajectory.update(trajectory, self.current_planning_joint_group)
         self.trajectory.plot_trajectories()
         status = "-1"
         if self.solver_status == "Solved":

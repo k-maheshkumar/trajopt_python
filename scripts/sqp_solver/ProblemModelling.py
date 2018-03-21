@@ -114,18 +114,28 @@ class ProblemModelling:
     def fill_velocity_limits(self):
         start_and_goal_lower_limits = []
         start_and_goal_upper_limits = []
-
         for joint in self.joints:
-            if type(joint) is dict:
+            if type(joint) is list:
+                max_vel = joint[2].velocity
+                min_vel = -joint[2].velocity
+                joint_lower_limit = joint[2].lower
+                joint_upper_limit = joint[2].upper
+                start = joint[0]
+                end = joint[1]
+            elif type(joint) is dict:
                 max_vel = self.joints[joint]["limit"]["velocity"]
                 min_vel = -self.joints[joint]["limit"]["velocity"]
                 joint_lower_limit = self.joints[joint]["limit"]["lower"]
                 joint_upper_limit = self.joints[joint]["limit"]["upper"]
+                start = self.joints[joint]["states"]["start"]
+                end = self.joints[joint]["states"]["end"]
             else:
-                max_vel = self.joints[joint].limit.velocity
-                min_vel = -self.joints[joint].limit.velocity
-                joint_lower_limit = self.joints[joint].limit.lower
-                joint_upper_limit = self.joints[joint].limit.upper
+                max_vel = self.joints[joint]["limit"].velocity
+                min_vel = -self.joints[joint]["limit"].velocity
+                joint_lower_limit = self.joints[joint]["limit"].lower
+                joint_upper_limit = self.joints[joint]["limit"].upper
+                start = self.joints[joint]["states"]["start"]
+                end = self.joints[joint]["states"]["end"]
 
 
             min_vel = min_vel * self.duration / float(self.samples - 1)
@@ -136,8 +146,8 @@ class ProblemModelling:
             self.velocity_upper_limits.append(np.full((1, self.samples - 1), max_vel))
             self.joints_lower_limits.append(joint_lower_limit)
             self.joints_upper_limits.append(joint_upper_limit)
-            start_state = np.round(self.joints[joint]["states"]["start"], self.decimals_to_round)
-            end_state = np.round(self.joints[joint]["states"]["end"], self.decimals_to_round)
+            start_state = np.round(start, self.decimals_to_round)
+            end_state = np.round(end, self.decimals_to_round)
             start_and_goal_lower_limits.append(np.round(start_state, self.decimals_to_round))
             start_and_goal_upper_limits.append(np.round(end_state, self.decimals_to_round))
             self.initial_guess.append(utils.interpolate(start_state, end_state, self.samples, self.decimals_to_round))
@@ -174,7 +184,8 @@ class ProblemModelling:
                 if len(initial_signed_distance) > 0:
 
                     np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
-                    lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
+                    # lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
+                    lower_collision_limit = self.collision_safe_distance - initial_signed_distance
                     upper_collision_limit = initial_signed_distance - self.collision_safe_distance
                     lower_collision_limit = lower_collision_limit.flatten()
                     upper_collision_limit = upper_collision_limit.flatten()

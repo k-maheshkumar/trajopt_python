@@ -7,9 +7,12 @@ import logging
 import collections
 
 class PlannerGui(QtGui.QMainWindow):
-    def __init__(self, verbose=False, file_log=False, simulation=None):
+    def __init__(self, verbose=False, file_log=False, planner=None):
         QtGui.QMainWindow.__init__(self)
         self.setGeometry(200, 100, 1200, 400)
+
+        # self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
+        self.planner = planner
 
         file_path_prefix = '../../config/'
         self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
@@ -23,7 +26,6 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_default_config_params = self.config["robot"]["default_paramaters"]
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
-        simulation.set_robot(self.robot_config["urdf"])
 
         self.sqp_labels = {}
         self.sqp_spin_box = {}
@@ -81,8 +83,7 @@ class PlannerGui(QtGui.QMainWindow):
 
         self.last_status = "Last Status: "
         self.init_ui(25)
-        # self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
-        self.sim_world = simulation
+
         self.can_execute_trajectory = False
         main_logger_name = "Trajectory_Planner"
         self.logger = logging.getLogger(main_logger_name)
@@ -234,7 +235,7 @@ class PlannerGui(QtGui.QMainWindow):
         if key == "start_simulation":
             self.is_simulation_started = True
         if key == "reset_object" or key == "execute":
-            self.sim_world.reset_objects_to()
+            self.planner.world.reset_objects_to()
 
     def on_robot_spin_box_value_changed(self, key, value):
         # print(key, value)
@@ -291,7 +292,7 @@ class PlannerGui(QtGui.QMainWindow):
                         self.statusBar.clearMessage()
                         status = "Please wait, trajectory is being executed.."
                         self.statusBar.showMessage(self.last_status + status)
-                        status = self.sim_world.execute_trajectory()
+                        status = self.planner.execute_trajectory()
                         self.statusBar.clearMessage()
                         self.statusBar.showMessage(self.last_status + status)
                     else:
@@ -308,7 +309,7 @@ class PlannerGui(QtGui.QMainWindow):
             status = "Please wait, random pose for the joints are being set.."
             self.statusBar.showMessage(self.last_status + status)
             if group is not None:
-                status = self.sim_world.reset_joints_to_random_states(group, motor_dir=np.random.rand(1, len(group)).flatten())
+                status = self.planner.world.reset_joints_to_random_states(group, motor_dir=np.random.rand(1, len(group)).flatten())
                 self.statusBar.showMessage(self.last_status + status)
             else:
                 self.statusBar.clearMessage()
@@ -322,11 +323,11 @@ class PlannerGui(QtGui.QMainWindow):
         if samples is not None and duration is not None \
                 and group is not None and goal_state is not None and self.sqp_config is not None:
             # status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=int(samples),
-            status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=goal_state.keys(), goal_state=goal_state, samples=int(samples),
-                                                                                 duration=int(duration),
-                                                                                 solver_config=self.sqp_config,
-                                                                                 collision_safe_distance=collision_d_safe_limit,
-                                                                                 collision_check_distance=collision_check_distance)
+            status, self.can_execute_trajectory = self.planner.plan_trajectory(goal_state.keys(), goal_state, samples=int(samples),
+                                                                               duration=int(duration),
+                                                                               solver_config=self.sqp_config,
+                                                                               collision_safe_distance=collision_d_safe_limit,
+                                                                               collision_check_distance=collision_check_distance)
         else:
             status = "Please select the planning group and joint configuration.."
 

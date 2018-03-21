@@ -5,7 +5,6 @@ import scripts.utils.yaml_paser as yaml
 from scripts.utils.utils import Utils as utils
 import logging
 import os
-from collections import  OrderedDict
 
 class TrajectoryOptimizationPlanner():
     def __init__(self, **kwargs):
@@ -28,16 +27,12 @@ class TrajectoryOptimizationPlanner():
         if "robot_config" in kwargs:
             robot_config = kwargs["robot_config"]
 
-
-
-
         self.logger = logging.getLogger(main_logger_name)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
         self.robot = Robot(main_logger_name, verbose, log_file)
         self.world = SimulationWorld(**kwargs)
         self.world.toggle_rendering(0)
         self.load_configs(robot_config)
-
 
     def load_configs(self, config_file=None):
         file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
@@ -55,7 +50,6 @@ class TrajectoryOptimizationPlanner():
         self.robot_default_config_params = self.config["robot"]["default_paramaters"]
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
-        print "-------------", self.robot_config
 
     def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=True):
         self.robot.id = self.world.load_robot(urdf_file, position, orientation, use_fixed_base)
@@ -86,24 +80,26 @@ class TrajectoryOptimizationPlanner():
 
         if "group" in kwargs:
             group = kwargs["group"]
-            if type(group) is not list:
-                group = self.robot_config["joints_groups"][group]
-            print "------group--------", group
-
-
+            if type(group) is str:
+                group = self.robot_config["joints_groups"][kwargs["group"]]
         if "start_state" in kwargs:
             start_state = kwargs["start_state"]
-            # if isinstance(start_state, OrderedDict):
-            #     print start_state
-            #     start_state = self.robot_config["joint_configurations"][start_state]
+            if type(start_state) is str:
+                start_state = self.robot_config["joint_configurations"][start_state]
 
-            self.world.reset_joint_states(self.robot.id, start_state)
+            if type(start_state)is dict:
+                start_state = start_state.values()
+
+            self.world.reset_joint_states(self.robot.id, start_state, group)
             self.world.step_simulation_for(0.2)
 
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
-            # if isinstance(goal_state, OrderedDict):
-            #     goal_state = self.robot_config["joint_configurations"][goal_state]
+            if type(goal_state) is str:
+                goal_state = self.robot_config["joint_configurations"][goal_state]
+
+            if type(goal_state)is dict:
+                goal_state = goal_state.values()
         if "samples" in kwargs:
             samples = kwargs["samples"]
         else:
@@ -121,22 +117,20 @@ class TrajectoryOptimizationPlanner():
         else:
             collision_check_distance = 0.1
 
-
         current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
-
         self.robot.init_plan_trajectory(group=group, current_state=current_robot_state,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance)
-        # self.world.toggle_rendering_while_planning(False)
+        self.world.toggle_rendering_while_planning(False)
         #
         self.robot.calulate_trajecotory(self.callback_function_from_solver)
         #
         status = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
-                                                         goal_state.keys(),
+                                                         group,
                                                          collision_safe_distance)
 
-        # self.world.toggle_rendering_while_planning(True)
+        self.world.toggle_rendering_while_planning(True)
 
         return status, self.robot.planner.get_trajectory()
 

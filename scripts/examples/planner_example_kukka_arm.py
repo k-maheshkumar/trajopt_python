@@ -11,8 +11,11 @@ class PlannerExample:
         location_prefix = home + '/masterThesis/bullet3/data/'
 
         urdf_file = location_prefix + "kuka_iiwa/model.urdf"
+
         config = {
-            "use_gui": True, "verbose": False, "log_file": False,
+            "use_gui": True,
+            "verbose": False,
+            "log_file": False,
             "robot_config": "robot_config_kukka_arm.yaml"
 
         }
@@ -22,9 +25,11 @@ class PlannerExample:
 
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
-        self.planner.load_from_urdf(urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
+        self.robot_id = self.planner.load_robot(urdf_file, position=[0, 0.25, 0.6])
+        plane_id = self.planner.load_from_urdf(urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
-        table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
+        table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
+                                                         position=[0, 0, 0.0])
 
         self.box_id = self.planner.add_constraint(shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
                                                   position=[0.28, -0.43, 0.9], mass=100)

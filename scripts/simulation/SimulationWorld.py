@@ -182,15 +182,16 @@ class SimulationWorld(ISimulationWorldBase):
 
     def get_joint_and_link_states_at(self, robot_id, trajectory, group):
         link_states = []
-        joint_states = []
+        joint_states = {}
         self.reset_joint_states_to(robot_id, trajectory, group)
         # joint_ids = [self.joint_name_to_id[joint] for joint in group]
-        joint_states = sim.getJointStates(robot_id, self.joint_ids)
-        joint_positions = [state[0] for state in joint_states]
-        joint_velocities = [state[1] for state in joint_states]
-        joint_torques = [state[3] for state in joint_states]
+        # joint_states = sim.getJointStates(robot_id, self.joint_ids)
+        # joint_positions = [state[0] for state in joint_states]
+        # joint_velocities = [state[1] for state in joint_states]
+        # joint_torques = [state[3] for state in joint_states]
+        print group
         for joint_name in group:
-            # joint_states[joint_name] = sim.getJointState(robot_id, self.joint_name_to_id[joint_name])
+            joint_states[joint_name] = sim.getJointState(robot_id, self.joint_name_to_id[joint_name])
 
             if joint_name in group:
                 state = sim.getLinkState(robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
@@ -198,9 +199,9 @@ class SimulationWorld(ISimulationWorldBase):
 
                 link_states.append(state)
 
-        # joint_positions = [joint_states[state][0] for state in joint_states]
-        # joint_velocities = [joint_states[state][1] for state in joint_states]
-        # joint_torques = [joint_states[state][3] for state in joint_states]
+        joint_positions = [joint_states[state][0] for state in joint_states]
+        joint_velocities = [joint_states[state][1] for state in joint_states]
+        joint_torques = [joint_states[state][3] for state in joint_states]
 
         return [joint_positions, joint_velocities, joint_torques], link_states
 
@@ -321,15 +322,9 @@ class SimulationWorld(ISimulationWorldBase):
                                                                                      current_closest_point_on_link_in_link_frame,
                                                                                      current_robot_state,
                                                                                      zero_vec, zero_vec)
-                                temp = []
-                                for i in range(len(current_position_jacobian)):
-                                    t = current_position_jacobian[i][self.planning_group_ids[0]:]
-                                    temp.append(t)
 
-                                print "ndfln", self.planning_group_ids[0]
-                                print temp
 
-                                current_state_jacobian_matrix = self.get_jacobian_matrix(temp,
+                                current_state_jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian,
                                                                                          len(trajectory),
                                                                                          len(group),
                                                                                          time_step_count)
@@ -358,11 +353,7 @@ class SimulationWorld(ISimulationWorldBase):
                                 # print "bfdkjnb", link_index
                                 # print "next_position_jacobian", next_position_jacobian
 
-                                temp1 = []
-                                for i in range(len(next_position_jacobian)):
-                                    t = next_position_jacobian[i][self.planning_group_ids[0]:]
-                                    temp1.append(t)
-                                next_state_jacobian_matrix = self.get_jacobian_matrix(temp1,
+                                next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian,
                                                                                       len(trajectory),
                                                                                       len(group),
                                                                                       time_step_count + 1)

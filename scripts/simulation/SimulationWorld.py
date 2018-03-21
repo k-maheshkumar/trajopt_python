@@ -186,7 +186,7 @@ class SimulationWorld(ISimulationWorldBase):
         joint_states = {}
         self.reset_joint_states_to(robot_id, trajectory, group)
 
-        for joint_name in self.joint_name_to_id:
+        for joint_name in group:
             joint_states[joint_name] = sim.getJointState(robot_id, self.joint_name_to_id[joint_name])
 
             if joint_name in group:
@@ -195,9 +195,9 @@ class SimulationWorld(ISimulationWorldBase):
 
                 link_states.append(state)
 
-        joint_positions = [joint_states[state][0] for state in joint_states]
-        joint_velocities = [joint_states[state][1] for state in joint_states]
-        joint_torques = [joint_states[state][3] for state in joint_states]
+        joint_positions = [joint_states[state][0] for state in group]
+        joint_velocities = [joint_states[state][1] for state in group]
+        joint_torques = [joint_states[state][3] for state in group]
 
         return [joint_positions, joint_velocities, joint_torques], link_states
 
@@ -258,6 +258,7 @@ class SimulationWorld(ISimulationWorldBase):
                 next_robot_state = next_robot_state[0]
                 zero_vec = [0.0] * len(current_robot_state)
 
+
                 # self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
 
                 for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
@@ -288,6 +289,16 @@ class SimulationWorld(ISimulationWorldBase):
                             fraction = cast_closest_points[0][10]
 
                             if dist < 0:
+                                # print "----------------------------------------------"
+                                # print "time_step_count", time_step_count
+                                # print "link_index", link_index
+                                # print "current_robot_state", current_robot_state
+                                # print "current_link_states", current_link_state[0]
+                                #
+                                # print "next_robot_state", next_robot_state
+                                # print "next_link_states", next_link_state[0]
+                                # print "**********************************************"
+                                #
                                 # print "-----------cast points--------------"
                                 # print "A(t)", closest_pt_on_A_at_t
                                 # print "A(t+1)", closest_pt_on_A_at_t_plus_1
@@ -303,25 +314,36 @@ class SimulationWorld(ISimulationWorldBase):
                                 current_closest_point_on_link_in_link_frame = self.get_point_in_local_frame(
                                     current_link_position_in_world_frame, current_link_orentation_in_world_frame,
                                     closest_pt_on_A_at_t)
+                                current_closest_point_on_link_in_link_frame1 = self.get_point_in_local_frame(
+                                    current_link_position_in_world_frame, current_link_orentation_in_world_frame,
+                                    closest_pt_on_A_at_t, inverse=False)
 
                                 initial_signed_distance.append(dist)
                                 closest_pts.append(closest_pt_on_A_at_t)
 
                                 current_position_jacobian, current_orientation_jacobian = sim.calculateJacobian(robot_id, link_index,
-                                                                                     # closest_pt_on_A_at_t,
-                                                                                     current_closest_point_on_link_in_link_frame,
-                                                                                     current_robot_state,
-                                                                                     zero_vec, zero_vec)
+                                                                                                                # closest_pt_on_A_at_t,
+                                                                                                                current_closest_point_on_link_in_link_frame,
+                                                                                                                # [0, 0, 0],
+                                                                                                                current_robot_state,
+                                                                                                                zero_vec, zero_vec)
 
                                 current_state_jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian,
                                                                                          len(trajectory),
                                                                                          len(group),
                                                                                          time_step_count)
-                                # jacob = self.robot.tree.get_jacobian_of_a_chain(current_robot_state)
-                                #
+
+                                # if link_index == 6:
+                                jacob = self.robot.tree.get_jacobian_of_a_chain(current_robot_state,
+                                                                                current_closest_point_on_link_in_link_frame
+                                                                                )
+
                                 # print "----------------------------------"
                                 # print "time_step_count", time_step_count
                                 # print "link_index", link_index
+                                # print "closest_pt_on_A_at_t", closest_pt_on_A_at_t
+                                # print "current_closest_point_on_link_in_link_frame", current_closest_point_on_link_in_link_frame
+                                # print "closest_pt_on_A_at_t1", current_closest_point_on_link_in_link_frame1
                                 # print "sim current_position_jacobian"
                                 # print current_position_jacobian
                                 # print "sim current_orientation_jacobian"
@@ -370,7 +392,7 @@ class SimulationWorld(ISimulationWorldBase):
 
         return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian
 
-    def get_point_in_local_frame(self, frame_position, frame_orientation, point):
+    def get_point_in_local_frame(self, frame_position, frame_orientation, point, inverse=True):
         # frame = kdl.Frame()
         # print frame_orientation
         rotation = kdl.Rotation.Quaternion(frame_orientation[0], frame_orientation[1], frame_orientation[2],
@@ -379,7 +401,10 @@ class SimulationWorld(ISimulationWorldBase):
         frame = kdl.Frame(rotation, position)
         point = kdl.Vector(point[0], point[1], point[2])
 
-        point_on_frame = frame.Inverse() * point
+        if inverse:
+            point_on_frame = frame.Inverse() * point
+        else:
+            point_on_frame = frame * point
 
         return [point_on_frame[0], point_on_frame[1], point_on_frame[2]]
 

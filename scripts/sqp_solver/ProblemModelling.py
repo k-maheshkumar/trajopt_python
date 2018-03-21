@@ -184,7 +184,8 @@ class ProblemModelling:
                 if len(initial_signed_distance) > 0:
 
                     np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
-                    lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
+                    # lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
+                    lower_collision_limit = self.collision_safe_distance - initial_signed_distance
                     upper_collision_limit = initial_signed_distance - self.collision_safe_distance
                     lower_collision_limit = lower_collision_limit.flatten()
                     upper_collision_limit = upper_collision_limit.flatten()

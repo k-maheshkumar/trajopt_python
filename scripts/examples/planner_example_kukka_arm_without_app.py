@@ -33,6 +33,11 @@ class PlannerExample:
         self.box_id = self.planner.add_constraint(shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
                                                   position=[0.28, -0.43, 0.9], mass=100)
 
+        self.box_id1 = self.planner.add_constraint(shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
+                                                  position=[-0.48, -0.43, 0.9], mass=100)
+        self.box_id2 = self.planner.add_constraint(shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
+                                                  position=[-0.48, 0.43, 0.9], mass=100)
+
 
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(0.01)

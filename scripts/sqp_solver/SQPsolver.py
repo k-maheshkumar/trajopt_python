@@ -218,9 +218,11 @@ class SQPsolver:
             # print cvxpy.matmul(cvxpy.hstack([constraints, constraints]), cvxpy.hstack([p,p]))
             # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
             temp = np.hstack([constraints[0], constraints[1]])
-            print temp.shape
             p1 = cvxpy.hstack([p, p])
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(temp, p1) <= upper_limit]
+            # print temp.shape
+            print lower_limit, delta
+            # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(temp, p1) <= upper_limit]
+            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, lower_limit <= cvxpy.matmul(temp, p1)]
             # constraints = [cvxpy.norm(p, "inf") <= delta]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]

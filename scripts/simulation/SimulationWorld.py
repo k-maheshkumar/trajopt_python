@@ -7,6 +7,7 @@ from scripts.interfaces.ISimulationWorldBase import ISimulationWorldBase
 import PyKDL as kdl
 import itertools
 from scripts.utils.utils import Utils as utils
+from collections import OrderedDict
 
 class SimulationWorld(ISimulationWorldBase):
     def __init__(self, **kwargs):
@@ -55,10 +56,11 @@ class SimulationWorld(ISimulationWorldBase):
         sim.setAdditionalSearchPath(pybullet_data.getDataPath())
 
 
-        self.joint_name_to_id = {}
-        self.start_state_for_traj_planning = {}
-        self.end_state_for_traj_planning = {}
-        self.scene_items = {}
+        self.joint_name_to_id = OrderedDict()
+        self.joint_id_to_name = OrderedDict()
+        self.start_state_for_traj_planning = OrderedDict()
+        self.end_state_for_traj_planning = OrderedDict()
+        self.scene_items = OrderedDict()
 
 
         self.planning_group = []
@@ -177,8 +179,8 @@ class SimulationWorld(ISimulationWorldBase):
 
     def get_joint_states_at(self, robot_id, trajectory, group):
         self.reset_joint_states_to(robot_id, trajectory, group)
-        joint_ids = [self.joint_name_to_id[joint] for joint in group]
-        joint_states = sim.getJointStates(robot_id, joint_ids)
+        # joint_ids = [self.joint_name_to_id[joint] for joint in group]
+        joint_states = sim.getJointStates(robot_id, self.joint_ids)
         joint_positions = [state[0] for state in joint_states]
         joint_velocities = [state[1] for state in joint_states]
         joint_torques = [state[3] for state in joint_states]
@@ -186,21 +188,39 @@ class SimulationWorld(ISimulationWorldBase):
 
     def get_joint_and_link_states_at(self, robot_id, trajectory, group):
         link_states = []
-        joint_states = {}
+        joint_states = OrderedDict()
+        joint_positions = []
+        joint_velocities = []
+        joint_torques = []
+
         self.reset_joint_states_to(robot_id, trajectory, group)
 
-        for joint_name in group:
-            joint_states[joint_name] = sim.getJointState(robot_id, self.joint_name_to_id[joint_name])
-
-            if joint_name in group:
-                state = sim.getLinkState(robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
+        for i in range(len(self.joint_ids)):
+            if self.joint_id_to_name[i] in group:
+                state = sim.getLinkState(robot_id, self.joint_ids[i], computeLinkVelocity=1,
                                      computeForwardKinematics=1)
 
                 link_states.append(state)
 
-        joint_positions = [joint_states[state][0] for state in group]
-        joint_velocities = [joint_states[state][1] for state in group]
-        joint_torques = [joint_states[state][3] for state in group]
+            # joint_states[self.joint_id_to_name[i]] = sim.getJointState(robot_id, self.joint_ids[i])
+            joint_state = sim.getJointState(robot_id, self.joint_ids[i])
+
+            joint_positions.append(joint_state[0])
+            joint_velocities.append(joint_state[1])
+            joint_torques.append(joint_state[3])
+
+        # for joint_name in group:
+        #     joint_states[joint_name] = sim.getJointState(robot_id, self.joint_name_to_id[joint_name])
+        #
+        #     if joint_name in group:
+        #         state = sim.getLinkState(robot_id, self.joint_name_to_id[joint_name], computeLinkVelocity=1,
+        #                              computeForwardKinematics=1)
+        #
+        #         link_states.append(state)
+
+        # joint_positions = [joint_states[state][0] for state in joint_states]
+        # joint_velocities = [joint_states[state][1] for state in joint_states]
+        # joint_torques = [joint_states[state][3] for state in joint_states]
 
         return [joint_positions, joint_velocities, joint_torques], link_states
 
@@ -259,7 +279,10 @@ class SimulationWorld(ISimulationWorldBase):
                     = self.get_joint_and_link_states_at(robot_id, current_time_step_of_trajectory, group)
                 current_robot_state = current_robot_state[0]
                 next_robot_state = next_robot_state[0]
-                zero_vec = [0.0] * len(current_robot_state)
+                zero_vec = [0.0] * len(self.joint_ids)
+
+                print "gjrg"
+                print len(zero_vec), len(current_robot_state)
 
 
                 # self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
@@ -571,6 +594,8 @@ class SimulationWorld(ISimulationWorldBase):
             joint_info = sim.getJointInfo(robot_id, i)
             self.joint_name_to_id[joint_info[1].decode('UTF-8')] = joint_info[0]
 
+        self.joint_id_to_name = dict(zip(self.joint_name_to_id.values(), self.joint_name_to_id.keys()))
+
     def reset_joint_states_to(self, robot_id, trajectory, joints):
         if len(trajectory) == len(joints):
             for i in range(len(trajectory)):
@@ -596,7 +621,7 @@ class SimulationWorld(ISimulationWorldBase):
         return status
 
     def reset_joint_states(self, robot_id, joints, group):
-        assert len(joints) == len(group)
+        # assert len(joints) == len(group)
         for i in range(len(group)):
             sim.resetJointState(robot_id, self.joint_name_to_id[group[i]], joints[i])
         status = "Reset joints to start pose is complete"

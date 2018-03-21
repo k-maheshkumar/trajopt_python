@@ -82,28 +82,29 @@ class PlannerExample:
         collision_check_distance = 0.15
         collision_safe_distance = 0.1
 
-        self.planner.world.reset_joint_states(self.robot_id, goal_state.values(), group)
+        self.planner.world.reset_joint_states(self.robot_id, start_state.values(), group)
 
 
-        import pybullet as p
-        p.connect(p.SHARED_MEMORY, "localhost")
-        joints = [i for i in range(p.getNumJoints(self.robot_id))]
-
-        ur5_wrist_3_joint = 13
-        zero_vec = [0] * p.getNumJoints(self.robot_id)
-        # for i in range(p.getNumJoints(self.robot_id)):
-        #     print p.getJointInfo(self.robot_id, i)
-        current_robot_state = p.getJointStates(self.robot_id, joints)
-
-        print "current_robot_state", len(current_robot_state)
-
-        current_position_jacobian, _ = p.calculateJacobian(self.robot_id, ur5_wrist_3_joint,
-                                                             # closest_pt_on_A_at_t,
-                                                             [0, 0, 0],
-                                                             current_robot_state,
-                                                             zero_vec, zero_vec)
-
-        print current_position_jacobian
+        # import pybullet as p
+        # p.connect(p.SHARED_MEMORY, "localhost")
+        # joints = [i for i in range(p.getNumJoints(self.robot_id))]
+        #
+        # ur5_wrist_3_joint = 13
+        # zero_vec = [0] * p.getNumJoints(self.robot_id)
+        # # for i in range(p.getNumJoints(self.robot_id)):
+        # #     print p.getJointInfo(self.robot_id, i)
+        # current_robot_state = p.getJointStates(self.robot_id, joints)
+        #
+        # print "current_robot_state", len(current_robot_state)
+        # print current_robot_state[0]
+        #
+        # current_position_jacobian, _ = p.calculateJacobian(self.robot_id, ur5_wrist_3_joint,
+        #                                                      # closest_pt_on_A_at_t,
+        #                                                      [0, 0, 0],
+        #                                                      current_robot_state[0],
+        #                                                      zero_vec, zero_vec)
+        #
+        # print current_position_jacobian
         # #
         #
         # status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
@@ -114,8 +115,8 @@ class PlannerExample:
         # self.planner.execute_trajectory()
         # self.planner.world.step_simulation_for(5)
         # time.sleep(5)
-        import sys
-        sys.exit(0)
+        # import sys
+        # sys.exit(0)
 
 
 def main():

@@ -5,6 +5,7 @@ import scripts.utils.yaml_paser as yaml
 from scripts.utils.utils import Utils as utils
 import logging
 import os
+from collections import OrderedDict
 
 class TrajectoryOptimizationPlanner():
     def __init__(self, **kwargs):
@@ -26,13 +27,13 @@ class TrajectoryOptimizationPlanner():
 
         if "robot_config" in kwargs:
             robot_config = kwargs["robot_config"]
+            self.load_configs(robot_config)
 
         self.logger = logging.getLogger(main_logger_name)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
         self.robot = Robot(main_logger_name, verbose, log_file)
         self.world = SimulationWorld(**kwargs)
         self.world.toggle_rendering(0)
-        self.load_configs(robot_config)
 
     def load_configs(self, config_file=None):
         file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
@@ -57,25 +58,23 @@ class TrajectoryOptimizationPlanner():
 
         return self.robot.id
 
-    def load_from_urdf(self, urdf_file, position, orientation=None, use_fixed_base=True):
-        urdf_id = self.world.load_urdf(urdf_file, position, orientation, use_fixed_base)
+    def load_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=True):
+        urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         return urdf_id
 
-    def add_constraint_from_urdf(self, urdf_file, position, orientation=None, use_fixed_base=True):
-        urdf_id = self.world.load_urdf(urdf_file, position, orientation, use_fixed_base)
+    def add_constraint_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=True):
+        urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         self.world.add_collision_constraints(urdf_id)
         return urdf_id
 
-    def add_constraint(self, shape, mass, position, size=None, radius=None, height=None, orientation=None):
-        shape_id = self.world.create_constraint(shape, mass, position, size, radius, height, orientation)
+    def add_constraint(self, name, shape, mass, position, size=None, radius=None, height=None, orientation=None):
+        shape_id = self.world.create_constraint(name, shape, mass, position, size, radius, height, orientation)
         self.world.add_collision_constraints(shape_id)
         return shape_id
 
     def add_constraint_with_id(self, constraint_id):
         self.world.add_collision_constraints(constraint_id)
 
-    # def get_trajectory(self, group, start_state, goal_state, samples, duration, collision_safe_distance,
-    #                    collision_check_distance):
     def get_trajectory(self, **kwargs):
 
         if "group" in kwargs:
@@ -87,7 +86,7 @@ class TrajectoryOptimizationPlanner():
             if type(start_state) is str:
                 start_state = self.robot_config["joint_configurations"][start_state]
 
-            if type(start_state)is dict:
+            if type(start_state)is dict or type(start_state) is OrderedDict:
                 start_state = start_state.values()
 
             self.world.reset_joint_states(self.robot.id, start_state, group)
@@ -98,7 +97,7 @@ class TrajectoryOptimizationPlanner():
             if type(goal_state) is str:
                 goal_state = self.robot_config["joint_configurations"][goal_state]
 
-            if type(goal_state)is dict:
+            if type(goal_state)is dict or type(goal_state)is OrderedDict:
                 goal_state = goal_state.values()
         if "samples" in kwargs:
             samples = kwargs["samples"]
@@ -118,50 +117,45 @@ class TrajectoryOptimizationPlanner():
             collision_check_distance = 0.1
 
         current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
+
         self.robot.init_plan_trajectory(group=group, current_state=current_robot_state,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance)
         self.world.toggle_rendering_while_planning(False)
-        #
-        self.robot.calulate_trajecotory(self.callback_function_from_solver)
-        #
-        status = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
+        status, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
+        is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
                                                          group,
                                                          collision_safe_distance)
-
         self.world.toggle_rendering_while_planning(True)
 
-        return status, self.robot.planner.get_trajectory()
+        return status, is_collision_free, self.robot.planner.get_trajectory()
 
     def plan_trajectory(self, planning_group, goal_state, samples=20, duration=10,
                         collision_safe_distance=0.1,
                        collision_check_distance=0.05, solver_config=None):
-        current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, planning_group)
-        self.robot.init_plan_trajectory(group=planning_group, current_state=current_robot_state,
+        status, is_collision_free, _ = self.get_trajectory(group=planning_group,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance,
                                         solver_config=solver_config)
-        self.world.toggle_rendering_while_planning(False)
 
-        status, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
-
-        can_execute_trajectory = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
-                                                                         goal_state.keys(),
-                                                                         collision_safe_distance)
-
-        self.world.toggle_rendering_while_planning(True)
-
-        return status, can_execute_trajectory
+        return status, is_collision_free
 
     def execute_trajectory(self):
-
-        # self.robot.get_trajectory().final = \
-        #     np.asarray(utils.interpolate_list(self.robot.planner.get_trajectory().final.T, 10)).T.tolist()
         self.world.execute_trajectory(self.robot, self.robot.planner.get_trajectory())
 
         return "Trajectory execution completed"
+
+    def reset_robot_to(self, **kwargs):
+        if "group" in kwargs:
+            group = kwargs["group"]
+            if type(group) is str:
+                group = self.robot_config["joints_groups"][kwargs["group"]]
+        status = self.world.reset_joints_to_random_states(self.robot, group)
+        self.world.step_simulation_for(0.2)
+
+        return status
 
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
         constraints, lower_limit, upper_limit = None, None, None

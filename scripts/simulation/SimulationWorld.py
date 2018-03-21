@@ -58,6 +58,7 @@ class SimulationWorld(ISimulationWorldBase):
         self.joint_name_to_id = {}
         self.start_state_for_traj_planning = {}
         self.end_state_for_traj_planning = {}
+        self.scene_items = {}
 
 
         self.planning_group = []
@@ -125,7 +126,7 @@ class SimulationWorld(ISimulationWorldBase):
     def set_gravity(self, x=0, y=0, z=-10):
         sim.setGravity(x, y, z)
 
-    def create_constraint(self, shape, mass, position, size=None, radius=None, height=None, orientation=None):
+    def create_constraint(self, name, shape, mass, position, size=None, radius=None, height=None, orientation=None):
         if position is not None:
             if radius is not None:
                 col_id = sim.createCollisionShape(shape, radius=radius, height=height)
@@ -134,19 +135,21 @@ class SimulationWorld(ISimulationWorldBase):
                 col_id = sim.createCollisionShape(shape, halfExtents=size)
                 vis_id = sim.createCollisionShape(shape, halfExtents=size)
             shape_id = sim.createMultiBody(mass, col_id, vis_id, position)
+        self.scene_items[name] = shape_id
 
         return shape_id
 
     def add_collision_constraints(self, constraint_id):
         self.collision_constraints.append(constraint_id)
 
-    def load_urdf(self, urdf_file, position, orientation=None, use_fixed_base=True):
+    def load_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=True):
 
         if orientation is None:
             urdf_id = sim.loadURDF(urdf_file, basePosition=position, useFixedBase=use_fixed_base)
         else:
             urdf_id = sim.loadURDF(urdf_file, basePosition=position,
                                    baseOrientation=orientation, useFixedBase=use_fixed_base)
+        self.scene_items[name] = urdf_id
 
         return urdf_id
 
@@ -334,9 +337,6 @@ class SimulationWorld(ISimulationWorldBase):
                                                                                          time_step_count)
 
                                 # if link_index == 6:
-                                jacob = self.robot.tree.get_jacobian_of_a_chain(current_robot_state,
-                                                                                current_closest_point_on_link_in_link_frame
-                                                                                )
 
                                 # print "----------------------------------"
                                 # print "time_step_count", time_step_count
@@ -587,9 +587,10 @@ class SimulationWorld(ISimulationWorldBase):
 
         motor_dir = np.random.uniform(-1, 1, size=len(joints))
         half_pi = 1.57079632679
-        for joint in joints:
-            for j in range(len(joints)):
-                sim.resetJointState(robot_id, self.joint_name_to_id[joint], motor_dir[j] * half_pi * (-(-1)**j))
+        for j, joint in enumerate(joints):
+            # motor_dir = np.random.uniform(robot.model.joint_map[joint].limit.lower,
+            #                               robot.model.joint_map[joint].limit.upper, size=1)
+            sim.resetJointState(robot_id, self.joint_name_to_id[joint], motor_dir[j] * half_pi * (-(-1)**j))
         status = "Reset joints to random pose is complete"
         self.logger.info(status)
         return status

@@ -4,7 +4,7 @@ sqp:
   improve_ratio_threshold: 0.25
   initial_penalty: 2
   max_iteration: 20
-  max_penalty: 1e4
+  max_penalty: 99.99
   max_trust_region_size: 5
   min_actual_redution: 1e-4
   min_actual_worse_redution: -100
@@ -23,5 +23,5 @@ sqp:
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
   trust_region_norm: inf
-  trust_region_size: 3
+  trust_region_size: 3.0
   trust_shrink_ratio: 0.25

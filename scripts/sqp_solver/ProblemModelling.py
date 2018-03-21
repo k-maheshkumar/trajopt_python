@@ -120,23 +120,22 @@ class ProblemModelling:
                 min_vel = -joint[2].velocity
                 joint_lower_limit = joint[2].lower
                 joint_upper_limit = joint[2].upper
-                start = joint[0]
-                end = joint[1]
+                start_state = joint[0]
+                end_state = joint[1]
             elif type(joint) is dict:
                 max_vel = self.joints[joint]["limit"]["velocity"]
                 min_vel = -self.joints[joint]["limit"]["velocity"]
                 joint_lower_limit = self.joints[joint]["limit"]["lower"]
                 joint_upper_limit = self.joints[joint]["limit"]["upper"]
-                start = self.joints[joint]["states"]["start"]
-                end = self.joints[joint]["states"]["end"]
+                start_state = self.joints[joint]["states"]["start"]
+                end_state = self.joints[joint]["states"]["end"]
             else:
                 max_vel = self.joints[joint]["limit"].velocity
                 min_vel = -self.joints[joint]["limit"].velocity
                 joint_lower_limit = self.joints[joint]["limit"].lower
                 joint_upper_limit = self.joints[joint]["limit"].upper
-                start = self.joints[joint]["states"]["start"]
-                end = self.joints[joint]["states"]["end"]
-
+                start_state = self.joints[joint]["states"]["start"]
+                end_state = self.joints[joint]["states"]["end"]
 
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)
@@ -146,8 +145,6 @@ class ProblemModelling:
             self.velocity_upper_limits.append(np.full((1, self.samples - 1), max_vel))
             self.joints_lower_limits.append(joint_lower_limit)
             self.joints_upper_limits.append(joint_upper_limit)
-            start_state = np.round(start, self.decimals_to_round)
-            end_state = np.round(end, self.decimals_to_round)
             start_and_goal_lower_limits.append(np.round(start_state, self.decimals_to_round))
             start_and_goal_upper_limits.append(np.round(end_state, self.decimals_to_round))
             self.initial_guess.append(utils.interpolate(start_state, end_state, self.samples, self.decimals_to_round))
@@ -186,11 +183,11 @@ class ProblemModelling:
                     np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
                     # lower_collision_limit = np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
                     lower_collision_limit = self.collision_safe_distance - initial_signed_distance
-                    upper_collision_limit = initial_signed_distance - self.collision_safe_distance
                     lower_collision_limit = lower_collision_limit.flatten()
-                    upper_collision_limit = upper_collision_limit.flatten()
-        return np.asarray([current_state_normal_times_jacobian, next_state_normal_times_jacobian]), \
-               lower_collision_limit, upper_collision_limit
+                    # upper_collision_limit = initial_signed_distance - self.collision_safe_distance
+                    # upper_collision_limit = upper_collision_limit.flatten()
+        return np.hstack([current_state_normal_times_jacobian, next_state_normal_times_jacobian]), \
+               lower_collision_limit, None
 
     def get_velocity_matrix(self):
 

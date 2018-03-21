@@ -8,7 +8,6 @@ import PyKDL as kdl
 import itertools
 from scripts.utils.utils import Utils as utils
 
-
 class SimulationWorld(ISimulationWorldBase):
     def __init__(self, **kwargs):
 
@@ -68,6 +67,8 @@ class SimulationWorld(ISimulationWorldBase):
         self.planning_samples = 0
         self.collision_safe_distance = 0.4
         self.collision_check_distance = 0.2
+
+        self.robot = None
 
         if use_real_time_simulation:
             sim.setRealTimeSimulation(use_real_time_simulation)
@@ -306,7 +307,7 @@ class SimulationWorld(ISimulationWorldBase):
                                 initial_signed_distance.append(dist)
                                 closest_pts.append(closest_pt_on_A_at_t)
 
-                                current_position_jacobian, _ = sim.calculateJacobian(robot_id, link_index,
+                                current_position_jacobian, current_orientation_jacobian = sim.calculateJacobian(robot_id, link_index,
                                                                                      # closest_pt_on_A_at_t,
                                                                                      current_closest_point_on_link_in_link_frame,
                                                                                      current_robot_state,
@@ -316,6 +317,18 @@ class SimulationWorld(ISimulationWorldBase):
                                                                                          len(trajectory),
                                                                                          len(group),
                                                                                          time_step_count)
+                                # jacob = self.robot.tree.get_jacobian_of_a_chain(current_robot_state)
+                                #
+                                # print "----------------------------------"
+                                # print "time_step_count", time_step_count
+                                # print "link_index", link_index
+                                # print "sim current_position_jacobian"
+                                # print current_position_jacobian
+                                # print "sim current_orientation_jacobian"
+                                # print current_orientation_jacobian
+                                # print "from tree current_orientation_jacobian"
+                                # print jacob
+                                # print "**********************************"
 
                                 next_link_position_in_world_frame = next_link_state[4]
                                 next_link_orentation_in_world_frame = next_link_state[5]

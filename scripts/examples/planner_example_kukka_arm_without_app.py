@@ -21,6 +21,8 @@ class PlannerExample:
         self.planner = TrajectoryOptimizationPlanner(**config)
         # self.planner = TrajectoryOptimizationPlanner(urdf_file, use_gui=False)
 
+        self.planner.world.robot = self.planner.robot
+
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
         self.robot_id = self.planner.load_robot(urdf_file, position=[0, 0.25, 0.6])
@@ -55,9 +57,9 @@ class PlannerExample:
         # goal_state["lbr_iiwa_joint_6"] = 1.5857854098720727
         # goal_state["lbr_iiwa_joint_7"] = 1.5726221954434347
 
-        start_state = "pick"
-        goal_state = "place"
-        group = "full_body"
+        start_state = "pick1"
+        goal_state = "place1"
+        group = "full_body1"
 
         # start_state = [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
         #              1.5855963769735366, 1.5770985888989753, 1.5704531145724918]

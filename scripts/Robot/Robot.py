@@ -3,6 +3,7 @@ from scripts.utils.utils import Utils as utils
 from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
 import itertools
+from scripts.Robot.ModelandTree import RobotTree
 
 class Robot:
     def __init__(self, logger_name=__name__, verbose=False, log_file=False):
@@ -12,11 +13,17 @@ class Robot:
         self.logger = logging.getLogger(logger_name + __name__)
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
+
+
     def load_robot_model(self, urdf_file=None):
         if urdf_file is not None:
             self.model = URDF.from_xml_file(urdf_file)
         else:
             self.model = URDF.from_parameter_server()
+
+        base_link, end_link = "lbr_iiwa_link_0", "lbr_iiwa_link_7"
+
+        self.tree = RobotTree(self.model, base_link, end_link)
 
     def get_trajectory(self):
         return self.planner.trajectory

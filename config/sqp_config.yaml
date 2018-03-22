@@ -5,7 +5,7 @@ sqp:
   initial_penalty: 2
   max_iteration: 20
   max_penalty: 99.99
-  max_trust_region_size: 5
+  max_trust_region_size: 10
   min_actual_redution: 1e-4
   min_actual_worse_redution: -100
   min_equality_norm: 1e-2

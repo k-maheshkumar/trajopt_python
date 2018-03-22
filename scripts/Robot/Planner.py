@@ -171,9 +171,8 @@ class TrajectoryPlanner:
         status = "-1"
         if self.solver_status == "Solved":
             can_execute_trajectory = True
-            print "Optimal Trajectory has been found in " + str(planning_time) + " secs"
-            status = "Optimal Trajectory has been found in " + str(end - start) + " secs"
-            self.logger.info(status)
+            status = "Total time taken to calculate Optimal Trajectory: " + str(planning_time) + " secs"
+            self.logger.debug(status)
         else:
             status = "Couldn't find the trajectory for the input problem"
             self.logger.info(status)

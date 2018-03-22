@@ -7,6 +7,7 @@ import logging
 import os
 from collections import OrderedDict
 from scripts.DB.Mongo_driver import MongoDriver
+import time
 
 
 class TrajectoryOptimizationPlanner():
@@ -15,7 +16,8 @@ class TrajectoryOptimizationPlanner():
         if "logger_name" in kwargs:
             main_logger_name = kwargs["logger_name"]
         else:
-            main_logger_name = "Trajectory_Planner"
+            # main_logger_name = "Trajectory_Planner."
+            main_logger_name = "Trajectory_Optimization_Planner."
 
         if "verbose" in kwargs:
             verbose = kwargs["verbose"]
@@ -40,12 +42,14 @@ class TrajectoryOptimizationPlanner():
             self.db_driver = MongoDriver(db_name)
         else:
             self.db_driver = None
+            self.save_problem = None
 
-        self.logger = logging.getLogger(main_logger_name)
-        utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
         self.robot = Robot(main_logger_name, verbose, log_file)
         self.world = SimulationWorld(**kwargs)
+        self.logger = logging.getLogger(main_logger_name)
+        utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
         self.world.toggle_rendering(0)
+        self.elapsed_time = 0
 
     def load_configs(self, config_file=None):
         file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
@@ -136,7 +140,9 @@ class TrajectoryOptimizationPlanner():
                                         collision_check_distance=collision_check_distance)
 
         self.world.toggle_rendering_while_planning(False)
-        status, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
+        _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
+        status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
+        self.logger.info(status)
         is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
                                                          group,
                                                          collision_safe_distance)
@@ -152,7 +158,7 @@ class TrajectoryOptimizationPlanner():
             planning_request["collision_safe_distance"] = collision_safe_distance
             planning_request["collision_check_distance"] = collision_check_distance
             result = OrderedDict()
-            result["planning_time"] = planning_time
+            result["planning_time"] = self.elapsed_time
             result["is_collision_free"] = is_collision_free
             result["planning_request"] = planning_request
             result["trajectory"] = self.robot.planner.trajectory.final.tolist()
@@ -166,7 +172,6 @@ class TrajectoryOptimizationPlanner():
 
             # for i in res:
             #     print i
-
 
         return status, is_collision_free, self.robot.planner.get_trajectory()
 
@@ -196,14 +201,16 @@ class TrajectoryOptimizationPlanner():
 
         return status
 
-    def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
+    def callback_function_from_solver(self, new_trajectory, delta_trajectory=None, elapsed_time_in_solver=0):
+
         constraints, lower_limit, upper_limit = None, None, None
         trajectory = np.split(new_trajectory, self.robot.planner.no_of_samples)
         self.robot.planner.trajectory.add_trajectory(trajectory)
-
+        start = time.time()
         collision_infos = self.world.get_collision_infos(self.robot.id, trajectory, self.robot.planner.current_planning_joint_group,
                                                          distance=self.robot.planner.collision_check_distance)
-
+        end = time.time()
+        self.elapsed_time = (end - start) + elapsed_time_in_solver
         if len(collision_infos[2]) > 0:
             constraints, lower_limit, upper_limit = \
                 self.robot.planner.problem_model.update_collision_infos(collision_infos, self.robot.planner.collision_safe_distance)

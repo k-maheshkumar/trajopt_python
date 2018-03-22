@@ -12,9 +12,9 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": False,
+            "verbose": True,
             "log_file": False,
-            "save_problem": True,
+            # "save_problem": True,
             "robot_config": "robot_config_kukka_arm.yaml"
 
         }
@@ -48,8 +48,8 @@ class PlannerExample:
         goal_state = "place"
         group = "full_arm"
 
-        duration = 10
-        samples = 10
+        duration = 20
+        samples = 20
         collision_check_distance = 0.15
         collision_safe_distance = 0.1
 
@@ -60,10 +60,10 @@ class PlannerExample:
                                                         )
         print("is trajectory free from collision: ", is_collision_free)
         print status
-        # self.planner.execute_trajectory()
-        # self.planner.world.step_simulation_for(2)
-        # import sys
-        # sys.exit(0)
+        self.planner.execute_trajectory()
+        self.planner.world.step_simulation_for(2)
+        import sys
+        sys.exit(0)
 
 
 def main():

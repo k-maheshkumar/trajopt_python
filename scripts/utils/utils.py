@@ -109,3 +109,4 @@ class Utils:
         log_console_handler.setFormatter(formatter)
         # add the handlers to the logger
         logger.addHandler(log_console_handler)
+

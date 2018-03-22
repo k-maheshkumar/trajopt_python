@@ -7,6 +7,7 @@ import logging
 import os
 import time
 
+elapsed_time = 0
 
 '''
         minimize
@@ -318,6 +319,8 @@ class SQPsolver:
 
         dynamic_constraints_satisfied = False
 
+        global elapsed_time
+
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
@@ -326,7 +329,7 @@ class SQPsolver:
                 # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
-                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
+                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k, elapsed_time)
                 while trust_box_size >= min_trust_box_size:
                     if callback_function is not None:
                         if constraints is not None:
@@ -336,7 +339,10 @@ class SQPsolver:
                                                                                         constraints, lower_limit,
                                                                                         upper_limit)
                             end = time.time()
-                            self.logger.info("each solve_problem time: " + str(end - start))
+                            elapsed_time += end - start
+
+                            # self.logger.info("each solve_problem time: " + str(end - start))
+                            # self.logger.info("time elapsed in solve_problem function: " + str(elapsed_time))
 
                         else:
                             dynamic_constraints_satisfied = True

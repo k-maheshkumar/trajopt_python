@@ -123,6 +123,9 @@ class SQPsolver:
         print (self.lb)
         print ("ub")
         print (self.ub)
+        print ("initial guess")
+        print (self.initial_guess)
+
 
     def update_prob(self, G=None, lbG=None, ubG=None, A=None, b=None):
         if G is not None:

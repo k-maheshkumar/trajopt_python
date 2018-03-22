@@ -251,7 +251,7 @@ class SimulationWorld(ISimulationWorldBase):
             jacobian_matrix = np.hstack([jaco1, np.asarray(position_jacobian)])
         elif len(jaco1) == 0 and len(jaco2) > 0:
             jacobian_matrix = np.vstack(
-                [np.asarray(position_jacobian).reshape(1, 3, 7), jaco2])
+                [np.asarray(position_jacobian).reshape(1, 3, planning_group_length), jaco2])
             jacobian_matrix = np.hstack(jacobian_matrix)
 
         return jacobian_matrix
@@ -281,8 +281,8 @@ class SimulationWorld(ISimulationWorldBase):
                 next_robot_state = next_robot_state[0]
                 zero_vec = [0.0] * len(self.joint_ids)
 
-                print "gjrg"
-                print len(zero_vec), len(current_robot_state)
+                # print "gjrg"
+                # print len(zero_vec), len(current_robot_state)
 
 
                 # self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
@@ -479,7 +479,19 @@ class SimulationWorld(ISimulationWorldBase):
 
         for i in range(int(trajectory.no_of_samples)):
             for joint_name, corresponding_trajectory in trajectory.trajectory_by_name.items():
-                sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
+                if robot.model.joint_map[joint_name].type == "prismatic":
+                    print robot.model.joint_map[joint_name]
+                    sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
+                                          controlMode=sim.VELOCITY_CONTROL,
+                                          targetPosition=0,
+                                          targetVelocity=corresponding_trajectory[i],
+                                          force=robot.model.joint_map[joint_name].limit.effort,
+                                          positionGain=0.03,
+                                          velocityGain=.5,
+                                          maxVelocity=float(robot.model.joint_map[joint_name].limit.velocity)
+                                          )
+                else:
+                    sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
                                           controlMode=sim.POSITION_CONTROL,
                                           targetPosition=corresponding_trajectory[i], targetVelocity=0,
                                           force=robot.model.joint_map[joint_name].limit.effort,
@@ -580,9 +592,9 @@ class SimulationWorld(ISimulationWorldBase):
                     if distance < 0:
                         collision = False
                         break
-                if collision:
+                if not collision:
                     break
-            if collision:
+            if not collision:
                 break
 
         self.reset_joint_states(robot_id, start_state, group)

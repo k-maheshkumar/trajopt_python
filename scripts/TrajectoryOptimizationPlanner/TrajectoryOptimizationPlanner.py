@@ -6,6 +6,8 @@ from scripts.utils.utils import Utils as utils
 import logging
 import os
 from collections import OrderedDict
+from scripts.DB.Mongo_driver import MongoDriver
+
 
 class TrajectoryOptimizationPlanner():
     def __init__(self, **kwargs):
@@ -28,6 +30,16 @@ class TrajectoryOptimizationPlanner():
         if "robot_config" in kwargs:
             robot_config = kwargs["robot_config"]
             self.load_configs(robot_config)
+        if "save_problem" in kwargs:
+            self.save_problem = kwargs["save_problem"]
+            if "db_name" in kwargs:
+                db_name = kwargs["db_name"]
+            else:
+                db_name = "trajectory_planner"
+
+            self.db_driver = MongoDriver(db_name)
+        else:
+            self.db_driver = None
 
         self.logger = logging.getLogger(main_logger_name)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
@@ -122,12 +134,39 @@ class TrajectoryOptimizationPlanner():
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance)
+
         self.world.toggle_rendering_while_planning(False)
-        status, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
+        status, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
         is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
                                                          group,
                                                          collision_safe_distance)
         self.world.toggle_rendering_while_planning(True)
+
+        if self.save_problem and self.db_driver is not None:
+            planning_request = OrderedDict()
+            planning_request["samples"] = samples
+            planning_request["duration"] = duration
+            planning_request["group"] = group
+            planning_request["start_state"] = current_robot_state
+            planning_request["goal_state"] = goal_state
+            planning_request["collision_safe_distance"] = collision_safe_distance
+            planning_request["collision_check_distance"] = collision_check_distance
+            result = OrderedDict()
+            result["planning_time"] = planning_time
+            result["is_collision_free"] = is_collision_free
+            result["planning_request"] = planning_request
+            result["trajectory"] = self.robot.planner.trajectory.final.tolist()
+            result["solver_config"] = self.robot.planner.sqp_solver.solver_config
+
+            self.db_driver.insert(result)
+            # res = self.db_driver.find({"is_collision_free": True})
+            # res = self.db_driver.find({"planning_request.samples": 10})
+
+            # print "ghfdkghdghdl: ", res
+
+            # for i in res:
+            #     print i
+
 
         return status, is_collision_free, self.robot.planner.get_trajectory()
 
@@ -171,3 +210,17 @@ class TrajectoryOptimizationPlanner():
             self.robot.planner.update_prob()
 
         return constraints, lower_limit, upper_limit
+
+    # def save_problem_in_db(self, **request):
+    #     for i in request:
+    #         print i
+    #
+    #     db_driver = MongoDriver("trajectory_planner")
+    #     db_driver.insert(request)
+
+
+if __name__ == '__main__':
+
+    temp = {}
+    planner = TrajectoryOptimizationPlanner(**temp)
+    planner.save_problem_in_db("", "", "")

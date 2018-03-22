@@ -2,8 +2,13 @@
 **/*.*~
 **/*.pyc
 */*/*LOCAL*
+*/*/*REMOTE*
 */*/*BASE*
 */*/*BACKUP*
 *.orig
 */*/*bak*
 */*/*back*
+world_props
+scripts/qpsolvers
+**/*.log
+**/*.txt

@@ -137,6 +137,11 @@ class ProblemModelling:
                 start_state = self.joints[joint]["states"]["start"]
                 end_state = self.joints[joint]["states"]["end"]
 
+            if joint_lower_limit is None:
+                joint_lower_limit = -3
+            if joint_upper_limit is None:
+                joint_upper_limit = 3
+
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)
 

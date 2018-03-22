@@ -30,7 +30,6 @@ class TrajectoryPlanner:
         self.delta_max = -1
         self.joints = -1
         self.num_of_joints = -1
-        self.solver = -1
         self.solver =  -1
         self.duration = -1
         self.no_of_samples = -1
@@ -165,19 +164,20 @@ class TrajectoryPlanner:
         start = time.time()
         self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
+        planning_time = end - start
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
         self.trajectory.update(trajectory, self.current_planning_joint_group)
         self.trajectory.plot_trajectories()
         status = "-1"
         if self.solver_status == "Solved":
             can_execute_trajectory = True
-            print "Optimal Trajectory has been found in " + str(end - start) + " secs"
+            print "Optimal Trajectory has been found in " + str(planning_time) + " secs"
             status = "Optimal Trajectory has been found in " + str(end - start) + " secs"
             self.logger.info(status)
         else:
             status = "Couldn't find the trajectory for the input problem"
             self.logger.info(status)
-        return status, can_execute_trajectory
+        return status, planning_time, can_execute_trajectory
 
     def get_trajectory(self):
         return self.trajectory

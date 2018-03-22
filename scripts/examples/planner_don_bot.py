@@ -12,7 +12,7 @@ class PlannerExample:
         urdf_file = location_prefix + "iai_donbot_description/robots/don_bot.urdf"
 
         config = {
-            # "use_gui": True,
+            "use_gui": True,
             "verbose": False,
             "log_file": True,
             "robot_config": "robot_config_don_bot.yaml"
@@ -40,24 +40,24 @@ class PlannerExample:
         start_state = OrderedDict()
         goal_state = OrderedDict()
 
-        start_state["odom_x_joint"] = 0
-        start_state["odom_y_joint"] = 0
-        start_state["odom_z_joint"] = 0
+        start_state["odom_x_joint"] = 0.01
+        start_state["odom_y_joint"] = 0.01
+        start_state["odom_z_joint"] = 0.01
 
         start_state["ur5_shoulder_pan_joint"] = 2.3823357809267463
         start_state["ur5_shoulder_lift_joint"] = 2.9299975516996142
         start_state["ur5_elbow_joint"] = -1.9762726255540713
         start_state["ur5_wrist_1_joint"] = 0.8666279970481103
-        start_state["ur5_wrist_2_joint"] = -1.5855963769735366
+        start_state["ur5_wrist_2_joint"] = 1.5855963769735366
         start_state["ur5_wrist_3_joint"] = -1.5770985888989753
 
         start_state["gripper_joint"] = 0
         start_state["gripper_base_gripper_left_joint"] = 0
         # start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
 
-        goal_state["odom_x_joint"] = 0
-        goal_state["odom_y_joint"] = 0
-        goal_state["odom_z_joint"] = 0
+        goal_state["odom_x_joint"] = 0.05
+        goal_state["odom_y_joint"] = 0.05
+        goal_state["odom_z_joint"] = 0.05
 
         goal_state["ur5_shoulder_pan_joint"] = 2.08180533826032865
         goal_state["ur5_shoulder_lift_joint"] = -1.5474152457596664
@@ -122,11 +122,12 @@ class PlannerExample:
         # print current_position_jacobian
 
 
-        status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
+        _, status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
                                                          goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)
+        print trajectory.final
         self.planner.execute_trajectory()
         self.planner.world.step_simulation_for(5)
         time.sleep(5)

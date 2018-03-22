@@ -9,12 +9,22 @@ class MongoDriver():
         self.db_collection = self.client[db_name]
         self.db = self.db_collection.db_name
 
-    def find(self, query):
+    def find_one(self, query):
         return self.db.find_one(query)
 
-    def insert(self, request):
+    def find(self, query):
+        return self.db.find(query)
 
+    def insert(self, request):
+        print request
         self.db.insert(request)
+        print "saved request into database . . . . . . .  ."
+
+    def say_hello(self):
+        print "hello . . ."
+
+    def drop(self):
+        self.db.drop()
 
 
 def main():
@@ -22,7 +32,7 @@ def main():
     db = MongoDriver("trajectory_planner")
     request = {
         "samples": 5,
-        "duration": 6,
+        "duration": 16,
         "max_iteration": 1000,
         "max_penalty": 500,
         "max_delta": 5,
@@ -34,7 +44,11 @@ def main():
         ]
     }
     # db.insert(request)
-    print(db.find({"samples": 5}))
+    # db.drop()
+    result = (db.find({"is_collision_free": True}))
+    print result
+    # for i in result:
+    #     print i
 
 
 if __name__ == '__main__':

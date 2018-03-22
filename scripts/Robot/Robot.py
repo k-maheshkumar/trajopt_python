@@ -114,8 +114,8 @@ class Robot:
 
     def calulate_trajecotory(self, callback_function=None):
         status, can_execute_trajectory = "No trajectory has been found", False
-        status, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)
-        return status, can_execute_trajectory
+        status, planning_time, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)
+        return status, planning_time, can_execute_trajectory
 
     # def get_robot_trajectory(self):
     #     return self.planner.trajectory.get_trajectory()

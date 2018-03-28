@@ -55,8 +55,8 @@ class PlannerExample:
         start_state["gripper_base_gripper_left_joint"] = 0
         # start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
 
-        goal_state["odom_x_joint"] = 0.05
-        goal_state["odom_y_joint"] = 0.05
+        goal_state["odom_x_joint"] = 1
+        goal_state["odom_y_joint"] = 1
         goal_state["odom_z_joint"] = 0.05
 
         goal_state["ur5_shoulder_pan_joint"] = 2.08180533826032865
@@ -121,18 +121,17 @@ class PlannerExample:
         #
         # print current_position_jacobian
 
-
         _, status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
                                                          goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)
-        print trajectory.final
+        # print trajectory.final
         self.planner.execute_trajectory()
-        self.planner.world.step_simulation_for(5)
+        # self.planner.world.step_simulation_for(5)
         time.sleep(5)
-        import sys
-        sys.exit(0)
+        # import sys
+        # sys.exit(0)
 
 
 def main():

@@ -75,8 +75,6 @@ class SQPsolver:
         else:
             self.initial_guess = np.zeros((self.P.shape[0], 1)).flatten()
 
-        self.analyse_inputs()
-
         if "solver_config" in kwargs:
             solver_config = kwargs["solver_config"]
         else:
@@ -99,6 +97,8 @@ class SQPsolver:
         self.penalty_norm = self.solver_config["penalty_norm"]
 
         self.trust_region_norm = self.solver_config["trust_region_norm"]
+
+        self.analyse_inputs()
 
         if solver is not None:
             self.solver = solver
@@ -139,8 +139,16 @@ class SQPsolver:
             self.A = A
         if b is not None:
             self.b = b
+        self.analyse_inputs()
 
     def analyse_inputs(self):
+        if self.lbG is not None:
+            self.lbG = np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
+                                 for lb in self.lbG])
+        if self.ubG is not None:
+            self.ubG = np.nan_to_num([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
+                                 for ub in self.ubG])
+
         if self.G is not None and self.lbG is None and self.ubG is not None:
             # self.lbG = np.ones(self.ubG.shape) * -1000
             self.lbG = -self.ubG

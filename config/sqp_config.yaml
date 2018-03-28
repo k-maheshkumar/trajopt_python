@@ -14,6 +14,7 @@ sqp:
   min_trust_region_size: 1e-4
   min_x_redution: 1e-4
   penalty_norm: 1
+  replace_none_with: 10e5
   solver:
   - ECOS
   - ECOS_BB

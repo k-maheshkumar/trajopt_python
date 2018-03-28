@@ -113,6 +113,12 @@ class Utils:
         logger.addHandler(log_console_handler)
 
     @classmethod
+    def replace_none(cls, x, v):
+        if x is None:
+            return v
+        return x
+
+    @classmethod
     def replace_paths(cls, urdf_str):
         rospack = rospkg.RosPack()
         with open('/tmp/robot.urdf', 'w') as o:

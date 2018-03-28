@@ -64,8 +64,8 @@ class ProblemModelling:
         self.fill_cost_matrix()
         # self.fill_velocity_matrix()
         self.fill_start_and_goal_matrix()
-        self.fill_robot_constraints_matrix()
         self.fill_velocity_limits()
+        self.fill_robot_constraints_matrix()
 
         main_logger_name = "Trajectory_Planner"
         # verbose = "DEBUG"
@@ -137,11 +137,13 @@ class ProblemModelling:
                 start_state = self.joints[joint]["states"]["start"]
                 end_state = self.joints[joint]["states"]["end"]
 
-            if joint_lower_limit is None:
-                joint_lower_limit = -3
-            if joint_upper_limit is None:
-                joint_upper_limit = 3
+            # if joint_lower_limit is None:
+            #     joint_lower_limit = -3
+            #     # joint_lower_limit = -np.nan
+            # if joint_upper_limit is None:
+            #     joint_upper_limit = 3
 
+            # if joint_lower_limit is not None and joint_upper_limit is not None:
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)
 

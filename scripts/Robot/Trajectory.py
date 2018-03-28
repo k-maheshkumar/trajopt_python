@@ -1,6 +1,4 @@
-from collections import defaultdict
-import numpy as np
-import matplotlib.pyplot as plt
+from collections import defaultdict, OrderedDict
 from pylab import *
 
 
@@ -63,7 +61,7 @@ class Trajectory:
         # self.add_trajectory(trajectory)
 
     def extract_trajectory_of_individual_joints(self, group):
-        self.__trajectory_by_joint_name = dict(zip(group, np.array(self.final).T))
+        self.__trajectory_by_joint_name = OrderedDict(zip(group, np.array(self.final).T))
 
     def add_trajectory(self, trajectory):
 

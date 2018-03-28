@@ -155,13 +155,12 @@ class SimulationWorld(ISimulationWorldBase):
 
         return urdf_id
 
-    def load_robot(self, urdf_file, position, orientation=None, use_fixed_base=True):
+    def load_robot(self, urdf_file, position, orientation=[0, 0, 0, 1], use_fixed_base=False):
 
-        if orientation is None:
-            robot_id = sim.loadURDF(urdf_file, basePosition=position, useFixedBase=use_fixed_base)
-        else:
-            robot_id = sim.loadURDF(urdf_file, basePosition=position,
-                                   baseOrientation=orientation, useFixedBase=use_fixed_base)
+
+        robot_id = sim.loadURDF(urdf_file, basePosition=position, baseOrientation=orientation,
+                                useFixedBase=use_fixed_base,
+                                    flags=sim.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT)
 
         self.setup_joint_id_to_joint_name(robot_id)
         self.joint_ids = [i for i in range(sim.getNumJoints(robot_id))]
@@ -476,31 +475,40 @@ class SimulationWorld(ISimulationWorldBase):
     def execute_trajectory(self, robot, trajectory, step_time=None):
         if step_time is None:
             sleep_time = trajectory.duration / float(trajectory.no_of_samples)
+            for each_time_step_trajectory in trajectory.final:
+                # print each_time_step_trajectory
+                # print trajectory.trajectory_by_name.keys()
+                self.reset_joint_states_to(robot.id, each_time_step_trajectory, trajectory.trajectory_by_name.keys())
+                time.sleep(0.5)
+            # for joint_name, corresponding_trajectory in trajectory.final:
+            #     print corresponding_trajectory
+            #     print trajectory.trajectory_by_name.keys()
+                # self.reset_joint_states_to(robot.id, corresponding_trajectory, trajectory.trajectory_by_name.keys())
+                # time.sleep(sleep_time)
 
-        for i in range(int(trajectory.no_of_samples)):
-            for joint_name, corresponding_trajectory in trajectory.trajectory_by_name.items():
-                if robot.model.joint_map[joint_name].type == "prismatic":
-                    print robot.model.joint_map[joint_name]
-                    sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
-                                          controlMode=sim.VELOCITY_CONTROL,
-                                          targetPosition=0,
-                                          targetVelocity=corresponding_trajectory[i],
-                                          force=robot.model.joint_map[joint_name].limit.effort,
-                                          positionGain=0.03,
-                                          velocityGain=.5,
-                                          maxVelocity=float(robot.model.joint_map[joint_name].limit.velocity)
-                                          )
-                else:
-                    sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
-                                          controlMode=sim.POSITION_CONTROL,
-                                          targetPosition=corresponding_trajectory[i], targetVelocity=0,
-                                          force=robot.model.joint_map[joint_name].limit.effort,
-                                          positionGain=0.03,
-                                          velocityGain=.5,
-                                          maxVelocity=float(robot.model.joint_map[joint_name].limit.velocity)
-                                          )
-
-            self.step_simulation_for(sleep_time)
+        # for i in range(int(trajectory.no_of_samples)):
+        #     for joint_name, corresponding_trajectory in trajectory.trajectory_by_name.items():
+        #         # if robot.model.joint_map[joint_name].type == "prismatic":
+        #         #     sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
+        #         #                           controlMode=sim.VELOCITY_CONTROL,
+        #         #                           targetPosition=0,
+        #         #                           targetVelocity=corresponding_trajectory[i],
+        #         #                           force=robot.model.joint_map[joint_name].limit.effort,
+        #         #                           positionGain=0.03,
+        #         #                           velocityGain=.5,
+        #         #                           maxVelocity=float(robot.model.joint_map[joint_name].limit.velocity)
+        #         #                           )
+        #         # else:
+        #         sim.setJointMotorControl2(bodyIndex=robot.id, jointIndex=self.joint_name_to_id[joint_name],
+        #                               controlMode=sim.POSITION_CONTROL,
+        #                               targetPosition=corresponding_trajectory[i], targetVelocity=0,
+        #                               force=robot.model.joint_map[joint_name].limit.effort,
+        #                               positionGain=0.03,
+        #                               velocityGain=.5,
+        #                               maxVelocity=float(robot.model.joint_map[joint_name].limit.velocity)
+        #                               )
+        #
+        #     self.step_simulation_for(sleep_time)
 
         status = "Trajectory execution has finished"
         self.logger.info(status)

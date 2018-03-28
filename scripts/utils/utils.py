@@ -2,6 +2,8 @@ import numpy as np
 from itertools import tee, islice, chain, izip, cycle
 import math
 import logging
+import rospkg
+
 
 class Utils:
 
@@ -109,4 +111,16 @@ class Utils:
         log_console_handler.setFormatter(formatter)
         # add the handlers to the logger
         logger.addHandler(log_console_handler)
+
+    @classmethod
+    def replace_paths(cls, urdf_str):
+        rospack = rospkg.RosPack()
+        with open('/tmp/robot.urdf', 'w') as o:
+            for line in urdf_str.split('\n'):
+                if 'package://' in line:
+                    package_name = line.split('package://', 1)[-1].split('/', 1)[0]
+                    real_path = rospack.get_path(package_name)
+                    o.write(line.replace(package_name, real_path))
+                else:
+                    o.write(line)
 

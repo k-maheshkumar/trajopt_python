@@ -119,7 +119,9 @@ class Utils:
         return x
 
     @classmethod
-    def replace_paths(cls, urdf_str):
+    def replace_paths(cls, urdf_file):
+        with open(urdf_file, 'r') as f:
+            urdf_str = f.read().replace('\n', '')
         rospack = rospkg.RosPack()
         with open('/tmp/robot.urdf', 'w') as o:
             for line in urdf_str.split('\n'):
@@ -129,4 +131,28 @@ class Utils:
                     o.write(line.replace(package_name, real_path))
                 else:
                     o.write(line)
+    @classmethod
+    def replace_paths1(cls, urdf_file):
+        with open(urdf_file, 'r') as f:
+            urdf_str = f.read().replace('\n', '')
+        rospack = rospkg.RosPack()
+        urdf_string_with_abs_path = ""
+        for line in urdf_str.split('\n'):
+            if 'package://' in line:
+                package_name = line.split('package://', 1)[-1].split('/', 1)[0]
+                real_path = rospack.get_path(package_name)
+                urdf_string_with_abs_path += line.replace(package_name, real_path)
+            else:
+                urdf_string_with_abs_path += line
+        return urdf_string_with_abs_path
+
+
+        # with open('/tmp/robot.urdf', 'w') as o:
+        #     for line in urdf_str.split('\n'):
+        #         if 'package://' in line:
+        #             package_name = line.split('package://', 1)[-1].split('/', 1)[0]
+        #             real_path = rospack.get_path(package_name)
+        #             o.write(line.replace(package_name, real_path))
+        #         else:
+        #             o.write(line)
 

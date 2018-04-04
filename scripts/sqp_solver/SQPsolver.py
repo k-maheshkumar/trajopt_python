@@ -349,6 +349,7 @@ class SQPsolver:
                             end = time.time()
                             elapsed_time += end - start
 
+                            # print ("each solve_problem time: " + str(end - start))
                             # self.logger.info("each solve_problem time: " + str(end - start))
                             # self.logger.info("time elapsed in solve_problem function: " + str(elapsed_time))
 

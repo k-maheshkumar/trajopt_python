@@ -3,6 +3,7 @@ from scripts.utils.utils import Utils as utils
 from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
 import itertools
+from scripts.Robot.ModelandTree import RobotTree
 
 class Robot:
     def __init__(self, logger_name=__name__, verbose=False, log_file=False):
@@ -12,11 +13,17 @@ class Robot:
         self.logger = logging.getLogger(logger_name + __name__)
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
+
+
     def load_robot_model(self, urdf_file=None):
         if urdf_file is not None:
             self.model = URDF.from_xml_file(urdf_file)
         else:
             self.model = URDF.from_parameter_server()
+
+        # base_link, end_link = "lbr_iiwa_link_0", "lbr_iiwa_link_7"
+
+        # self.tree = RobotTree(self.model, base_link, end_link)
 
     def get_trajectory(self):
         return self.planner.trajectory
@@ -74,11 +81,8 @@ class Robot:
 
         if verbose:
             main_logger_name = "Trajectory_Planner"
-            # verbose = False
             self.logger = logging.getLogger(main_logger_name)
             self.setup_logger(main_logger_name, verbose)
-        # else:
-        #     self.logger = logging.getLogger("Trajectory_Planner." + __name__)
 
         if "current_state" in kwargs and "goal_state" in kwargs:
             if type(current_state) is dict and type(current_state) is dict:
@@ -95,27 +99,11 @@ class Robot:
                                 "limit": self.model.joint_map[joint_in_group].limit,
                             }
             elif type(current_state) is list and type(current_state) is list:
-                print "gmfdlmg"
-                print current_state
-                print goal_state
-                print joint_group
                 joints = []
                 assert len(current_state) == len(goal_state) == len(joint_group)
                 for joint, current_state, next_state in itertools.izip(joint_group, current_state, goal_state):
                     if joint in self.model.joint_map:
                         joints.append([current_state, next_state, self.model.joint_map[joint].limit])
-                # for joint_in_group in joint_group:
-                #     if joint_in_group in current_state and joint_in_group in goal_state and \
-                #                     joint_in_group in self.model.joint_map:
-                #         if self.model.joint_map[joint_in_group].type != "fixed":
-                #             states[joint_in_group] = {"start": current_state[joint_in_group],
-                #                                       "end": goal_state[joint_in_group]}
-                #             joints[joint_in_group] = {
-                #                 "states": states[joint_in_group],
-                #                 "limit": self.model.joint_map[joint_in_group].limit,
-                #             }
-
-
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,
@@ -126,8 +114,8 @@ class Robot:
 
     def calulate_trajecotory(self, callback_function=None):
         status, can_execute_trajectory = "No trajectory has been found", False
-        status, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)
-        return status, can_execute_trajectory
+        status, planning_time, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)
+        return status, planning_time, can_execute_trajectory
 
     # def get_robot_trajectory(self):
     #     return self.planner.trajectory.get_trajectory()

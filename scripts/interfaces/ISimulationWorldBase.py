@@ -89,7 +89,7 @@ class ISimulationWorldBase(object):
         return
 
     @abc.abstractmethod
-    def reset_joint_states_to(self, trajectory, joints):
+    def reset_joint_states_to(self, robot_id, trajectory, joints):
         """joints are reset to the  given a trajectory position"""
 
 

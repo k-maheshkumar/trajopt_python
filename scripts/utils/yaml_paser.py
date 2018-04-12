@@ -39,7 +39,8 @@ class ConfigParser:
 
     def save(self, default_flow_style=False):
         with open(self.file_name, 'w') as yaml_file:
-            yaml.dump(self.config, yaml_file, default_flow_style=default_flow_style)
+            yaml.dump(self.config, yaml_file, default_flow_style=default_flow_style,
+                      Dumper=yamlordereddictloader.Dumper)
 
 # file_path_prefix = '../../config/'
 # sqp_config_file = file_path_prefix + 'robot_config.yaml'

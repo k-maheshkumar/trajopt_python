@@ -1,51 +1,11 @@
-#robot:
-#  groups:
-#    - name: "right_arm"
-#      joints: ["joint1", "joint2", "joint3"]
-#    - name: "left_arm"
-#      joints: ["joint4", "joint5", "joint6", "join7"]
-#    - name: "full_body"
-#      sub_groups: ["right_arm", "left_arm"]
-#    - name: "full_body1"
-#      sub_groups: ["right_arm", "left_arm"]
-#robot:
-#  groups:
-#    - name: "right_arm"
-#      joints: &right_arm
-#        - ["joint0", "joint1", "joint2"]
-#    - name: "left_arm"
-#      joints: &left_arm
-#        - ["joint3", "joint4", "joint5", "joint6"]
-#    - name: "right_arm1"
-#      joints: &right_arm1
-#        - ["joint01", "joint11", "joint12"]
-#
-#    - name: "left_arm1"
-#      joints: &left_arm1
-#        - ["joint31", "joint14", "joint51", "joint16"]
-#    - name: "full_body"
-#      joints: [*right_arm, *left_arm]
-#    - name: "full_body1"
-#      joints: [*right_arm1, *left_arm1]
-
-
 robot:
-#    urdf: "/home/mahe/masterThesis/bullet3/data/kuka_iiwa/model.urdf"
     urdf: "/home/mahesh/libraries/bullet3/data/kuka_iiwa/model.urdf"
-#      upper_collision_limit: {"value": 5, "step": 0.5, "min": 0, "max": 30}
     joints_groups:
-#      joints:
       right_arm: &right_arm
         ["lbr_iiwa_joint_1", "lbr_iiwa_joint_2", "lbr_iiwa_joint_3"]
       left_arm: &left_arm
         ["lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
-      right_arm1: &right_arm1
-        ["lbr_iiwa_joint_1", "lbr_iiwa_joint_2", "lbr_iiwa_joint_3"]
-      left_arm1: &left_arm1
-        ["lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
-      full_body1: [*right_arm, *left_arm]
-#      full_body1: [*right_arm1, *left_arm1]
-      full_body: ['lbr_iiwa_joint_5', 'lbr_iiwa_joint_4', 'lbr_iiwa_joint_7', 'lbr_iiwa_joint_6', 'lbr_iiwa_joint_1', 'lbr_iiwa_joint_3', 'lbr_iiwa_joint_2']
+      full_arm: [*right_arm, *left_arm]
 
     joint_configurations:
       home:
@@ -56,33 +16,8 @@ robot:
         lbr_iiwa_joint_5: 1.572
         lbr_iiwa_joint_6: 1.574
         lbr_iiwa_joint_7: 1.571
-#      initial:
-#      # endState = [-0.43397739069763064, 1.4723163745550858, -1.5581591136925037,
-##             -1.0268873087087633, 1.567033026684058, 1.5814537807610403, 1.571342501955761]
-#        lbr_iiwa_joint_1: -0.433
-#        lbr_iiwa_joint_2: 1.472
-#        lbr_iiwa_joint_3: -1.558
-#        lbr_iiwa_joint_4: -1.026
-#        lbr_iiwa_joint_5: 1.567
-#        lbr_iiwa_joint_6: 1.581
-#        lbr_iiwa_joint_7: 1.571
-#      initial:
-#      # endState = [-0.43397739069763064, 1.4723163745550858, -1.5581591136925037,
-##             -1.0268873087087633, 1.567033026684058, 1.5814537807610403, 1.571342501955761]
-#       lbr_iiwa_joint_1: -2.4823357809267463
-#       lbr_iiwa_joint_2: 1.4999975516996142
-#       lbr_iiwa_joint_3: -1.5762726255540713
-#       lbr_iiwa_joint_4: -0.8666279970481103
-#       lbr_iiwa_joint_5: 1.5855963769735366
-#       lbr_iiwa_joint_6: 1.5770985888989753
-#       lbr_iiwa_joint_7: 1.5704531145724918
 
-      place:
-#      {'lbr_iiwa_joint_5': 1.5979105177314896, 'lbr_iiwa_joint_4': -0.5791571346767671,
-#      'lbr_iiwa_joint_7': 1.5726221954434347,
-#      'lbr_iiwa_joint_6': 1.5857854098720727, 'lbr_iiwa_joint_1': -0.08180533826032865,
-#      'lbr_iiwa_joint_3': -1.5873548294514912, 'lbr_iiwa_joint_2': 1.5474152457596664}
-
+      pick:
         lbr_iiwa_joint_1: -0.08180533826032865
         lbr_iiwa_joint_2: 1.5474152457596664
         lbr_iiwa_joint_3: -1.5873548294514912
@@ -90,7 +25,7 @@ robot:
         lbr_iiwa_joint_5: 1.5979105177314896
         lbr_iiwa_joint_6: 1.5857854098720727
         lbr_iiwa_joint_7: 1.5726221954434347
-      pick:
+      place:
         lbr_iiwa_joint_1: -2.4823357809267463
         lbr_iiwa_joint_2: 1.4999975516996142
         lbr_iiwa_joint_3: -1.5762726255540713
@@ -99,8 +34,8 @@ robot:
         lbr_iiwa_joint_6: 1.5770985888989753
         lbr_iiwa_joint_7: 1.5704531145724918
 
-      pick1: [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
-                      1.5855963769735366, 1.5770985888989753, 1.5704531145724918]
-
-      place1: [-0.08180533826032865, 1.5474152457596664, -1.5873548294514912, -0.5791571346767671,
-                       1.5979105177314896, 1.5857854098720727, 1.5726221954434347]
+#      pick1: [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
+#                      1.5855963769735366, 1.5770985888989753, 1.5704531145724918]
+#
+#      place1: [-0.08180533826032865, 1.5474152457596664, -1.5873548294514912, -0.5791571346767671,
+#                       1.5979105177314896, 1.5857854098720727, 1.5726221954434347]

@@ -1,6 +1,9 @@
 from collections import defaultdict
-from scripts.utils.dict import DefaultOrderedDict
+import numpy as np
+import matplotlib.pyplot as plt
 from pylab import *
+from scripts.utils.dict import DefaultOrderedDict
+from collections import OrderedDict
 
 
 class Trajectory:
@@ -62,7 +65,7 @@ class Trajectory:
         # self.add_trajectory(trajectory)
 
     def extract_trajectory_of_individual_joints(self, group):
-        self.__trajectory_by_joint_name = dict(zip(group, np.array(self.final).T))
+        self.__trajectory_by_joint_name = OrderedDict(zip(group, np.array(self.final).T))
 
     def add_trajectory(self, trajectory):
 
@@ -78,31 +81,31 @@ class Trajectory:
         fig = plt.figure()
         subplots_adjust(hspace=0.000)
 
-        for index, trajectory in enumerate(self.trajectories):
-            if (index == 0 or index == len(self.trajectories) - 1):
-                count = 0
-                for joint_name, traj in trajectory.items():
-                    # plt.plot(traj, label=joint_name, marker='x')
-                    count += 1
-
-                    # plt.subplot(7, 1, count)
-                    if index == 0:
-                        label = "initial"
-                    elif index == 6:
-                        label = "final"
-                    # plt.plot(traj, label=label, marker='x')
-
-                    ax = plt.subplot(7, 1, count)
-                    ax.plot(traj, label=joint_name, marker='x')
-
-                    # plt.title('A tale of 2 subplots')
-                    # plt.ylabel('Damped oscillation')
-
-        # plt.scatter(x, y, c='b', marker='x', label='1')
-        # plt.scatter(x, y, c='r', marker='s', label='-1')
-        plt.legend(loc='upper left')
-        plt.show(block=False)
-
+        # for index, trajectory in enumerate(self.trajectories):
+        #     if (index == 0 or index == len(self.trajectories) - 1):
+        #         count = 0
+        #         for joint_name, traj in trajectory.items():
+        #             # plt.plot(traj, label=joint_name, marker='x')
+        #             count += 1
+        #
+        #             # plt.subplot(7, 1, count)
+        #             if index == 0:
+        #                 label = "initial"
+        #             elif index == 6:
+        #                 label = "final"
+        #             # plt.plot(traj, label=label, marker='x')
+        #
+        #             ax = plt.subplot(self.no_of_samples, 1, count)
+        #             ax.plot(traj, label=joint_name, marker='x')
+        #
+        #             # plt.title('A tale of 2 subplots')
+        #             # plt.ylabel('Damped oscillation')
+        #
+        # # plt.scatter(x, y, c='b', marker='x', label='1')
+        # # plt.scatter(x, y, c='r', marker='s', label='-1')
+        # plt.legend(loc='upper left')
+        # plt.show(block=False)
+        #
 
 
 

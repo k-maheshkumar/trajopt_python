@@ -9,10 +9,9 @@ class PlannerExample:
 
         location_prefix = home + "/catkin_ws/src/iai_robots/"
 
-        urdf_file = location_prefix + "iai_donbot_description/robots/donbot2.urdf"
+        urdf_file = location_prefix + "iai_donbot_description/robots/don_bot.urdf"
 
         config = {
-            # "use_gui": True,
             "use_gui": True,
             "verbose": False,
             "log_file": True,
@@ -24,7 +23,7 @@ class PlannerExample:
         # self.planner = TrajectoryOptimizationPlanner(use_gui=False)
         self.planner.world.toggle_rendering(0)
         self.planner.world.set_gravity(0, 0, -10)
-        plane_id = self.planner.add_constraint_from_urdf("plane.urdf", position=[0, 0, 0.0])
+        plane_id = self.planner.add_constraint_from_urdf("plane", "plane.urdf", position=[0, 0, 0.0])
         self.robot_id = self.planner.load_robot(urdf_file)
         #
         # # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
@@ -37,16 +36,28 @@ class PlannerExample:
         self.planner.world.step_simulation_for(0.02)
 
     def run(self):
-        start_state = {}
-        goal_state = {}
+        from collections import OrderedDict
+        start_state = OrderedDict()
+        goal_state = OrderedDict()
+
+        start_state["odom_x_joint"] = 0.01
+        start_state["odom_y_joint"] = 0.01
+        start_state["odom_z_joint"] = 0.01
 
         start_state["ur5_shoulder_pan_joint"] = 2.3823357809267463
         start_state["ur5_shoulder_lift_joint"] = 2.9299975516996142
         start_state["ur5_elbow_joint"] = -1.9762726255540713
         start_state["ur5_wrist_1_joint"] = 0.8666279970481103
-        start_state["ur5_wrist_2_joint"] = -1.5855963769735366
+        start_state["ur5_wrist_2_joint"] = 1.5855963769735366
         start_state["ur5_wrist_3_joint"] = -1.5770985888989753
+
+        start_state["gripper_joint"] = 0
+        start_state["gripper_base_gripper_left_joint"] = 0
         # start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
+
+        goal_state["odom_x_joint"] = 1
+        goal_state["odom_y_joint"] = 1
+        goal_state["odom_z_joint"] = 0.05
 
         goal_state["ur5_shoulder_pan_joint"] = 2.08180533826032865
         goal_state["ur5_shoulder_lift_joint"] = -1.5474152457596664
@@ -54,6 +65,9 @@ class PlannerExample:
         goal_state["ur5_wrist_1_joint"] = -0.5791571346767671
         goal_state["ur5_wrist_2_joint"] = 1.5979105177314896
         goal_state["ur5_wrist_3_joint"] = 1.5857854098720727
+
+        goal_state["gripper_joint"] = 0
+        goal_state["gripper_base_gripper_left_joint"] = 0
 
         # start_state["ur5_shoulder_pan_joint"] = -1.4823357809267463
         # start_state["ur5_shoulder_lift_joint"] = -2.9299975516996142
@@ -81,36 +95,41 @@ class PlannerExample:
         collision_check_distance = 0.15
         collision_safe_distance = 0.1
 
-        self.planner.world.reset_joint_states(self.robot_id, goal_state)
+        self.planner.world.reset_joint_states(self.robot_id, start_state.values(), start_state.keys())
 
 
         # import pybullet as p
         # p.connect(p.SHARED_MEMORY, "localhost")
         # joints = [i for i in range(p.getNumJoints(self.robot_id))]
         #
-        # ur5_ee_fixed_joint = 14
+        # ur5_wrist_3_joint = 13
+        # # print "ghdghrdklhg", p.getNumJoints(self.robot_id)
+        # # zero_vec = [0] * 11
         # zero_vec = [0] * p.getNumJoints(self.robot_id)
-        # current_robot_state = p.getJointStates(self.robot_id, joints)
+        # # for i in range(p.getNumJoints(self.robot_id)):
+        # #     print p.getJointInfo(self.robot_id, i)
+        # current_robot_state = self.planner.world.get_joint_states_at(self.robot_id, start_state.values(), goal_state.keys())
         #
-        # print current_robot_state
+        # print "current_robot_state*------------------", len(current_robot_state[0])
+        # print current_robot_state[0]
         #
-        # current_position_jacobian, _ = p.calculateJacobian(self.robot_id, ur5_ee_fixed_joint,
+        # current_position_jacobian, _ = p.calculateJacobian(self.robot_id, ur5_wrist_3_joint,
         #                                                      # closest_pt_on_A_at_t,
         #                                                      [0, 0, 0],
-        #                                                      current_robot_state,
+        #                                                    current_robot_state[0],
         #                                                      zero_vec, zero_vec)
         #
         # print current_position_jacobian
-        # #
-        #
-        status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
+
+        _, status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
                                                          goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
-        # print("is trajectory free from collision: ", status)
-        # self.planner.execute_trajectory()
+        print("is trajectory free from collision: ", status)
+        # print trajectory.final
+        self.planner.execute_trajectory()
         # self.planner.world.step_simulation_for(5)
-        # time.sleep(5)
+        time.sleep(5)
         # import sys
         # sys.exit(0)
 

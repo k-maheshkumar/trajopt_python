@@ -8,6 +8,8 @@ import os
 import time
 from collections import OrderedDict
 
+elapsed_time = 0
+
 '''
         minimize
             (1/2) * x.T * P * x + q.T * x
@@ -74,8 +76,6 @@ class SQPsolver:
         else:
             self.initial_guess = np.zeros((self.P.shape[0], 1)).flatten()
 
-        self.analyse_inputs()
-
         if "solver_config" in kwargs:
             solver_config = kwargs["solver_config"]
         else:
@@ -98,6 +98,8 @@ class SQPsolver:
         self.penalty_norm = self.solver_config["penalty_norm"]
 
         self.trust_region_norm = self.solver_config["trust_region_norm"]
+
+        self.analyse_inputs()
 
         if solver is not None:
             self.solver = solver
@@ -123,6 +125,9 @@ class SQPsolver:
         print (self.lb)
         print ("ub")
         print (self.ub)
+        print ("initial guess")
+        print (self.initial_guess)
+
 
     def update_prob(self, G=None, lbG=None, ubG=None, A=None, b=None):
         if G is not None:
@@ -135,8 +140,16 @@ class SQPsolver:
             self.A = A
         if b is not None:
             self.b = b
+        self.analyse_inputs()
 
     def analyse_inputs(self):
+        if self.lbG is not None:
+            self.lbG = np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
+                                 for lb in self.lbG])
+        if self.ubG is not None:
+            self.ubG = np.nan_to_num([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
+                                 for ub in self.ubG])
+
         if self.G is not None and self.lbG is None and self.ubG is not None:
             # self.lbG = np.ones(self.ubG.shape) * -1000
             self.lbG = -self.ubG
@@ -210,18 +223,21 @@ class SQPsolver:
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         if constraints is not None:
-            # print upper_limit, constraints.shape, delta
-            # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= constraints * p]
-            # constraints = [cvxpy.norm(p, "inf") <= delta, lower_limit <= cvxpy.matmul(constraints, p)]
-            # constraints = [cvxpy.norm(p, "inf") <= delta, - lower_limit >= cvxpy.matmul(constraints, p)]
-            # constraints = [cvxpy.norm(p, "inf") <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
-            # print cvxpy.matmul(cvxpy.hstack([constraints, constraints]), cvxpy.hstack([p,p]))
-            # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, cvxpy.matmul(constraints, p) <= upper_limit]
-            temp = np.hstack([constraints[0], constraints[1]])
-            print temp.shape
-            p1 = cvxpy.hstack([p, p])
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta, upper_limit <= cvxpy.matmul(temp, p1)]
-            # constraints = [cvxpy.norm(p, "inf") <= delta]
+            # print lower_limit, delta
+            if constraints.shape[1] == 2 * p.shape[0]:
+                p1 = cvxpy.hstack([p, p])
+            else:
+                p1 = p
+            if lower_limit is not None and upper_limit is not None:
+                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+                               lower_limit <= cvxpy.matmul(constraints, p1),
+                               cvxpy.matmul(constraints, p1) <= upper_limit]
+            elif lower_limit is None:
+                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+                               cvxpy.matmul(constraints, p1) <= upper_limit]
+            elif upper_limit is None:
+                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+                               lower_limit <= cvxpy.matmul(constraints, p1)]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
@@ -312,6 +328,8 @@ class SQPsolver:
 
         dynamic_constraints_satisfied = False
 
+        global elapsed_time
+
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
@@ -320,43 +338,21 @@ class SQPsolver:
                 # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
-                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
+                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k, elapsed_time)
                 while trust_box_size >= min_trust_box_size:
                     if callback_function is not None:
-                        # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
-                        if constraints is not None and lower_limit is not None and upper_limit is not None:
-                            # dynamic_constraints_count = len(upper_limit)
-                            # if dynamic_constraints_count > last_dynamic_constraints_count:
-                            #     print "collision count increases. . . .. . ."
-                            # print x_k
-                            #     x_k -= p_k
-                            # print x_k
-                            # penalty.value *= trust_expand_ratio
-                            # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
-                            # trust_box_size = np.fmax(min_trust_box_size, np.linalg.norm(lower_limit, np.inf) * 3)
-                            # trust_box_size = np.fmin(trust_box_size * trust_expand_ratio, max_trust_box_size)
-                            # trust_box_size = np.fmin(trust_box_size * trust_shrink_ratio, max_trust_box_size)
-                            # print "delta: ", trust_box_size
-
-                            # last_dynamic_constraints_count = copy.copy(dynamic_constraints_count)
-                            # if trust_box_size < np.linalg.norm(lower_limit, np.inf):
-                            #     trust_box_size = np.fmin(np.linalg.norm(lower_limit, np.inf) * trust_expand_ratio,
-                            #                              max_trust_box_size)
-                            # print "delta 1 .. .: ", trust_box_size
+                        if constraints is not None:
                             start = time.time()
                             p_k, model_objective_at_p_k, \
                             actual_objective_at_x_k, solver_status = self.solve_problem(x_k, penalty, p, trust_box_size,
                                                                                         constraints, lower_limit,
                                                                                         upper_limit)
                             end = time.time()
+                            elapsed_time += end - start
 
-                            # print constraints
-                            # print p_k
-                            print "each solve_problem time: ", end - start
-                            # temp =  np.matmul(constraints, p_k)
-                            # print temp
-                            # print temp.shape
-
+                            # print ("each solve_problem time: " + str(end - start))
+                            # self.logger.info("each solve_problem time: " + str(end - start))
+                            # self.logger.info("time elapsed in solve_problem function: " + str(elapsed_time))
 
                         else:
                             dynamic_constraints_satisfied = True
@@ -390,12 +386,6 @@ class SQPsolver:
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(rho_k))
-                        # print x_k, rho_k
-
-                        # print "objective_at_x_plus_p_k", actual_objective_at_x_plus_p_k.value
-                        # print "model_objective_at_x_plus_p_k", model_objective_at_p_0.value
-                        # print "actual xk, xk1", actual_objective_at_x_plus_p_k.value, actual_objective_at_x_k.value
-                        # print "model p0, pk",model_objective_at_p_0.value, model_objective_at_p_k.value
 
                         if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                             # self.logger.warn("Infeasible problem cannot be solved" + str(penalty.value))
@@ -408,7 +398,7 @@ class SQPsolver:
                             trust_box_size = np.fmin(trust_box_size * trust_expand_ratio, max_trust_box_size)
                             self.logger.debug("expanding trust region" + str(trust_box_size))
                             x_k += p_k
-                            # print "expanding . .. . .. "
+
                             new_x_k = copy.copy(x_k)
                             break
                         elif rho_k <= trust_bad_region_ratio:
@@ -416,14 +406,6 @@ class SQPsolver:
                             self.logger.debug("shrinking trust region " + str(trust_box_size))
                             # x_k = copy.copy(new_x_k)
                             x_k -= p_k
-
-                        # if actual_reduction > 0.2 * predicted_reduction:
-                        #     trust_box_size *= trust_expand_ratio
-                        #     print "expanding  .. .. . ."
-                        #     x_k += p_k
-                        # else:
-                        #     trust_box_size *=trust_shrink_ratio
-                        #     print "shrinking  .. .. . ."
 
                         if trust_box_size < min_x_redution:
                             check_for_constraints = True
@@ -452,9 +434,6 @@ class SQPsolver:
                 # trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 0.5)
 
 
-                # else:
-                #     is_converged = False
-
                 if is_adjust_penalty or dynamic_constraints_satisfied:
                     break
 
@@ -464,7 +443,6 @@ class SQPsolver:
                 if self.is_objective_function_converged(actual_reduction, min_actual_redution):
                     is_objective_converged = True
                     inter_status = "actual reduction is very small"
-                    # print "actual reduction is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"
                     break
@@ -474,7 +452,6 @@ class SQPsolver:
                 if self.is_x_converged(x_k, p_k, min_x_redution):
                     is_x_converged = True
                     inter_status = "reduction in x is very small"
-                    # print "reduction in x is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"
                     break

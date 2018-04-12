@@ -1,15 +1,13 @@
 from PyQt4 import QtGui
 from scripts.utils import yaml_paser as yaml
 import functools
-from scripts.simulation.SimulationWorld import SimulationWorld
-import numpy as np
+from scripts.utils.utils import Utils as utils
 import logging
-import collections
 
 class PlannerGui(QtGui.QMainWindow):
-    def __init__(self, verbose=False, file_log=False, planner=None):
+    def __init__(self, logger_name=__name__, verbose=False, file_log=False, planner=None, width=1200, height=400):
         QtGui.QMainWindow.__init__(self)
-        self.setGeometry(200, 100, 1200, 400)
+        self.setGeometry(200, 100, width, height)
 
         # self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
         self.planner = planner
@@ -85,42 +83,9 @@ class PlannerGui(QtGui.QMainWindow):
         self.init_ui(25)
 
         self.can_execute_trajectory = False
-        main_logger_name = "Trajectory_Planner"
-        self.logger = logging.getLogger(main_logger_name)
-        self.setup_logger(main_logger_name, verbose, file_log)
+        self.logger = logging.getLogger(logger_name + __name__)
+        utils.setup_logger(self.logger, logger_name, verbose, file_log)
 
-    def setup_logger(self, main_logger_name, verbose=False, log_file=False):
-
-        # creating a formatter
-        formatter = logging.Formatter('-%(asctime)s - %(name)s - %(levelname)-8s: %(message)s')
-
-        # create console handler with a debug log level
-        log_console_handler = logging.StreamHandler()
-        if log_file:
-            # create file handler which logs info messages
-            logger_file_handler = logging.FileHandler(main_logger_name + '.log', 'w', 'utf-8')
-            logger_file_handler.setLevel(logging.INFO)
-            # setting handler format
-            logger_file_handler.setFormatter(formatter)
-            # add the file logging handlers to the logger
-            self.logger.addHandler(logger_file_handler)
-
-        if verbose == "WARN":
-            self.logger.setLevel(logging.WARN)
-            log_console_handler.setLevel(logging.WARN)
-
-        elif verbose == "INFO" or verbose is True:
-            self.logger.setLevel(logging.INFO)
-            log_console_handler.setLevel(logging.INFO)
-
-        elif verbose == "DEBUG":
-            self.logger.setLevel(logging.DEBUG)
-            log_console_handler.setLevel(logging.DEBUG)
-
-        # setting console handler format
-        log_console_handler.setFormatter(formatter)
-        # add the handlers to the logger
-        self.logger.addHandler(log_console_handler)
 
     def init_ui(self, val):
 
@@ -182,10 +147,8 @@ class PlannerGui(QtGui.QMainWindow):
                     for key1, value1 in self.robot_config[key].items():
                         self.robot_config_combo_box[key].addItem(key1)
                         self.selected_robot_combo_value[key] = value1
-                        # print " key1, value1",  key1, value1
+
         for key, value in self.robot_default_config_params.items():
-            # for key1, value1 in self.robot_config[key].items():
-                # print " key1, value1", key1, value1
             self.robot_config_params_spin_box[key] = QtGui.QDoubleSpinBox(self)
             self.robot_config_form.addRow(key, self.robot_config_params_spin_box[key])
             self.robot_config_params_spin_box[key].setValue(float(value["value"]))
@@ -193,8 +156,6 @@ class PlannerGui(QtGui.QMainWindow):
                 functools.partial(self.on_robot_spin_box_value_changed, key))
             self.robot_config_params_spin_box[key].setRange(value["min"], value["max"])
             self.robot_config_params_spin_box[key].setSingleStep(value["step"])
-
-                    # self.selected_robot_spin_value[key] = value1
 
         self.robot_action_button_hbox.addStretch(1)
 
@@ -238,17 +199,13 @@ class PlannerGui(QtGui.QMainWindow):
             self.planner.world.reset_objects_to()
 
     def on_robot_spin_box_value_changed(self, key, value):
-        # print(key, value)
         # self.selected_robot_spin_value.clear()
         self.selected_robot_spin_value[str(key)] = value
-        # print self.selected_robot_spin_value[key]
 
     def on_robot_action_button_clicked(self, key):
         # if not self.selected_robot_spin_value:
         for spin_box_key in self.robot_config_params_spin_box:
             self.selected_robot_spin_value[spin_box_key] = self.robot_config_params_spin_box[spin_box_key].value()
-        # print "self.selected_robot_combo_value", self.selected_robot_combo_value
-        # print "self.selected_robot_spin_value", self.selected_robot_spin_value
 
         samples = None
         duration = None
@@ -268,13 +225,6 @@ class PlannerGui(QtGui.QMainWindow):
             safe_collision_distance = self.selected_robot_spin_value["safe_collision_distance"]
         if "collision_check_distance" in self.selected_robot_spin_value:
             collision_check_distance = self.selected_robot_spin_value["collision_check_distance"]
-        # if "upper_collision_limit" in self.selected_robot_spin_value:
-        #     upper_collision_limit = self.selected_robot_spin_value["upper_collision_limit"]
-        # print samples
-        # print duration
-        # print group
-        # print goal_state
-        # print safe_collision_distance
 
         if group is not None and goal_state is not None:
             if samples is not None and duration is not None and self.sqp_config is not None and \
@@ -309,7 +259,7 @@ class PlannerGui(QtGui.QMainWindow):
             status = "Please wait, random pose for the joints are being set.."
             self.statusBar.showMessage(self.last_status + status)
             if group is not None:
-                status = self.planner.world.reset_joints_to_random_states(group, motor_dir=np.random.rand(1, len(group)).flatten())
+                status = self.planner.reset_robot_to(group=group)
                 self.statusBar.showMessage(self.last_status + status)
             else:
                 self.statusBar.clearMessage()
@@ -319,11 +269,9 @@ class PlannerGui(QtGui.QMainWindow):
 
     def initiate_plan_trajectory(self, group, goal_state, samples, duration, collision_d_safe_limit,
                                  collision_check_distance):
-        # can_execute_trajectory = False
         if samples is not None and duration is not None \
                 and group is not None and goal_state is not None and self.sqp_config is not None:
-            # status, self.can_execute_trajectory = self.sim_world.plan_trajectory(group=group, goal_state=goal_state, samples=int(samples),
-            status, self.can_execute_trajectory = self.planner.plan_trajectory(goal_state.keys(), goal_state, samples=int(samples),
+            status, self.can_execute_trajectory = self.planner.plan_trajectory(group, goal_state, samples=int(samples),
                                                                                duration=int(duration),
                                                                                solver_config=self.sqp_config,
                                                                                collision_safe_distance=collision_d_safe_limit,
@@ -334,7 +282,6 @@ class PlannerGui(QtGui.QMainWindow):
         return status
 
     def on_sqp_spin_box_value_changed(self, key, value):
-        # print (key, value)
         self.sqp_config[str(key)] = value
         self.sqp_yaml.save()
 
@@ -343,9 +290,6 @@ class PlannerGui(QtGui.QMainWindow):
 
     def on_robot_config_combo_box_value_changed(self, combo_box_key):
         # self.selected_robot_combo_value.clear()
-        # print (combo_box_key, self.robot_config_combo_box[combo_box_key].currentText())
         key = self.robot_config_combo_box[combo_box_key].currentText()
         if key != "Select":
-            # print self.robot_config_combo_box[combo_box_key][self.robot_config_combo_box[combo_box_key].currentText()]
             self.selected_robot_combo_value[str(combo_box_key)] = self.robot_config[combo_box_key][str(key)]
-            # print self.selected_robot_combo_value

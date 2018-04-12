@@ -1,10 +1,13 @@
 import os
 from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
 from collections import OrderedDict
+from scripts.utils.dict import DefaultOrderedDict
+from srdfdom.srdf import SRDF
+
+home = os.path.expanduser('~')
 
 class PlannerExample:
     def __init__(self):
-        home = os.path.expanduser('~')
 
         location_prefix = home + '/masterThesis/bullet3/data/'
 
@@ -65,9 +68,30 @@ class PlannerExample:
         import sys
         sys.exit(0)
 
+    def load_srdf(self):
+        srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
+
+        stream = open(srdf_file, 'r')
+        srdf = SRDF.from_xml_string(stream.read())
+
+        ignored_collisions = DefaultOrderedDict(bool)
+        shape = len(self.planner.world.joint_ids)
+
+        # ignored_collisions_matrix = np.zeros((shape, shape))
+        # joints = self.planner.world.link_name_to_id
+
+        for collision in srdf.disable_collisionss:
+            ignored_collisions[collision.link1, collision.link2] = True
+            ignored_collisions[collision.link2, collision.link1] = True
+            # if collision.link1 in joints and collision.link2 in joints:
+            #     ignored_collisions_matrix[joints[collision.link1], joints[collision.link2]] = 1
+            #     ignored_collisions_matrix[joints[collision.link2], joints[collision.link1]] = 1
+        # print ignored_collisions
+        self.planner.world.ignored_collisions = ignored_collisions
 
 def main():
     example = PlannerExample()
+    example.load_srdf()
     example.run()
 
 

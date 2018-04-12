@@ -1,11 +1,13 @@
 import os
 import time
 from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
+from scripts.utils.dict import DefaultOrderedDict
+from srdfdom.srdf import SRDF
 
+home = os.path.expanduser('~')
 
 class PlannerExample:
     def __init__(self):
-        home = os.path.expanduser('~')
 
         location_prefix = home + "/catkin_ws/src/iai_robots/"
 
@@ -13,7 +15,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": False,
+            "verbose": True,
             "log_file": True,
             "robot_config": "robot_config_don_bot.yaml"
 
@@ -55,9 +57,9 @@ class PlannerExample:
         start_state["gripper_base_gripper_left_joint"] = 0
         # start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
 
-        goal_state["odom_x_joint"] = 1
-        goal_state["odom_y_joint"] = 1
-        goal_state["odom_z_joint"] = 0.05
+        goal_state["odom_x_joint"] = 0.01
+        goal_state["odom_y_joint"] = 0.01
+        goal_state["odom_z_joint"] = 0.01
 
         goal_state["ur5_shoulder_pan_joint"] = 2.08180533826032865
         goal_state["ur5_shoulder_lift_joint"] = -1.5474152457596664
@@ -133,9 +135,31 @@ class PlannerExample:
         # import sys
         # sys.exit(0)
 
+    def load_srdf(self):
+        srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
+
+        stream = open(srdf_file, 'r')
+        srdf = SRDF.from_xml_string(stream.read())
+
+        ignored_collisions = DefaultOrderedDict(bool)
+        shape = len(self.planner.world.joint_ids)
+
+        # ignored_collisions_matrix = np.zeros((shape, shape))
+        # joints = self.planner.world.link_name_to_id
+
+        for collision in srdf.disable_collisionss:
+            ignored_collisions[collision.link1, collision.link2] = True
+            ignored_collisions[collision.link2, collision.link1] = True
+            # if collision.link1 in joints and collision.link2 in joints:
+            #     ignored_collisions_matrix[joints[collision.link1], joints[collision.link2]] = 1
+            #     ignored_collisions_matrix[joints[collision.link2], joints[collision.link1]] = 1
+        # print ignored_collisions
+        self.planner.world.ignored_collisions = ignored_collisions
+
 
 def main():
     example = PlannerExample()
+    example.load_srdf()
     example.run()
     while True:
         pass

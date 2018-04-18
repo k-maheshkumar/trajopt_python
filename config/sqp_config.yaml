@@ -18,11 +18,11 @@ sqp:
   solver:
   - ECOS
   - ECOS_BB
-  - SCS
   - CVXOPT
+  - SCS
   trust_bad_region_ratio: 0.25
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
   trust_region_norm: inf
-  trust_region_size: 15.0
+  trust_region_size: 5.0
   trust_shrink_ratio: 0.25

@@ -68,17 +68,17 @@ class TrajectoryOptimizationPlanner():
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
 
-    def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=True):
+    def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=False):
         self.robot.id = self.world.load_robot(urdf_file, position, orientation, use_fixed_base)
         self.robot.load_robot_model(urdf_file)
 
         return self.robot.id
 
-    def load_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=True):
+    def load_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
         urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         return urdf_id
 
-    def add_constraint_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=True):
+    def add_constraint_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
         urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         self.world.add_collision_constraints(urdf_id)
         return urdf_id
@@ -139,7 +139,7 @@ class TrajectoryOptimizationPlanner():
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance)
 
-        self.world.toggle_rendering_while_planning(False)
+        # self.world.toggle_rendering_while_planning(False)
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
         status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
         self.logger.info(status)
@@ -207,7 +207,7 @@ class TrajectoryOptimizationPlanner():
         trajectory = np.split(new_trajectory, self.robot.planner.no_of_samples)
         self.robot.planner.trajectory.add_trajectory(trajectory)
         start = time.time()
-        collision_infos = self.world.get_collision_infos(self.robot.id, trajectory, self.robot.planner.current_planning_joint_group,
+        collision_infos = self.world.get_collision_infos(self.robot, trajectory, self.robot.planner.current_planning_joint_group,
                                                          distance=self.robot.planner.collision_check_distance)
         end = time.time()
         self.elapsed_time = (end - start) + elapsed_time_in_solver

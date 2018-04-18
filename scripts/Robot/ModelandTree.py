@@ -12,6 +12,7 @@ class RobotTree:
         status, self.tree = kdl_parser_py.urdf.treeFromUrdfModel(robot_model, quiet=True)
 
         self.kdl_kin = KDLKinematics(robot_model, base_link, end_link, kdl_tree=self.tree)
+        self.chain = self.tree.getChain(base_link, end_link)
 
     def get_jacobian_of_a_chain(self, q, position=None):
 
@@ -24,7 +25,8 @@ class RobotTree:
         else:
             J = self.kdl_kin.jacobian(q)
 
-        return J
+        return J[:3, :], J[3:, :]
+        # return J
         # q = kdl_kin.random_joint_angles()
         # print "Random angles:", q, len(q), type(q)
         # pose = self.kdl_kin.forward(q)
@@ -44,6 +46,25 @@ class RobotTree:
         # if False:
         #     M_cart = self.kdl_kin.cart_inertia(q)
         #     # print "Cartesian inertia matrix:", M_cart
+
+    def get_ee_points_jacobians(self, ref_jacobian, ee_points, ref_rot):
+        """
+        Get the jacobians of the points on a link given the jacobian for that link's origin
+        :param ref_jacobian: 6 x 6 numpy array, jacobian for the link's origin
+        :param ee_points: N x 3 numpy array, points' coordinates on the link's coordinate system
+        :param ref_rot: 3 x 3 numpy array, rotational matrix for the link's coordinate system
+        :return: 3N x 6 Jac_trans, each 3 x 6 numpy array is the Jacobian[:3, :] for that point
+                 3N x 6 Jac_rot, each 3 x 6 numpy array is the Jacobian[3:, :] for that point
+        """
+        ee_points = np.asarray(ee_points)
+        ref_jacobians_trans = ref_jacobian[:3, :]
+        ref_jacobians_rot = ref_jacobian[3:, :]
+        end_effector_points_rot = np.expand_dims(ref_rot.dot(ee_points.T).T, axis=1)
+        ee_points_jac_trans = np.tile(ref_jacobians_trans, (ee_points.shape[0], 1)) + \
+                              np.cross(ref_jacobians_rot.T, end_effector_points_rot).transpose(
+                                  (0, 2, 1)).reshape(-1, self.chain.getNrOfJoints())
+        ee_points_jac_rot = np.tile(ref_jacobians_rot, (ee_points.shape[0], 1))
+        return ee_points_jac_trans, ee_points_jac_rot
 
 
 if __name__ == '__main__':

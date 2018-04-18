@@ -11,6 +11,7 @@ from collections import OrderedDict
 from scripts.utils.dict import DefaultOrderedDict
 from scripts.simulation.bulletTypes import *
 import os
+from scripts.Robot.ModelandTree import RobotTree
 
 home = os.path.expanduser('~')
 file_name = home + '/temp/collision.log'
@@ -155,7 +156,7 @@ class SimulationWorld(ISimulationWorldBase):
     def add_collision_constraints(self, constraint_id):
         self.collision_constraints.append(constraint_id)
 
-    def load_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=True):
+    def load_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
 
         if orientation is None:
             urdf_id = sim.loadURDF(urdf_file, basePosition=position, useFixedBase=use_fixed_base)
@@ -222,9 +223,18 @@ class SimulationWorld(ISimulationWorldBase):
         return link_states
 
     def get_joint_states_at(self, robot_id, trajectory, group):
-        self.reset_joint_states_to(robot_id, trajectory, group)
-        joint_ids = [self.joint_name_to_id[joint] for joint in group]
-        joint_states = sim.getJointStates(robot_id, joint_ids)
+        # self.reset_joint_states_to(robot_id, trajectory, group)
+        # joint_ids = [self.joint_name_to_id[joint] for joint in group]
+        # joint_states = sim.getJointStates(robot_id, joint_ids)
+        # joint_positions = [state[0] for state in joint_states]
+        # joint_velocities = [state[1] for state in joint_states]
+        # joint_torques = [state[3] for state in joint_states]
+        # return joint_positions, joint_velocities, joint_torques
+
+        joint_states = sim.getJointStates(robot_id, range(sim.getNumJoints(robot_id)))
+
+        joint_infos = [sim.getJointInfo(robot_id, i) for i in range(sim.getNumJoints(robot_id))]
+        joint_states = [j for j, i in zip(joint_states, joint_infos) if i[3] > -1]
         joint_positions = [state[0] for state in joint_states]
         joint_velocities = [state[1] for state in joint_states]
         joint_torques = [state[3] for state in joint_states]
@@ -248,10 +258,11 @@ class SimulationWorld(ISimulationWorldBase):
 
             # joint_states[self.joint_id_to_name[i]] = sim.getJointState(robot_id, self.joint_ids[i])
             joint_state = sim.getJointState(robot_id, self.joint_ids[i])
-
-            joint_positions.append(joint_state[0])
-            joint_velocities.append(joint_state[1])
-            joint_torques.append(joint_state[3])
+            joint_info = sim.getJointInfo(robot_id, i)
+            if joint_info[3] > -1:
+                joint_positions.append(joint_state[0])
+                joint_velocities.append(joint_state[1])
+                joint_torques.append(joint_state[3])
 
         # for joint_name in group:
         #     joint_states[joint_name] = sim.getJointState(robot_id, self.joint_name_to_id[joint_name])
@@ -272,10 +283,10 @@ class SimulationWorld(ISimulationWorldBase):
         for joint in group:
             self.planning_group_ids.append(self.joint_name_to_id[joint])
 
-    def get_collision_infos(self, robot_id, initial_trajectory, group, distance=0.10):
+    def get_collision_infos(self, robot, initial_trajectory, group, distance=0.10):
         # print initial_trajectory
         self.extract_ids_from_planning_group(group)
-        collision_infos = self.formulate_collision_infos(robot_id, initial_trajectory, group, distance)
+        collision_infos = self.formulate_collision_infos(robot, initial_trajectory, group, distance)
         return collision_infos
 
     def get_jacobian_matrix(self, position_jacobian, trajectory_length, planning_group_length, time_step_count):
@@ -297,7 +308,6 @@ class SimulationWorld(ISimulationWorldBase):
             jacobian_matrix = np.vstack(
                 [np.asarray(position_jacobian).reshape(1, 3, planning_group_length), jaco2])
             jacobian_matrix = np.hstack(jacobian_matrix)
-
         return jacobian_matrix
 
     def get_robot_self_collision_infos(self, robot_id, link_index, current_link_state, next_link_state, distance,
@@ -392,20 +402,20 @@ class SimulationWorld(ISimulationWorldBase):
                         # print "next_link_states", next_link_state[0]
                         # print "**********************************************"
                         #
-                        # print "-----------cast points--------------"
-                        # print "collision pair", self.joint_id_to_info[body_a].link_name, self.joint_id_to_info[body_b].link_name
-                        #
-                        # print "bodyUniqueIdA", cast_closest_points[0][1]
-                        # print "bodyUniqueIdB", cast_closest_points[0][2]
-                        # print "linkIndexA", cast_closest_points[0][3]
-                        # print "linkIndexB", cast_closest_points[0][4]
-                        # print "A(t)", closest_pt_on_A_at_t
-                        # print "A(t+1)", closest_pt_on_A_at_t_plus_1
-                        # print "B", closest_pt_on_B
-                        # print "normal", normal_.T
-                        # print "Distance ", dist
-                        # print "fraction ", fraction
-                        # print "*************************************"
+                        print "-----------cast points--------------"
+                        print "collision pair", self.joint_id_to_info[body_a].link_name, self.joint_id_to_info[body_b].link_name
+
+                        print "bodyUniqueIdA", cast_closest_points[0][1]
+                        print "bodyUniqueIdB", cast_closest_points[0][2]
+                        print "linkIndexA", cast_closest_points[0][3]
+                        print "linkIndexB", cast_closest_points[0][4]
+                        print "A(t)", closest_pt_on_A_at_t
+                        print "A(t+1)", closest_pt_on_A_at_t_plus_1
+                        print "B", closest_pt_on_B
+                        print "normal", normal_.T
+                        print "Distance ", dist
+                        print "fraction ", fraction
+                        print "*************************************"
 
                         with open(file_name, 'a') as file_:
                             file_.write("---------------------------------------------------------------------")
@@ -429,26 +439,26 @@ class SimulationWorld(ISimulationWorldBase):
                             # file_.write("current_link_states", current_link_state[0])
                             # file_.write("next_robot_state", next_robot_state)
                             # file_.write("next_link_states", next_link_state[0])
-                            # file_.write("bodyUniqueIdA: " + str(cast_closest_points[0][1]))
-                            # file_.write("\n")
-                            # file_.write("bodyUniqueIdB: " + str(cast_closest_points[0][2]))
-                            # file_.write("\n")
-                            # file_.write("linkIndexA: " + str(cast_closest_points[0][3]))
-                            # file_.write("\n")
-                            # file_.write("linkIndexB: " + str(cast_closest_points[0][4]))
-                            # file_.write("\n")
-                            # file_.write("A(t): " + str(closest_pt_on_A_at_t))
-                            # file_.write("\n")
-                            # file_.write("A(t+1):" + str(closest_pt_on_A_at_t_plus_1))
-                            # file_.write("\n")
-                            # file_.write("B: " + str(closest_pt_on_B))
-                            # file_.write("\n")
-                            # file_.write("normal: " + str(normal_.T))
-                            # file_.write("\n")
-                            # file_.write("Distance: " + str(dist))
-                            # file_.write("\n")
-                            # file_.write("fraction: " + str(fraction))
-                            # file_.write("\n")
+                            file_.write("bodyUniqueIdA: " + str(cast_closest_points[0][1]))
+                            file_.write("\n")
+                            file_.write("bodyUniqueIdB: " + str(cast_closest_points[0][2]))
+                            file_.write("\n")
+                            file_.write("linkIndexA: " + str(cast_closest_points[0][3]))
+                            file_.write("\n")
+                            file_.write("linkIndexB: " + str(cast_closest_points[0][4]))
+                            file_.write("\n")
+                            file_.write("A(t): " + str(closest_pt_on_A_at_t))
+                            file_.write("\n")
+                            file_.write("A(t+1):" + str(closest_pt_on_A_at_t_plus_1))
+                            file_.write("\n")
+                            file_.write("B: " + str(closest_pt_on_B))
+                            file_.write("\n")
+                            file_.write("normal: " + str(normal_.T))
+                            file_.write("\n")
+                            file_.write("Distance: " + str(dist))
+                            file_.write("\n")
+                            file_.write("fraction: " + str(fraction))
+                            file_.write("\n")
                             file_.write("**********************************************************************")
                             file_.write("\n")
                             file_.write("**********************************************************************")
@@ -472,7 +482,11 @@ class SimulationWorld(ISimulationWorldBase):
                             zero_vec,
                             zero_vec)
 
-                        current_state_jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian,
+                        current_position_jacobian1 = []
+                        current_position_jacobian1.append(
+                            [jac[-len(current_robot_state):] for jac in current_position_jacobian])
+
+                        current_state_jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian1[0],
                                                                                  len(trajectory),
                                                                                  len(group),
                                                                                  time_step_count)
@@ -490,7 +504,11 @@ class SimulationWorld(ISimulationWorldBase):
                                                                           next_robot_state,
                                                                           zero_vec, zero_vec)
 
-                        next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian,
+                        next_position_jacobian1 = []
+                        next_position_jacobian1.append(
+                            [jac[-len(current_robot_state):] for jac in next_position_jacobian])
+
+                        next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian1[0],
                                                                               len(trajectory),
                                                                               len(group),
                                                                               time_step_count + 1)
@@ -503,7 +521,7 @@ class SimulationWorld(ISimulationWorldBase):
                         next_normal_T_times_jacobian_.append(np.matmul((1 - fraction) * normal_.T,
                                                                        next_state_jacobian_matrix))
 
-    def get_collision_infos_for_constraints(self, robot_id, link_index, current_link_state, next_link_state, distance,
+    def get_collision_infos_for_constraints(self, robot, link_index, current_link_state, next_link_state, distance,
                                             current_robot_state, next_robot_state,
                                             zero_vec, trajectory, group, time_step_count,
                                             initial_signed_distance_,
@@ -516,8 +534,8 @@ class SimulationWorld(ISimulationWorldBase):
             #     print (self.ignored_collisions[self.joint_id_to_info[link_index].link_name,
             #                                    self.joint_id_to_info[link_index].link_name])
 
-            if robot_id != constraint:
-                cast_closest_points = [CastClosestPointInfo(*x) for x in sim.getConvexSweepClosestPoints(robot_id, constraint,
+            if robot.id != constraint:
+                cast_closest_points = [CastClosestPointInfo(*x) for x in sim.getConvexSweepClosestPoints(robot.id, constraint,
                                                                                linkIndexA=link_index,
                                                                                distance=distance,
                                                                                bodyAfromPosition=current_link_state[
@@ -568,7 +586,7 @@ class SimulationWorld(ISimulationWorldBase):
                             closest_pt_on_A_at_t)
 
                         current_position_jacobian, current_orientation_jacobian = sim.calculateJacobian(
-                            robot_id,
+                            robot.id,
                             link_index,
                             # closest_pt_on_A_at_t,
                             current_closest_point_on_link_in_link_frame,
@@ -576,8 +594,12 @@ class SimulationWorld(ISimulationWorldBase):
                             current_robot_state,
                             zero_vec,
                             zero_vec)
+                        # print "current_position_jacobian.shape", np.asarray(current_position_jacobian).shape
 
-                        current_state_jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian,
+                        current_position_jacobian1 = []
+                        current_position_jacobian1.append([jac[-len(current_robot_state):] for jac in current_position_jacobian])
+
+                        current_state_jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian1[0],
                                                                                  len(trajectory),
                                                                                  len(group),
                                                                                  time_step_count)
@@ -588,13 +610,21 @@ class SimulationWorld(ISimulationWorldBase):
                             next_link_position_in_world_frame, next_link_orentation_in_world_frame,
                             closest_pt_on_A_at_t_plus_1)
 
-                        next_position_jacobian, _ = sim.calculateJacobian(robot_id, link_index,
+                        next_position_jacobian, _ = sim.calculateJacobian(robot.id, link_index,
                                                                           # closest_pt_on_A_at_t,
                                                                           next_closest_point_on_link_in_link_frame,
                                                                           next_robot_state,
                                                                           zero_vec, zero_vec)
 
-                        next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian,
+                        next_position_jacobian1 = []
+                        next_position_jacobian1.append([jac[-len(next_robot_state):] for jac in next_position_jacobian])
+
+                        # print ("next_position_jacobian", len(next_robot_state), len(next_position_jacobian[0]))
+                        # print (next_position_jacobian)
+                        # print ("next_position_jacobian1")
+                        # print (next_position_jacobian1)
+
+                        next_state_jacobian_matrix = self.get_jacobian_matrix(next_position_jacobian1[0],
                                                                               len(trajectory),
                                                                               len(group),
                                                                               time_step_count + 1)
@@ -729,12 +759,12 @@ class SimulationWorld(ISimulationWorldBase):
                         next_normal_T_times_jacobian_.append(np.matmul((1 - fraction) * normal_.T,
                                                                        next_state_jacobian_matrix))
 
-    def formulate_collision_infos(self, robot_id, trajectory, group, distance=0.2):
+    def formulate_collision_infos(self, robot, trajectory, group, distance=0.2):
 
         initial_signed_distance = []
         current_normal_T_times_jacobian = []
         next_normal_T_times_jacobian = []
-        start_state = self.get_current_states_for_given_joints(robot_id, group)
+        start_state = self.get_current_states_for_given_joints(robot.id, group)
         time_step_count = 0
         checked_collisions_pairs = DefaultOrderedDict(bool)
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
@@ -743,12 +773,12 @@ class SimulationWorld(ISimulationWorldBase):
 
             if next_time_step_of_trajectory is not None:
                 next_robot_state, next_link_states \
-                    = self.get_joint_and_link_states_at(robot_id, next_time_step_of_trajectory, group)
+                    = self.get_joint_and_link_states_at(robot.id, next_time_step_of_trajectory, group)
                 current_robot_state, current_link_states \
-                    = self.get_joint_and_link_states_at(robot_id, current_time_step_of_trajectory, group)
+                    = self.get_joint_and_link_states_at(robot.id, current_time_step_of_trajectory, group)
                 current_robot_state = current_robot_state[0]
                 next_robot_state = next_robot_state[0]
-                zero_vec = [0.0] * len(self.joint_ids)
+                zero_vec = [0.0] * len(current_robot_state)
 
                 # print "gjrg"
                 # print len(zero_vec), len(current_robot_state)
@@ -765,7 +795,7 @@ class SimulationWorld(ISimulationWorldBase):
                     initial_signed_distance_ = []
                     start = time.time()
 
-                    self.get_collision_infos_for_constraints(robot_id, link_index, current_link_state, next_link_state,
+                    self.get_collision_infos_for_constraints(robot, link_index, current_link_state, next_link_state,
                                                              distance, current_robot_state, next_robot_state,
                                                              zero_vec, trajectory, group, time_step_count,
                                                              initial_signed_distance_,
@@ -776,7 +806,7 @@ class SimulationWorld(ISimulationWorldBase):
                     # print "each constraints collision check time:", str(end - start)
                     #
                     # start = time.time()
-                    self.get_robot_self_collision_infos(robot_id, link_index, current_link_state, next_link_state,
+                    self.get_robot_self_collision_infos(robot.id, link_index, current_link_state, next_link_state,
                                                         distance, current_robot_state, next_robot_state,
                                                         zero_vec, trajectory, group, time_step_count,
                                                         initial_signed_distance_,
@@ -799,7 +829,7 @@ class SimulationWorld(ISimulationWorldBase):
         if len(next_normal_T_times_jacobian) > 0:
             next_normal_T_times_jacobian = np.vstack(itertools.chain.from_iterable(next_normal_T_times_jacobian))
 
-        self.reset_joint_states(robot_id, start_state, group)
+        self.reset_joint_states(robot.id, start_state, group)
 
         return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian
 
@@ -993,13 +1023,19 @@ class SimulationWorld(ISimulationWorldBase):
                 # for body_a, body_b in itertools.combinations(self.joint_ids, 2):
                 for body_b in self.link_pairs[link_index]:
                     body_a = link_index
+                    object_A = self.joint_id_to_info[body_a].link_name
+                    object_B = self.joint_id_to_info[body_b].link_name
+
+                    link_index_A = self.joint_id_to_info[body_a].joint_index
+                    # link_index_A = link_index
+                    link_index_B = self.joint_id_to_info[body_b].joint_index
                     # for link_index in self.joint_ids:
                     # if robot_id == constraint:
-                    if not self.ignored_collisions[self.joint_id_to_info[body_a].link_name,
-                                                   self.joint_id_to_info[body_b].link_name]:
+                    if not self.ignored_collisions[object_A, object_B]:
 
                         cast_closest_points = sim.getConvexSweepClosestPoints(robot_id, robot_id,
-                                                                              linkIndexA=link_index,
+                                                                               linkIndexA=link_index_A,
+                                                                               linkIndexB=link_index_B,
                                                                               distance=distance,
                                                                               bodyAfromPosition=current_link_state[
                                                                                   0],

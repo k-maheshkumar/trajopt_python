@@ -26,7 +26,9 @@ class PlannerExample:
         self.planner.world.toggle_rendering(0)
         self.planner.world.set_gravity(0, 0, -10)
         plane_id = self.planner.add_constraint_from_urdf("plane", "plane.urdf", position=[0, 0, 0.0])
-        self.robot_id = self.planner.load_robot(urdf_file)
+        self.robot_id = self.planner.load_robot(urdf_file,
+                                                use_fixed_base=True
+                                                )
         #
         # # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         # #                                                  position=[0, 0, 0.0])
@@ -99,30 +101,6 @@ class PlannerExample:
 
         self.planner.world.reset_joint_states(self.robot_id, start_state.values(), start_state.keys())
 
-
-        # import pybullet as p
-        # p.connect(p.SHARED_MEMORY, "localhost")
-        # joints = [i for i in range(p.getNumJoints(self.robot_id))]
-        #
-        # ur5_wrist_3_joint = 13
-        # # print "ghdghrdklhg", p.getNumJoints(self.robot_id)
-        # # zero_vec = [0] * 11
-        # zero_vec = [0] * p.getNumJoints(self.robot_id)
-        # # for i in range(p.getNumJoints(self.robot_id)):
-        # #     print p.getJointInfo(self.robot_id, i)
-        # current_robot_state = self.planner.world.get_joint_states_at(self.robot_id, start_state.values(), goal_state.keys())
-        #
-        # print "current_robot_state*------------------", len(current_robot_state[0])
-        # print current_robot_state[0]
-        #
-        # current_position_jacobian, _ = p.calculateJacobian(self.robot_id, ur5_wrist_3_joint,
-        #                                                      # closest_pt_on_A_at_t,
-        #                                                      [0, 0, 0],
-        #                                                    current_robot_state[0],
-        #                                                      zero_vec, zero_vec)
-        #
-        # print current_position_jacobian
-
         _, status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
                                                          goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
@@ -131,9 +109,9 @@ class PlannerExample:
         # print trajectory.final
         self.planner.execute_trajectory()
         # self.planner.world.step_simulation_for(5)
-        time.sleep(5)
-        # import sys
-        # sys.exit(0)
+        # time.sleep(5)
+        # # import sys
+        # # sys.exit(0)
 
     def load_srdf(self):
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
@@ -156,6 +134,30 @@ class PlannerExample:
         # print ignored_collisions
         self.planner.world.ignored_collisions = ignored_collisions
 
+    def cal_jacobian(self):
+        import pybullet as p
+        p.connect(p.SHARED_MEMORY, "localhost")
+        joints = [i for i in range(p.getNumJoints(self.robot_id))]
+
+        ur5_wrist_3_joint = 13
+        # print "ghdghrdklhg", p.getNumJoints(self.robot_id)
+        # zero_vec = [0] * 11
+        # for i in range(p.getNumJoints(self.robot_id)):
+        #     print p.getJointInfo(self.robot_id, i)
+        current_robot_state = self.planner.world.get_joint_states_at(self.robot_id, start_state.values(),
+                                                                     goal_state.keys())
+        zero_vec = [0] * len(current_robot_state[0])
+
+        print "current_robot_state*------------------", len(current_robot_state[0])
+        print current_robot_state[0]
+
+        current_position_jacobian, _ = p.calculateJacobian(self.robot_id, ur5_wrist_3_joint,
+                                                           # closest_pt_on_A_at_t,
+                                                           [0, 0, 0],
+                                                           current_robot_state[0],
+                                                           zero_vec, zero_vec)
+
+        print current_position_jacobian
 
 def main():
     example = PlannerExample()

@@ -49,8 +49,8 @@ class PlannerExample:
 
 
 
-        self.planner.robot.load_srdf(srdf_file)
-        self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
+        # self.planner.robot.load_srdf(srdf_file)
+        # self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(1)
 

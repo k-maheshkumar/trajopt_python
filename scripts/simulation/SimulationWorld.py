@@ -197,11 +197,11 @@ class SimulationWorld(ISimulationWorldBase):
             self.link_pairs[body_a].append(body_b)
             self.link_pairs[body_b].append(body_a)
 
-        # initial_distances = self.check_self_collision(robot_id, distance=0.05)
+        initial_distances = self.check_self_collision(robot_id, distance=0.05)
         # file_name1 = home + '/temp/initial_collision.xml'
-        # for (link_a, link_b) in initial_distances:
-        #     self.ignored_collisions[link_a, link_b] = True
-        #     self.ignored_collisions[link_b, link_a] = True
+        for (link_a, link_b) in initial_distances:
+            self.ignored_collisions[link_a, link_b] = True
+            self.ignored_collisions[link_b, link_a] = True
         #     with open(file_name1, 'a') as file_:
         #         file_.write( "<disable_collisions link1=\""+link_a+"\" link2=\""+ link_b + "\" reason=\"initial_collision\" />")
         #         file_.write("\n")
@@ -444,7 +444,7 @@ class SimulationWorld(ISimulationWorldBase):
 
         cast_closest_points = [CastClosestPointInfo(*x) for x in
                                sim.getConvexSweepClosestPoints(robot_id, robot_id,
-                                                               # linkIndexA=link_index_A,
+                                                               linkIndexA=link_index,
                                                                # linkIndexB=link_index_B,
                                                                distance=distance,
                                                                bodyAfromPosition=current_link_state[
@@ -515,6 +515,7 @@ class SimulationWorld(ISimulationWorldBase):
                 cast_closest_points = [CastClosestPointInfo(*x) for x in
                                        sim.getConvexSweepClosestPoints(robot.id, constraint,
                                                                        linkIndexA=link_index,
+                                                                       linkIndexB=-1,
                                                                        distance=distance,
                                                                        bodyAfromPosition=current_link_state[
                                                                            0],
@@ -528,6 +529,8 @@ class SimulationWorld(ISimulationWorldBase):
 
                 # if len(cast_closest_points) > 0:
                 for closest_point in cast_closest_points:
+                    link_a = self.joint_id_to_info[closest_point.link_index_a].link_name
+                    link_b = self.joint_id_to_info[closest_point.link_index_b].link_name
                     closest_pt_on_A_at_t = closest_point.position_on_a
                     closest_pt_on_A_at_t_plus_1 = closest_point.position_on_a1
                     closest_pt_on_B = closest_point.position_on_b
@@ -536,7 +539,9 @@ class SimulationWorld(ISimulationWorldBase):
                     dist = closest_point.contact_distance
                     fraction = closest_point.contact_fraction
 
+                    # if dist < 0 and link_a is not None and link_b is not None:
                     if dist < 0:
+                        self.print_contact_points(closest_point, time_step_count, link_index)
                         current_state_jacobian_matrix = self.formulate_jacbian_matrix(robot.id, link_index,
                                                                                       current_robot_state,
                                                                                       current_link_state,

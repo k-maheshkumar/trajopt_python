@@ -4,6 +4,8 @@ from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
 import itertools
 from scripts.Robot.ModelandTree import RobotTree
+from srdfdom.srdf import SRDF
+from scripts.utils.dict import DefaultOrderedDict
 
 class Robot:
     def __init__(self, logger_name=__name__, verbose=False, log_file=False):
@@ -11,6 +13,8 @@ class Robot:
         self.model = None
         self.planner = TrajectoryPlanner(logger_name, verbose, log_file)
         self.logger = logging.getLogger(logger_name + __name__)
+        self.ignored_collisions = DefaultOrderedDict(bool)
+        self.srdf = None
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
 
@@ -24,6 +28,18 @@ class Robot:
         # base_link, end_link = "lbr_iiwa_link_0", "lbr_iiwa_link_7"
 
         # self.tree = RobotTree(self.model, base_link, end_link)
+
+    def load_srdf(self, srdf_file):
+
+        stream = open(srdf_file, 'r')
+        self.srdf = SRDF.from_xml_string(stream.read())
+
+    def get_ignored_collsion(self):
+        for collision in self.srdf.disable_collisionss:
+            self.ignored_collisions[collision.link1, collision.link2] = True
+            self.ignored_collisions[collision.link2, collision.link1] = True
+
+        return self.ignored_collisions
 
     def get_trajectory(self):
         return self.planner.trajectory

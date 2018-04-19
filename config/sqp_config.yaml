@@ -4,7 +4,7 @@ sqp:
   improve_ratio_threshold: 0.25
   initial_penalty: 2
   max_iteration: 20
-  max_penalty: 1e5
+  max_penalty: 1e4
   max_trust_region_size: 20
   min_actual_redution: 1e-4
   min_actual_worse_redution: -100

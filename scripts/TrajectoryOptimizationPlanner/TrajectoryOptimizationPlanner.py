@@ -106,7 +106,7 @@ class TrajectoryOptimizationPlanner():
                 start_state = start_state.values()
 
             self.world.reset_joint_states(self.robot.id, start_state, group)
-            self.world.step_simulation_for(0.2)
+            # self.world.step_simulation_for(0.2)
 
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
@@ -145,7 +145,7 @@ class TrajectoryOptimizationPlanner():
         self.logger.info(status)
         is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
                                                          group,
-                                                         collision_safe_distance)
+                                                         0.02)
         self.world.toggle_rendering_while_planning(True)
 
         if self.save_problem and self.db_driver is not None:

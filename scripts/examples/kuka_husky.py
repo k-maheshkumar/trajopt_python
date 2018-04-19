@@ -14,6 +14,8 @@ class PlannerExample:
         location_prefix = home + '/masterThesis/bullet3/data/'
 
         urdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_husky_description/urdf/kuka_husky.urdf"
+        srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_husky_description/moveit_config/config/kuka_husky.srdf"
+
         config = {
             "use_gui": True,
             "verbose": True,
@@ -30,7 +32,7 @@ class PlannerExample:
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
         self.robot_id = self.planner.load_robot(urdf_file,
-                                                use_fixed_base=True
+                                                # use_fixed_base=True
                                                 )
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
@@ -47,7 +49,8 @@ class PlannerExample:
 
 
 
-
+        self.planner.robot.load_srdf(srdf_file)
+        self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(1)
 
@@ -87,17 +90,18 @@ class PlannerExample:
         goal_state["rear_right_wheel"] = 0.6
 
         goal_state["lbr_iiwa_joint_1"] = 0.8032
-        goal_state["lbr_iiwa_joint_2"] = 1.6067
+        goal_state["lbr_iiwa_joint_2"] = 1.4067
         goal_state["lbr_iiwa_joint_3"] = 0.9404
         goal_state["lbr_iiwa_joint_4"] = -1.0499
         goal_state["lbr_iiwa_joint_5"] = -0.5409
         goal_state["lbr_iiwa_joint_6"] = 1.2149
         goal_state["lbr_iiwa_joint_7"] = 0.0
 
-        # self.planner.world.reset_joint_states(self.planner.robot.id, goal_state.values(), goal_state.keys())
+        # self.planner.world.reset_joint_states(self.planner.robot.id, start_state.values(), start_state.keys())
+        # self.planner.world.step_simulation_for(0.2)
 
-        duration = 20
-        samples = 5
+        duration = 10
+        samples = 20
         collision_check_distance = 0.15
         collision_safe_distance = 0.1
         # start_state = [1.561610221862793, 2.094395160675049, 2.96705961227417, 1.5873310565948486, 2.96705961227417,
@@ -110,10 +114,11 @@ class PlannerExample:
                                                                             )
         print("is trajectory free from collision: ", is_collision_free)
         print status
+        # print trajectory.final
         self.planner.execute_trajectory()
         self.planner.world.step_simulation_for(2)
-        # # import sys
-        # # sys.exit(0)
+        # # # import sys
+        # # # sys.exit(0)
 
     def load_srdf(self):
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_husky_description/moveit_config/config/kuka_husky.srdf"
@@ -136,14 +141,20 @@ class PlannerExample:
         p.connect(p.SHARED_MEMORY)
         jointIds = []
         paramIds     = []
-        for j in range(p.getNumJoints(self.planner.robot.id)):
-            info = p.getJointInfo(self.planner.robot.id, j)
+        for j in range(p.getNumJoints(self.robot_id)):
+            info = p.getJointInfo(self.robot_id, j)
+            joint_state = p.getJointState(self.robot_id, j)
             # print(info)
             jointName = info[1]
             jointType = info[2]
+            lower_limit = info[8]
+            upper_limit = info[9]
+            lower_limit = -4
+            lower_limit = 4
+            print lower_limit, upper_limit
             if (jointType == p.JOINT_PRISMATIC or jointType == p.JOINT_REVOLUTE):
                 jointIds.append(j)
-                paramIds.append(p.addUserDebugParameter(jointName.decode("utf-8"), -4, 4, 0))
+                paramIds.append(p.addUserDebugParameter(jointName.decode("utf-8"), lower_limit, upper_limit, joint_state[0]))
 
         p.setRealTimeSimulation(1)
         while (1):
@@ -198,7 +209,7 @@ class PlannerExample:
 
 def main():
     example = PlannerExample()
-    example.load_srdf()
+    # example.load_srdf()
     example.run()
     # example.manual_control()
     # example.connect_directly()

@@ -12,6 +12,7 @@ class PlannerExample:
         location_prefix = home + '/masterThesis/bullet3/data/'
 
         urdf_file = location_prefix + "kuka_iiwa/model.urdf"
+        srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
             "use_gui": True,
@@ -35,12 +36,14 @@ class PlannerExample:
 
         self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
                                                   position=[0.28, -0.43, 0.9], mass=100)
-        #
-        # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-        #                                           position=[-0.48, -0.43, 0.9], mass=100)
-        # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-        #                                           position=[-0.48, 0.43, 0.9], mass=100)
 
+        self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
+                                                  position=[-0.48, -0.43, 0.9], mass=100)
+        self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
+                                                  position=[-0.48, 0.43, 0.9], mass=100)
+
+        # self.planner.robot.load_srdf(srdf_file)
+        # self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
 
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(0.01)
@@ -62,11 +65,11 @@ class PlannerExample:
                                                         collision_check_distance=collision_check_distance
                                                         )
         print("is trajectory free from collision: ", is_collision_free)
-        print status
+        print (status)
         self.planner.execute_trajectory()
         self.planner.world.step_simulation_for(2)
-        import sys
-        sys.exit(0)
+        # import sys
+        # sys.exit(0)
 
     def load_srdf(self):
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"

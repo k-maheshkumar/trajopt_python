@@ -144,7 +144,7 @@ class SQPsolver:
 
     def analyse_inputs(self):
         if self.lbG is not None:
-            self.lbG = np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
+            self.lbG = +1 * np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
                                  for lb in self.lbG])
         if self.ubG is not None:
             self.ubG = np.nan_to_num([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
@@ -223,7 +223,7 @@ class SQPsolver:
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
         if constraints is not None:
-            # print lower_limit, delta
+            print lower_limit, delta
             if constraints.shape[1] == 2 * p.shape[0]:
                 p1 = cvxpy.hstack([p, p])
             else:
@@ -238,9 +238,28 @@ class SQPsolver:
             elif upper_limit is None:
                 constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
                                lower_limit <= cvxpy.matmul(constraints, p1)]
+                # cons1_model = lower_limit - cvxpy.matmul(constraints, p1)
+                # cons1_model += cvxpy.matmul(-constraints, p1)
+                # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+                # cons2_model = cvxpy.norm(p, self.trust_region_norm) - delta
+                # model_objective += penalizer * cvxpy.norm(cons1_model, self.penalty_norm)
+                # model_objective += penalizer * cvxpy.norm(cons2_model, self.trust_region_norm)
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+
+        # cons1 = cvxpy.norm(p, self.trust_region_norm) - delta
+        # cons1 = cvxpy.norm(p, self.trust_region_norm) - delta
+        # cons2 = lower_limit - cvxpy.matmul(constraints, p1)
+
+
+        # temp = model_objective + [penalizer * cons.value for cons in constraints]
+        # temp = model_objective + penalizer * cons1
+        # temp += model_objective + penalizer * (cvxpy.norm(cons2, self.trust_region_norm))
+        # model_objective += temp
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
+        # problem = cvxpy.Problem(cvxpy.Minimize(model_objective))
+        # problem = cvxpy.Problem(cvxpy.Minimize(model_objective))
+        # problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
         # print problem.get_problem_data(self.solver)[0]
         if self.solver == "CVXOPT":
             result = problem.solve(solver=self.solver, warm_start=True, kktsolver=cvxpy.ROBUST_KKTSOLVER, verbose=False)
@@ -336,7 +355,7 @@ class SQPsolver:
             while iteration_count < max_iteration:
                 iteration_count += 1
                 # print "iteration_count", iteration_count
-                self.logger.debug("iteration_count " + str(iteration_count))
+                self.logger.info("iteration_count " + str(iteration_count))
                 if callback_function is not None:
                     constraints, lower_limit, upper_limit = callback_function(x_k, p_k, elapsed_time)
                 while trust_box_size >= min_trust_box_size:

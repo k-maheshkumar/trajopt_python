@@ -79,6 +79,10 @@ class SimulationWorld(ISimulationWorldBase):
         self.ignored_collisions = DefaultOrderedDict(bool)
         self.link_pairs = DefaultOrderedDict(list)
 
+        self.constraint_name_to_info = DefaultOrderedDict()
+        self.constraint_id_to_info = DefaultOrderedDict()
+        self.constraint_id_to_name = DefaultOrderedDict()
+
         self.planning_group = []
         self.planning_group_ids = []
         self.joint_ids = []
@@ -185,6 +189,15 @@ class SimulationWorld(ISimulationWorldBase):
 
         return robot_id
 
+    def init_constraints_info(self, constraint_name, constraint_id):
+        self.constraint_name_to_info[constraint_name, 'base'] = JointInfo(*([-1, 'base'] + [None] * 15))
+        self.constraint_id_to_info[constraint_name, -1] = JointInfo(*([-1, 'base'] + [None] * 15))
+        self.constraint_id_to_name[constraint_id] = constraint_name
+        for joint_index in range(sim.getNumJoints(constraint_id)):
+            constraint_info = JointInfo(*sim.getJointInfo(constraint_id, joint_index))
+            self.constraint_name_to_info[constraint_name, constraint_info.joint_name] = constraint_info
+            self.constraint_id_to_info[constraint_name, constraint_info.joint_index] = constraint_info
+
     def init_js_info(self, robot_id):
         self.joint_name_to_info['base'] = JointInfo(*([-1, 'base'] + [None] * 15))
         self.joint_id_to_info[-1] = JointInfo(*([-1, 'base'] + [None] * 15))
@@ -199,9 +212,9 @@ class SimulationWorld(ISimulationWorldBase):
 
         initial_distances = self.check_self_collision(robot_id, distance=0.05)
         # file_name1 = home + '/temp/initial_collision.xml'
-        for (link_a, link_b) in initial_distances:
-            self.ignored_collisions[link_a, link_b] = True
-            self.ignored_collisions[link_b, link_a] = True
+        # for (link_a, link_b) in initial_distances:
+        #     self.ignored_collisions[link_a, link_b] = True
+        #     self.ignored_collisions[link_b, link_a] = True
         #     with open(file_name1, 'a') as file_:
         #         file_.write( "<disable_collisions link1=\""+link_a+"\" link2=\""+ link_b + "\" reason=\"initial_collision\" />")
         #         file_.write("\n")
@@ -387,30 +400,33 @@ class SimulationWorld(ISimulationWorldBase):
             file_.write("**********************************************************************")
             file_.write("\n \n")
 
-    def print_contact_points(self, cp, time, index):
+    def print_contact_points(self, cp, time, index, body_a_info, body_b_info=None, body_b_name=None):
 
-        link_a = self.joint_id_to_info[cp.link_index_a].link_name
-        link_b = self.joint_id_to_info[cp.link_index_b].link_name
+        link_a = body_a_info[cp.link_index_a].link_name
+        if body_b_info is not None:
+            link_b = body_b_info[body_b_name, cp.link_index_b].link_name
+        else:
+            link_b = body_a_info[cp.link_index_b].link_name
 
         print ("-----------cast points--------------")
+        print ("collision pair", link_a, link_b)
         print ("time_step_count", time)
         print ("link_index", index)
 
-        print ("collision pair", link_a, link_b)
 
         print ("bodyUniqueIdA", cp.body_unique_id_a)
         print ("bodyUniqueIdB", cp.body_unique_id_b)
         print ("linkIndexA", cp.link_index_a)
         print ("linkIndexB", cp.link_index_b)
         print ("A(t)", cp.position_on_a)
-        print ("A(t+1)", cp.position_on_a1)
+        # print ("A(t+1)", cp.position_on_a1)
         print ("B", cp.position_on_b)
         print ("normal", cp.contact_normal_on_b)
         print ("Distance ", cp.contact_distance)
-        print ("fraction ", cp.contact_fraction)
+        # print ("fraction ", cp.contact_fraction)
         print ("*************************************")
 
-    def formulate_jacbian_matrix(self, robot_id, link_index, robot_state, link_state, cp, trajectory, group,
+    def formulate_jacbian_matrix(self, robot, link_index, robot_state, link_state, cp, trajectory, group,
                                  time_step_count, zero_vec):
         link_position_in_world_frame = link_state[4]
         link_orentation_in_world_frame = link_state[5]
@@ -418,7 +434,7 @@ class SimulationWorld(ISimulationWorldBase):
             link_position_in_world_frame, link_orentation_in_world_frame,
             cp)
 
-        position_jacobian, _ = sim.calculateJacobian( robot_id, link_index,
+        position_jacobian, _ = sim.calculateJacobian( robot.id, link_index,
             # closest_pt_on_A_at_t,
             closest_point_on_link_in_link_frame,
             # [0, 0, 0],
@@ -510,12 +526,14 @@ class SimulationWorld(ISimulationWorldBase):
                                             current_normal_T_times_jacobian_,
                                             next_normal_T_times_jacobian_):
 
+        # print self.collision_constraints
+        # print self.scene_items
         for constraint in self.collision_constraints:
             if robot.id != constraint:
                 cast_closest_points = [CastClosestPointInfo(*x) for x in
                                        sim.getConvexSweepClosestPoints(robot.id, constraint,
                                                                        linkIndexA=link_index,
-                                                                       linkIndexB=-1,
+                                                                       # linkIndexB=-1,
                                                                        distance=distance,
                                                                        bodyAfromPosition=current_link_state[
                                                                            0],
@@ -541,15 +559,17 @@ class SimulationWorld(ISimulationWorldBase):
 
                     # if dist < 0 and link_a is not None and link_b is not None:
                     if dist < 0:
-                        self.print_contact_points(closest_point, time_step_count, link_index)
-                        current_state_jacobian_matrix = self.formulate_jacbian_matrix(robot.id, link_index,
+                        # self.print_contact_points(closest_point, time_step_count, link_index,
+                        #                           self.joint_id_to_info, self.constraint_id_to_info,
+                        #                           self.constraint_id_to_name[constraint])
+                        current_state_jacobian_matrix = self.formulate_jacbian_matrix(robot, link_index,
                                                                                       current_robot_state,
                                                                                       current_link_state,
                                                                                       closest_pt_on_A_at_t,
                                                                                       trajectory, group,
                                                                                       time_step_count, zero_vec)
 
-                        next_state_jacobian_matrix = self.formulate_jacbian_matrix(robot.id, link_index,
+                        next_state_jacobian_matrix = self.formulate_jacbian_matrix(robot, link_index,
                                                                                    next_robot_state,
                                                                                    next_link_state,
                                                                                    closest_pt_on_A_at_t_plus_1,
@@ -596,12 +616,12 @@ class SimulationWorld(ISimulationWorldBase):
                 # self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
 
 
+                current_normal_T_times_jacobian_ = []
+                next_normal_T_times_jacobian_ = []
+                initial_signed_distance_ = []
                 for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
                                                                                       current_link_states,
                                                                                       next_link_states):
-                    current_normal_T_times_jacobian_ = []
-                    next_normal_T_times_jacobian_ = []
-                    initial_signed_distance_ = []
                     start = time.time()
 
                     self.get_collision_infos_for_constraints(robot, link_index, current_link_state, next_link_state,
@@ -615,7 +635,7 @@ class SimulationWorld(ISimulationWorldBase):
                     # print "each constraints collision check time:", str(end - start)
                     #
                     # start = time.time()
-                    if True:
+                    if False:
                         self.get_robot_self_collision_infos(robot.id, link_index, current_link_state, next_link_state,
                                                             distance, current_robot_state, next_robot_state,
                                                             zero_vec, trajectory, group, time_step_count,
@@ -624,8 +644,8 @@ class SimulationWorld(ISimulationWorldBase):
                                                             next_normal_T_times_jacobian_, checked_collisions_pairs,
                                                             to_plot)
 
-                    # end = time.time()
-                    # print "each self collision check time:", str(end - start)
+                        # end = time.time()
+                        # print "each self collision check time:", str(end - start)
                 if len(initial_signed_distance_) > 0:
                     initial_signed_distance.append(initial_signed_distance_)
                 if len(current_normal_T_times_jacobian_) > 0:
@@ -645,6 +665,8 @@ class SimulationWorld(ISimulationWorldBase):
             next_normal_T_times_jacobian = np.vstack(itertools.chain.from_iterable(next_normal_T_times_jacobian))
 
         self.reset_joint_states(robot.id, start_state, group)
+
+        print "initial_signed_distance . . . . .", len(initial_signed_distance)
 
         return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian
 
@@ -796,9 +818,11 @@ class SimulationWorld(ISimulationWorldBase):
         collision = True
         start_state = self.get_current_states_for_given_joints(robot_id, group)
         distance = 10
+        checked_collisions_pairs = DefaultOrderedDict(bool)
+        time_step_count = 0
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
             next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
-
+            time_step_count += 1
             if next_time_step_of_trajectory is not None:
                 next_link_states = self.get_link_states_at(robot_id, next_time_step_of_trajectory, group)
             current_link_states = self.get_link_states_at(robot_id, current_time_step_of_trajectory, group)
@@ -810,7 +834,7 @@ class SimulationWorld(ISimulationWorldBase):
                                                                                   next_link_states):
 
                 for constraint in self.collision_constraints:
-                    if next_link_state is not None:
+                    if next_link_state is not None and constraint != robot_id:
                         cast_closest_points = sim.getConvexSweepClosestPoints(robot_id, constraint,
                                                                               linkIndexA=link_index,
                                                                               distance=collision_safe_distance,
@@ -833,11 +857,12 @@ class SimulationWorld(ISimulationWorldBase):
 
                     if distance < 0:
                         collision = False
+                        print "const"
                         break
 
                 cast_closest_points = [CastClosestPointInfo(*x) for x in
                                        sim.getConvexSweepClosestPoints(robot_id, robot_id,
-                                                                       # linkIndexA=link_index_A,
+                                                                       linkIndexA=link_index,
                                                                        # linkIndexB=link_index_B,
                                                                        distance=distance,
                                                                        bodyAfromPosition=current_link_state[
@@ -849,18 +874,24 @@ class SimulationWorld(ISimulationWorldBase):
                                                                        bodyAtoOrientation=next_link_state[1],
                                                                        # bodyAtoOrientation=[0, 0, 0, 1],
                                                                        )]
+                # print self.ignored_collisions
+                # print self.joint_id_to_info
 
                 for cp in cast_closest_points:
                     if cp.link_index_a > -1 and cp.link_index_b > -1:
                         link_a = self.joint_id_to_info[cp.link_index_a].link_name
                         link_b = self.joint_id_to_info[cp.link_index_b].link_name
+                        visited = checked_collisions_pairs[time_step_count, link_a, link_b]
 
-
-                        if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not \
+                        if not visited and cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not \
                         self.ignored_collisions[link_a, link_b]:
+
                             dist = cp.contact_distance
+
                             if dist < 0:
                                 collision = False
+                                print "traj has self collision between "
+                                self.print_contact_points(cp, time_step_count, link_index, self.joint_id_to_info)
                                 break
 
                 if not collision:

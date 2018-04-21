@@ -34,7 +34,7 @@ class PlannerExample:
         self.robot_id = self.planner.load_robot(urdf_file,
                                                 # use_fixed_base=True
                                                 )
-        plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
+        plane_id = self.planner.add_constraint_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
         # table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf",
         #                                                  position=[0, 0, 0.0])
@@ -49,8 +49,8 @@ class PlannerExample:
 
 
 
-        # self.planner.robot.load_srdf(srdf_file)
-        # self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
+        self.planner.robot.load_srdf(srdf_file)
+        self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(1)
 
@@ -84,10 +84,10 @@ class PlannerExample:
 
         goal_state = OrderedDict()
 
-        goal_state["front_left_wheel"] = 0.5
-        goal_state["front_right_wheel"] = 0.5
-        goal_state["rear_left_wheel"] = 0.2
-        goal_state["rear_right_wheel"] = 0.6
+        goal_state["front_left_wheel"] = 0.0
+        goal_state["front_right_wheel"] = 0.0
+        goal_state["rear_left_wheel"] = 0.0
+        goal_state["rear_right_wheel"] = 0.0
 
         goal_state["lbr_iiwa_joint_1"] = 0.8032
         goal_state["lbr_iiwa_joint_2"] = 1.4067

@@ -16,7 +16,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": True,
+            # "verbose": True,
             "log_file": False,
             # "save_problem": True,
             "robot_config": "robot_config_kukka_arm.yaml"

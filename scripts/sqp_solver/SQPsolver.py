@@ -161,13 +161,27 @@ class SQPsolver:
             self.lbG = np.hstack([-self.ubG, -self.ubG])
             self.ubG = np.hstack([self.ubG, -self.ubG])
 
-    def is_constraints_satisfied(self, x_k, tolerance=1e-3):
+    def is_constraints_satisfied1(self, x_k, tolerance=1e-3):
         cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
         cons2_cond = np.isclose(np.matmul(-self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
         cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
         # return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
 
         return cons1_cond.all() and cons2_cond.all() and cons3_cond.all()
+
+    def is_constraints_satisfied(self, x_k, p, constraints, lower_limit, tolerance=1e-3):
+        cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
+        cons2_cond = np.isclose(np.matmul(-self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
+        cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
+
+        if constraints is not None:
+            p1 = np.hstack([p.value] * (constraints.shape[1] / p.shape[0]))
+
+            cons4_cond = np.isclose(np.matmul(constraints, p1) >= lower_limit, 1, rtol=tolerance, atol=tolerance).all()
+        else:
+            cons4_cond = True
+
+        return cons1_cond.all() and cons2_cond.all() and cons3_cond.all() and cons4_cond
 
     def is_x_converged(self, x_k, p_k, tolerance=1e-3):
         return abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= tolerance
@@ -176,41 +190,71 @@ class SQPsolver:
 
         return abs(objective) <= tolerance
 
-    def evaluate_constraints(self, x_k):
+    def evaluate_constraints1(self, x_k):
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
         cons2 = np.add(np.matmul(-self.G, x_k), self.lbG)
         cons3 = np.subtract(np.matmul(self.A, x_k), self.b)
         # print cons1, cons2, cons3
         return cons1.flatten(), cons2.flatten(), cons3.flatten()
 
-    def get_constraints_gradients(self):
+    def evaluate_constraints(self, x_k, p, constraints, lower_limit):
+        p1 = cvxpy.hstack([p] * (constraints.shape[1] / p.shape[0]))
+        cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
+        cons2 = np.add(np.matmul(-self.G, x_k), self.lbG)
+        cons3 = np.subtract(np.matmul(self.A, x_k), self.b)
+
+        cons4 = lower_limit - cvxpy.matmul(constraints, p1)
+        # print cons1, cons2, cons3
+        return cons1.flatten(), cons2.flatten(), cons3.flatten(), cons4
+
+    def get_constraints_gradients1(self):
         cons1_grad = self.G
         cons2_grad = -self.G
         cons3_grad = self.A
         return cons1_grad, cons2_grad, cons3_grad
+
+    def get_constraints_gradients(self, constraints):
+        cons1_grad = self.G
+        cons2_grad = -self.G
+        cons3_grad = self.A
+        cons4_grad = -constraints
+        return cons1_grad, cons2_grad, cons3_grad, cons4_grad
 
     def get_objective_gradient_and_hessian(self, x_k):
         model_grad = 0.5 * np.matmul((self.P + self.P.T), x_k)
         model_hess = 0.5 * (self.P + self.P.T)
         return model_grad, model_hess
 
-    def get_model_objective(self, x_k, penalty, p):
-        cons1_at_xk, cons2_at_xk, cons3_at_xk = self.evaluate_constraints(x_k)
-        cons1_grad_at_xk, cons2_grad_at_xk, cons3_grad_at_xk = self.get_constraints_gradients()
+    def get_model_objective(self, x_k, penalty, p, constraints, lower_limit):
+        # cons1_model = lower_limit - cvxpy.matmul(constraints, p1)
+        # cons1_model += cvxpy.matmul(-constraints, p1)
+        # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+        # cons2_model = cvxpy.norm(p, self.trust_region_norm) - delta
+        # model_objective += penalizer * cvxpy.norm(cons1_model, self.penalty_norm)
+        # model_objective += penalizer * cvxpy.norm(cons2_model, self.trust_region_norm)
+
+        p1 = cvxpy.hstack([p] * (constraints.shape[1] / p.shape[0]))
+        cons1_at_xk, cons2_at_xk, cons3_at_xk, cons4_at_xk = self.evaluate_constraints(x_k, p, constraints, lower_limit)
+        # cons4_at_xk = self.evaluate_constraints1(p1, constraints, lower_limit)
+        # cons1_grad_at_xk, cons2_grad_at_xk, cons3_grad_at_xk = self.get_constraints_gradients()
+        cons1_grad_at_xk, cons2_grad_at_xk, cons3_grad_at_xk, cons4_grad_at_xk = self.get_constraints_gradients(constraints)
         cons1_model = cons1_at_xk + cons1_grad_at_xk * p
         cons2_model = cons2_at_xk + cons2_grad_at_xk * p
         cons3_model = cons3_at_xk + cons3_grad_at_xk * p
+        cons4_model = cons4_at_xk + cvxpy.matmul(cons4_grad_at_xk, p1)
 
         objective_grad_at_xk, objective_hess_at_xk = self.get_objective_gradient_and_hessian(x_k)
-        objective_at_xk = self.get_actual_objective(x_k, penalty)
+        objective_at_xk = self.get_actual_objective(x_k, penalty, p, constraints, lower_limit)
         model = objective_at_xk.value + objective_grad_at_xk * p + 0.5 * cvxpy.quad_form(p, objective_hess_at_xk)
 
         model += penalty * (cvxpy.norm(cons1_model, self.penalty_norm) + cvxpy.norm(cons2_model, self.penalty_norm)
                             + cvxpy.norm(cons3_model, self.penalty_norm))
 
+        model += penalty * (cvxpy.norm(cons4_model, self.penalty_norm))
+
         return model, objective_at_xk
 
-    def get_actual_objective(self, xk, penalty):
+    def get_actual_objective1(self, xk, penalty):
         x = cvxpy.Variable(self.P.shape[0])
         x.value = copy.copy(xk)
         objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
@@ -220,32 +264,50 @@ class SQPsolver:
         objective += penalty * (constraints1 + constraints2 + constraints3)
         return objective
 
+    def get_actual_objective(self, xk, penalty, p, constraints, lower_limit):
+        x = cvxpy.Variable(self.P.shape[0])
+        x.value = copy.copy(xk)
+        objective = 0.5 * cvxpy.quad_form(x, self.P) + self.q * x
+        constraints1 = cvxpy.norm(self.G * x - self.ubG.flatten(), self.penalty_norm)
+        constraints2 = cvxpy.norm(-self.G * x + self.lbG.flatten(), self.penalty_norm)
+        constraints3 = cvxpy.norm(self.A * x - self.b.flatten(), self.penalty_norm)
+
+        p1 = cvxpy.hstack([p] * (constraints.shape[1] / p.shape[0]))
+
+        constraints4 = cvxpy.norm(-constraints * p1 + lower_limit, self.penalty_norm)
+        objective += penalty * (constraints1 + constraints2 + constraints3 + constraints4)
+        return objective
+
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
-        model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p)
-        if constraints is not None:
-            print lower_limit, delta
-            if constraints.shape[1] == 2 * p.shape[0]:
-                p1 = cvxpy.hstack([p, p])
-            else:
-                p1 = p
-            if lower_limit is not None and upper_limit is not None:
-                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               lower_limit <= cvxpy.matmul(constraints, p1),
-                               cvxpy.matmul(constraints, p1) <= upper_limit]
-            elif lower_limit is None:
-                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               cvxpy.matmul(constraints, p1) <= upper_limit]
-            elif upper_limit is None:
-                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               lower_limit <= cvxpy.matmul(constraints, p1)]
-                # cons1_model = lower_limit - cvxpy.matmul(constraints, p1)
-                # cons1_model += cvxpy.matmul(-constraints, p1)
-                # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
-                # cons2_model = cvxpy.norm(p, self.trust_region_norm) - delta
-                # model_objective += penalizer * cvxpy.norm(cons1_model, self.penalty_norm)
-                # model_objective += penalizer * cvxpy.norm(cons2_model, self.trust_region_norm)
-        else:
-            constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+        model_objective, actual_objective = self.get_model_objective(x_k, penalizer, p,
+                                                                     constraints, lower_limit)
+        print lower_limit, delta
+        # if constraints is not None:
+        #     print lower_limit, delta
+        #     if constraints.shape[1] == 2 * p.shape[0]:
+        #         p1 = cvxpy.hstack([p, p])
+        #     else:
+        #         p1 = p
+        #     if lower_limit is not None and upper_limit is not None:
+        #         constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+        #                        lower_limit <= cvxpy.matmul(constraints, p1),
+        #                        cvxpy.matmul(constraints, p1) <= upper_limit]
+        #     elif lower_limit is None:
+        #         constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+        #                        cvxpy.matmul(constraints, p1) <= upper_limit]
+        #     elif upper_limit is None:
+        #         constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+        #                        lower_limit <= cvxpy.matmul(constraints, p1)]
+        #         # cons1_model = lower_limit - cvxpy.matmul(constraints, p1)
+        #         # cons1_model += cvxpy.matmul(-constraints, p1)
+        #         # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+        #         # cons2_model = cvxpy.norm(p, self.trust_region_norm) - delta
+        #         # model_objective += penalizer * cvxpy.norm(cons1_model, self.penalty_norm)
+        #         # model_objective += penalizer * cvxpy.norm(cons2_model, self.trust_region_norm)
+        # else:
+        #     constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+
+        constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
 
         # cons1 = cvxpy.norm(p, self.trust_region_norm) - delta
         # cons1 = cvxpy.norm(p, self.trust_region_norm) - delta
@@ -393,8 +455,10 @@ class SQPsolver:
                         p.value = last_p_k
                         p_k = last_p_k
                     if p_k is not None:
-                        actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty)
-                        model_objective_at_p_0 = self.get_model_objective(x_k, penalty, p_0)[0]
+                        actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty,
+                                                                                   p, constraints, lower_limit)
+                        model_objective_at_p_0 = self.get_model_objective(x_k, penalty, p_0,
+                                                                          constraints, lower_limit)[0]
 
                         actual_reduction = actual_objective_at_x_k.value - actual_objective_at_x_plus_p_k.value
                         predicted_reduction = model_objective_at_p_0.value - model_objective_at_p_k.value
@@ -450,7 +514,8 @@ class SQPsolver:
                         last_p_k = p_k
 
                 # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
-                # trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 0.5)
+                trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 0.5)
+                # trust_box_size = max_trust_box_size / 4
 
 
                 if is_adjust_penalty or dynamic_constraints_satisfied:
@@ -475,7 +540,7 @@ class SQPsolver:
                     self.status = "Solved"
                     break
 
-            if self.is_constraints_satisfied(x_k, const_violation_tolerance):
+            if self.is_constraints_satisfied(x_k, p, constraints, lower_limit, const_violation_tolerance):
                 # print "constrains satisfied .. . . ..  ."
                 if callback_function is not None:
                     if dynamic_constraints_satisfied:

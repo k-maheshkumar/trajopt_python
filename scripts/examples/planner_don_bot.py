@@ -33,12 +33,13 @@ class PlannerExample:
         plane_id = self.planner.add_constraint_from_urdf("plane", "plane.urdf", position=[0, 0, 0.0])
         self.robot_id = self.planner.load_robot(urdf_file,
                                                 use_fixed_base=True,
-                                                position=[0.2, 0.2, 0],
-                                                orientation=p.getQuaternionFromEuler([0, 0, 2.5])
+                                                position=[0.6, 0.2, 0],
+                                                orientation=p.getQuaternionFromEuler([0, 0, -1.57])
                                                 )
 
-        # shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[1, 1, 0.0])
-        #
+        shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[0, 0, 0.0],
+                                                orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
+
         # # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         # #                                                  position=[0, 0, 0.0])
         # #
@@ -49,7 +50,7 @@ class PlannerExample:
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
         # self.planner.world.step_simulation_for(1)
-        print self.planner.world.ignored_collisions
+        # print self.planner.world.ignored_collisions
 
     def run(self):
         from collections import OrderedDict
@@ -57,12 +58,12 @@ class PlannerExample:
         start_state = OrderedDict()
         goal_state = OrderedDict()
 
-        start_state["odom_x_joint"] = 0.01
-        start_state["odom_y_joint"] = 0.01
+        start_state["odom_x_joint"] = -0.1
+        start_state["odom_y_joint"] = 0.2
         start_state["odom_z_joint"] = 0.01
 
-        start_state["ur5_shoulder_pan_joint"] = 2.3823357809267463
-        start_state["ur5_shoulder_lift_joint"] = -2.9299975516996142
+        start_state["ur5_shoulder_pan_joint"] = 1.9823357809267463
+        start_state["ur5_shoulder_lift_joint"] = -2.4299975516996142
         start_state["ur5_elbow_joint"] = -1.9762726255540713
         start_state["ur5_wrist_1_joint"] = 0.8666279970481103
         start_state["ur5_wrist_2_joint"] = 1.5855963769735366
@@ -72,16 +73,16 @@ class PlannerExample:
         start_state["gripper_base_gripper_left_joint"] = 0
         # start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
 
-        goal_state["odom_x_joint"] = 1.01
-        goal_state["odom_y_joint"] = 1.01
-        goal_state["odom_z_joint"] = 0.01
+        goal_state["odom_x_joint"] = -0.1
+        goal_state["odom_y_joint"] = 0.35
+        goal_state["odom_z_joint"] = 1.01
 
-        goal_state["ur5_shoulder_pan_joint"] = 2.08180533826032865
-        goal_state["ur5_shoulder_lift_joint"] = -1.5474152457596664
-        goal_state["ur5_elbow_joint"] = 1.5873548294514912
-        goal_state["ur5_wrist_1_joint"] = -0.5791571346767671
-        goal_state["ur5_wrist_2_joint"] = 1.5979105177314896
-        goal_state["ur5_wrist_3_joint"] = 1.5857854098720727
+        goal_state["ur5_shoulder_pan_joint"] = 1.9823357809267463
+        goal_state["ur5_shoulder_lift_joint"] = -1.8299975516996142
+        goal_state["ur5_elbow_joint"] = -1.9762726255540713
+        goal_state["ur5_wrist_1_joint"] = 0.8666279970481103
+        goal_state["ur5_wrist_2_joint"] = 1.5855963769735366
+        goal_state["ur5_wrist_3_joint"] = -1.5770985888989753
 
         goal_state["gripper_joint"] = 0
         goal_state["gripper_base_gripper_left_joint"] = 0
@@ -168,8 +169,8 @@ class PlannerExample:
 
         duration = 10
         samples = 20
-        collision_check_distance = 0.15
-        collision_safe_distance = 0.1
+        collision_check_distance = 0.18
+        collision_safe_distance = 0.15
         #
         self.planner.world.reset_joint_states(self.robot_id, start_state.values(), start_state.keys())
 

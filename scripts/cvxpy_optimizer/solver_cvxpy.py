@@ -27,12 +27,18 @@ class ConvexOptimizer:
         joints = self.joints.values()
         for i in range(len(joints)):
             for t in range((self.samples - 1)):
-                min_vel = - joints[i].limit.velocity * self.duration / float(self.samples - 1)
-                max_vel = joints[i].limit.velocity * self.duration / float(self.samples - 1)
-                lower_limit = joints[i].limit.lower
-                upper_limit = joints[i].limit.upper
-                start = joints[i].states.start
-                end = joints[i].states.end
+                # min_vel = - joints[i].limit.velocity * self.duration / float(self.samples - 1)
+                # max_vel = joints[i].limit.velocity * self.duration / float(self.samples - 1)
+                # lower_limit = joints[i].limit.lower
+                # upper_limit = joints[i].limit.upper
+                # start = joints[i].states.start
+                # end = joints[i].states.end
+                min_vel = - joints[i]["limit"]["velocity"] * self.duration / float(self.samples - 1)
+                max_vel = joints[i]["limit"]["velocity"] * self.duration / float(self.samples - 1)
+                lower_limit = joints[i]["limit"]["lower"]
+                upper_limit = joints[i]["limit"]["upper"]
+                start = joints[i]["states"]["start"]
+                end = joints[i]["states"]["end"]
                 self.objective += cvxpy.sum_squares(self.x[t + 1, i] - self.x[t, i])
                 self.constraints += [self.x[t + 1, i] - self.x[t, i] <= max_vel,
                                 min_vel <= self.x[t + 1, i] - self.x[t, i]]

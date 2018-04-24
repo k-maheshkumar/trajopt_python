@@ -49,8 +49,8 @@ class PlannerExample:
 
 
 
-        # self.planner.robot.load_srdf(srdf_file)
-        # self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
+        self.planner.robot.load_srdf(srdf_file)
+        self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(1)
 
@@ -100,10 +100,10 @@ class PlannerExample:
         # self.planner.world.reset_joint_states(self.planner.robot.id, start_state.values(), start_state.keys())
         # self.planner.world.step_simulation_for(0.2)
 
-        duration = 10
+        duration = 20
         samples = 20
         collision_check_distance = 0.15
-        collision_safe_distance = 0.1
+        collision_safe_distance = 0.10
         # start_state = [1.561610221862793, 2.094395160675049, 2.96705961227417, 1.5873310565948486, 2.96705961227417,
         #                1.1904981136322021, 0.0]
         status, is_collision_free, trajectory = self.planner.get_trajectory(group=start_state.keys(), start_state=start_state.values(),

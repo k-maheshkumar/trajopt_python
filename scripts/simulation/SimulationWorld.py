@@ -460,12 +460,12 @@ class SimulationWorld(ISimulationWorldBase):
         # print self.joint_id_to_info
 
         for cp in cast_closest_points:
-            if cp.link_index_a > -1 and cp.link_index_b > -1:
+            if True or cp.link_index_a > -1 and cp.link_index_b > -1:
                 link_a = self.joint_id_to_info[cp.link_index_a].link_name
                 link_b = self.joint_id_to_info[cp.link_index_b].link_name
                 visited = checked_collisions_pairs[time_step_count, link_a, link_b]
 
-                if not visited and cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not self.ignored_collisions[link_a, link_b]:
+                if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not self.ignored_collisions[link_a, link_b]:
 
                     closest_pt_on_A_at_t = cp.position_on_a
                     closest_pt_on_A_at_t_plus_1 = cp.position_on_a1
@@ -515,7 +515,7 @@ class SimulationWorld(ISimulationWorldBase):
                 cast_closest_points = [CastClosestPointInfo(*x) for x in
                                        sim.getConvexSweepClosestPoints(robot.id, constraint,
                                                                        linkIndexA=link_index,
-                                                                       linkIndexB=-1,
+                                                                       # linkIndexB=-1,
                                                                        distance=distance,
                                                                        bodyAfromPosition=current_link_state[
                                                                            0],
@@ -540,8 +540,8 @@ class SimulationWorld(ISimulationWorldBase):
                     fraction = closest_point.contact_fraction
 
                     # if dist < 0 and link_a is not None and link_b is not None:
-                    if dist < 0:
-                        self.print_contact_points(closest_point, time_step_count, link_index)
+                    if closest_point.link_index_a == link_index and dist < 0:
+                        # self.print_contact_points(closest_point, time_step_count, link_index)
                         current_state_jacobian_matrix = self.formulate_jacbian_matrix(robot.id, link_index,
                                                                                       current_robot_state,
                                                                                       current_link_state,

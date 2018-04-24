@@ -144,7 +144,7 @@ class SQPsolver:
 
     def analyse_inputs(self):
         if self.lbG is not None:
-            self.lbG = np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
+            self.lbG = 1 * np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
                                  for lb in self.lbG])
         if self.ubG is not None:
             self.ubG = np.nan_to_num([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
@@ -245,6 +245,7 @@ class SQPsolver:
         if self.solver == "CVXOPT":
             result = problem.solve(solver=self.solver, warm_start=True, kktsolver=cvxpy.ROBUST_KKTSOLVER, verbose=False)
         else:
+            # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
             result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
         return p.value, model_objective, actual_objective, problem.status
 

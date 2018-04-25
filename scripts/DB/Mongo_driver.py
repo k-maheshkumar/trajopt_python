@@ -47,8 +47,8 @@ def main():
     # db.drop()
     result = (db.find({"is_collision_free": True}))
     print result
-    # for i in result:
-    #     print i
+    for i in result:
+        print i["trajectory"]
 
 
 if __name__ == '__main__':

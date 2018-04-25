@@ -86,6 +86,8 @@ class SimulationWorld(ISimulationWorldBase):
         self.planning_samples = 0
         self.collision_safe_distance = 0.4
         self.collision_check_distance = 0.2
+        self.collision_check_time = 0
+
 
         self.robot = None
 
@@ -410,6 +412,25 @@ class SimulationWorld(ISimulationWorldBase):
         print ("fraction ", cp.contact_fraction)
         print ("*************************************")
 
+    def get_convex_sweep_closest_points(self, body_a, body_b, link_index_a, current_state, next_state, distance=0.1):
+        start = time.time()
+        cast_closest_points = [CastClosestPointInfo(*x) for x in
+                               sim.getConvexSweepClosestPoints(body_a, body_b,
+                                                               linkIndexA=link_index_a,
+                                                               # linkIndexB=link_index_B,
+                                                               distance=distance,
+                                                               bodyAfromPosition=current_state[0],
+                                                               bodyAfromOrientation=current_state[1],
+                                                               # bodyAfromOrientation=[0, 0, 0, 1],
+                                                               bodyAtoPosition=next_state[0],
+                                                               bodyAtoOrientation=next_state[1],
+                                                               # bodyAtoOrientation=[0, 0, 0, 1],
+                                                               )]
+        end = time.time()
+        self.collision_check_time += end - start
+
+        return cast_closest_points
+
     def formulate_jacbian_matrix(self, robot_id, link_index, robot_state, link_state, cp, trajectory, group,
                                  time_step_count, zero_vec):
         link_position_in_world_frame = link_state[4]
@@ -442,20 +463,8 @@ class SimulationWorld(ISimulationWorldBase):
                                        current_normal_T_times_jacobian_,
                                        next_normal_T_times_jacobian_, checked_collisions_pairs, to_plot):
 
-        cast_closest_points = [CastClosestPointInfo(*x) for x in
-                               sim.getConvexSweepClosestPoints(robot_id, robot_id,
-                                                               linkIndexA=link_index,
-                                                               # linkIndexB=link_index_B,
-                                                               distance=distance,
-                                                               bodyAfromPosition=current_link_state[
-                                                                   0],
-                                                               bodyAfromOrientation=
-                                                               current_link_state[1],
-                                                               # bodyAfromOrientation=[0, 0, 0, 1],
-                                                               bodyAtoPosition=next_link_state[0],
-                                                               bodyAtoOrientation=next_link_state[1],
-                                                               # bodyAtoOrientation=[0, 0, 0, 1],
-                                                               )]
+        cast_closest_points = self.get_convex_sweep_closest_points(robot_id, robot_id, link_index,
+                                                                   current_link_state, next_link_state, distance)
         # print self.ignored_collisions
         # print self.joint_id_to_info
 
@@ -512,20 +521,10 @@ class SimulationWorld(ISimulationWorldBase):
 
         for constraint in self.collision_constraints:
             if robot.id != constraint:
-                cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                       sim.getConvexSweepClosestPoints(robot.id, constraint,
-                                                                       linkIndexA=link_index,
-                                                                       # linkIndexB=-1,
-                                                                       distance=distance,
-                                                                       bodyAfromPosition=current_link_state[
-                                                                           0],
-                                                                       bodyAfromOrientation=
-                                                                       current_link_state[1],
-                                                                       # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                       bodyAtoPosition=next_link_state[0],
-                                                                       bodyAtoOrientation=next_link_state[1],
-                                                                       # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                       )]
+
+                cast_closest_points = self.get_convex_sweep_closest_points(robot.id, constraint, link_index,
+                                                                           current_link_state, next_link_state,
+                                                                           distance)
 
                 # if len(cast_closest_points) > 0:
                 for closest_point in cast_closest_points:

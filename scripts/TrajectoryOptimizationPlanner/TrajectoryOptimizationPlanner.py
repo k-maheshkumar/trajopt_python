@@ -143,10 +143,19 @@ class TrajectoryOptimizationPlanner():
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
         status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
         self.logger.info(status)
+
+        total = self.robot.planner.sqp_solver.solving_time + self.world.collision_check_time + self.robot.planner.prob_model_time
+        print "collision check time: ", self.world.collision_check_time
+        print "solving_time: ", self.robot.planner.sqp_solver.solving_time
+        print "prob_model_time: ", self.robot.planner.prob_model_time
+        print "total time: ", total
+
         is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
                                                          group,
                                                          0.02)
         self.world.toggle_rendering_while_planning(True)
+
+
 
         if self.save_problem and self.db_driver is not None:
             planning_request = OrderedDict()
@@ -201,7 +210,7 @@ class TrajectoryOptimizationPlanner():
 
         return status
 
-    def callback_function_from_solver(self, new_trajectory, delta_trajectory=None, elapsed_time_in_solver=0):
+    def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
 
         constraints, lower_limit, upper_limit = None, None, None
         trajectory = np.split(new_trajectory, self.robot.planner.no_of_samples)
@@ -210,7 +219,8 @@ class TrajectoryOptimizationPlanner():
         collision_infos = self.world.get_collision_infos(self.robot, trajectory, self.robot.planner.current_planning_joint_group,
                                                          distance=self.robot.planner.collision_check_distance)
         end = time.time()
-        self.elapsed_time = (end - start) + elapsed_time_in_solver
+        self.elapsed_time = (end - start) + self.robot.planner.sqp_solver.solving_time
+        # self.elapsed_time = self.world.collision_check_time + self.robot.planner.sqp_solver.solving_time
         if len(collision_infos[2]) > 0:
             constraints, lower_limit, upper_limit = \
                 self.robot.planner.problem_model.update_collision_infos(collision_infos, self.robot.planner.collision_safe_distance)

@@ -19,7 +19,7 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/iai_robots/iai_donbot_description/ur5_moveit_config/config/ur5.srdf"
 
         config = {
-            "use_gui": True,
+            # "use_gui": True,
             "verbose": True,
             "log_file": True,
             "robot_config": "robot_config_don_bot.yaml"

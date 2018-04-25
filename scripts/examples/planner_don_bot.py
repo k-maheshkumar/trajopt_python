@@ -33,7 +33,7 @@ class PlannerExample:
         plane_id = self.planner.add_constraint_from_urdf("plane", "plane.urdf", position=[0, 0, 0.0])
         self.robot_id = self.planner.load_robot(urdf_file,
                                                 use_fixed_base=True,
-                                                position=[0.6, 0.2, 0],
+                                                position=[0.6, -0.1, 0],
                                                 orientation=p.getQuaternionFromEuler([0, 0, -1.57])
                                                 )
 
@@ -43,9 +43,9 @@ class PlannerExample:
         # # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         # #                                                  position=[0, 0, 0.0])
         # #
-        # # self.box_id = self.planner.add_constraint(shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-        # #                                           position=[0.28, -0.43, 0.9], mass=100)
-        #
+        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+                                                  position=[0, 0.3, 0.62], mass=100)
+
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
@@ -178,7 +178,7 @@ class PlannerExample:
                                                          goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
-        print("is trajectory free from collision: ", status)
+        # print("is trajectory free from collision: ", status)
         # # print trajectory.final
         self.planner.execute_trajectory()
         # self.planner.world.step_simulation_for(1)

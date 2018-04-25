@@ -112,7 +112,7 @@ class PlannerExample:
                                                                             collision_safe_distance=collision_safe_distance,
                                                                             collision_check_distance=collision_check_distance
                                                                             )
-        print("is trajectory free from collision: ", is_collision_free)
+        # print("is trajectory free from collision: ", is_collision_free)
         print status
         # print trajectory.final
         self.planner.execute_trajectory()

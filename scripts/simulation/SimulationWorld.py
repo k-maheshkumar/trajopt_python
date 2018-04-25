@@ -796,9 +796,10 @@ class SimulationWorld(ISimulationWorldBase):
         collision = True
         start_state = self.get_current_states_for_given_joints(robot_id, group)
         distance = 10
+        time_step_count = 0
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
             next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
-
+            time_step_count += 1
             if next_time_step_of_trajectory is not None:
                 next_link_states = self.get_link_states_at(robot_id, next_time_step_of_trajectory, group)
             current_link_states = self.get_link_states_at(robot_id, current_time_step_of_trajectory, group)
@@ -860,6 +861,7 @@ class SimulationWorld(ISimulationWorldBase):
                         self.ignored_collisions[link_a, link_b]:
                             dist = cp.contact_distance
                             if dist < 0:
+                                # self.print_contact_points(cp, time_step_count, link_index)
                                 collision = False
                                 break
 

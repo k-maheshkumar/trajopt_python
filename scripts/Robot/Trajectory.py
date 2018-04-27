@@ -80,7 +80,7 @@ class Trajectory:
     def plot_trajectories(self):
         # print self.trajectory_by_name
         # print self.final
-        self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.trajectory_by_name.values(), "time steps", "joint angle")
+        self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.initial.T, self.final.T, "time steps", "joint angle")
 
         # # print self.trajectories[0]
         # fig = plt.figure()

@@ -43,8 +43,8 @@ class PlannerExample:
         # # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         # #                                                  position=[0, 0, 0.0])
         # #
-        # # self.box_id = self.planner.add_constraint(shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-        # #                                           position=[0.28, -0.43, 0.9], mass=100)
+        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+                                                  position=[0, 0.3, 0.62], mass=100)
         #
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
@@ -58,7 +58,7 @@ class PlannerExample:
         start_state = OrderedDict()
         goal_state = OrderedDict()
 
-        start_state["odom_x_joint"] = -0.1
+        start_state["odom_x_joint"] = 0.1
         start_state["odom_y_joint"] = 0.3
         start_state["odom_z_joint"] = 0.01
 
@@ -73,7 +73,7 @@ class PlannerExample:
         start_state["gripper_base_gripper_left_joint"] = 0
         # start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
 
-        goal_state["odom_x_joint"] = -0.1
+        goal_state["odom_x_joint"] = 0.1
         goal_state["odom_y_joint"] = 0.35
         goal_state["odom_z_joint"] = 1.01
 

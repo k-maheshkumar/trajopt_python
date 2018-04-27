@@ -708,9 +708,10 @@ class SimulationWorld(ISimulationWorldBase):
     def execute_trajectory(self, robot, trajectory, step_time=None):
         if step_time is None:
             sleep_time = trajectory.duration / float(trajectory.no_of_samples)
-            for each_time_step_trajectory in trajectory.final:
+            for each_time_step_trajectory in trajectory.final.T:
                 # print each_time_step_trajectory
                 # print trajectory.trajectory_by_name.keys()
+
                 self.reset_joint_states_to(robot.id, each_time_step_trajectory, trajectory.trajectory_by_name.keys())
                 time.sleep(0.5)
             # for joint_name, corresponding_trajectory in trajectory.final:
@@ -833,6 +834,8 @@ class SimulationWorld(ISimulationWorldBase):
 
                     if distance < 0:
                         collision = False
+                        print ("collision between")
+                        self.print_contact_points(cp, time_step_count, link_index)
                         break
 
                 cast_closest_points = [CastClosestPointInfo(*x) for x in
@@ -860,7 +863,8 @@ class SimulationWorld(ISimulationWorldBase):
                         self.ignored_collisions[link_a, link_b]:
                             dist = cp.contact_distance
                             if dist < 0:
-                                # self.print_contact_points(cp, time_step_count, link_index)
+                                print ("self collision between")
+                                self.print_contact_points(cp, time_step_count, link_index)
                                 collision = False
                                 break
 

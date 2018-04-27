@@ -39,6 +39,7 @@ class TrajectoryPlanner:
         self.collision_check_distance = 0.1
         self.collision_safe_distance = 0.05
         self.solver_class = 0
+        self.prob_model_time = 0
 
         self.solver_config = None
         self.trajectory = Trajectory.Trajectory()
@@ -138,9 +139,11 @@ class TrajectoryPlanner:
 
             if "solver_config" in kwargs:
                 self.solver_config = kwargs["solver_config"]
-
+            start = time.time()
             self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
                               self.collision_safe_distance, self.collision_check_distance)
+            end = time.time()
+            self.prob_model_time += end - start
             self.sqp_solver.init(P=self.problem_model.cost_matrix_P, q=self.problem_model.cost_matrix_q,
                                  G=self.problem_model.robot_constraints_matrix,
                                  lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,

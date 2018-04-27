@@ -59,7 +59,7 @@ class PlannerExample:
         goal_state = OrderedDict()
 
         start_state["odom_x_joint"] = -0.1
-        start_state["odom_y_joint"] = 0.2
+        start_state["odom_y_joint"] = 0.3
         start_state["odom_z_joint"] = 0.01
 
         start_state["ur5_shoulder_pan_joint"] = 1.9823357809267463

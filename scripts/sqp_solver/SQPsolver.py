@@ -45,6 +45,9 @@ class SQPsolver:
         self.penalty_norm = 1
         self.trust_region_norm = np.inf
 
+        self.num_iterations = 0
+        self.solving_time = 0
+
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
@@ -243,10 +246,16 @@ class SQPsolver:
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
         # print problem.get_problem_data(self.solver)[0]
         if self.solver == "CVXOPT":
+            start = time.time()
             result = problem.solve(solver=self.solver, warm_start=True, kktsolver=cvxpy.ROBUST_KKTSOLVER, verbose=False)
+            end = time.time()
         else:
+            start = time.time()
             # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
             result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
+            end = time.time()
+        self.solving_time += end - start
+
         return p.value, model_objective, actual_objective, problem.status
 
     def approx_equal(self, x, y, tolerance=0.001):
@@ -334,13 +343,16 @@ class SQPsolver:
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
+            self.num_iterations += 1
             while iteration_count < max_iteration:
                 iteration_count += 1
+                self.num_iterations += 1
                 # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
-                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k, elapsed_time)
+                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
+                    self.num_iterations += 1
                     if callback_function is not None:
                         if constraints is not None:
                             start = time.time()

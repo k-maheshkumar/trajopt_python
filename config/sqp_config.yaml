@@ -20,6 +20,7 @@ sqp:
   - ECOS
   - ECOS_BB
   - SCS
+  - ECOS_BB
   - CVXOPT
   trust_bad_region_ratio: 0.25
   trust_expand_ratio: 2

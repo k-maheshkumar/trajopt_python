@@ -241,6 +241,11 @@ class SQPsolver:
             elif upper_limit is None:
                 constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
                                lower_limit <= cvxpy.matmul(constraints, p1)]
+                # constraints = [lower_limit <= cvxpy.matmul(constraints, p1)]
+                # expr = cvxpy.transforms.indicator(constraints)
+                # model_objective += penalizer * (cvxpy.norm(expr, self.penalty_norm))
+                # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
@@ -251,7 +256,7 @@ class SQPsolver:
             end = time.time()
         else:
             start = time.time()
-            # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
+            # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=20)
             result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
             end = time.time()
         self.solving_time += end - start

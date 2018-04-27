@@ -56,7 +56,7 @@ class Trajectory:
     def init(self, trajectory, no_of_samples, duration, group):
         self.__no_of_samples = no_of_samples
         self.__duration = duration
-        self.__initial = np.array(trajectory)
+        self.__initial = np.array(trajectory).T
         self.__trajectory_group = group
 
     def update(self, trajectory, group):
@@ -80,8 +80,9 @@ class Trajectory:
     def plot_trajectories(self):
         # print self.trajectory_by_name
         # print self.final
-        self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.trajectory_by_name.values(), "time steps", "joint angle")
-
+        # self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.initial, self.trajectory_by_name.values(),
+        #                           "Time steps (t)", "Joint angle (q)")
+        pass
         # # print self.trajectories[0]
         # fig = plt.figure()
         # subplots_adjust(hspace=0.000)

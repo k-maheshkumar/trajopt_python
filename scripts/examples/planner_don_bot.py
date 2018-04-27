@@ -19,7 +19,7 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/iai_robots/iai_donbot_description/ur5_moveit_config/config/ur5.srdf"
 
         config = {
-            # "use_gui": True,
+            "use_gui": True,
             "verbose": True,
             "log_file": True,
             "robot_config": "robot_config_don_bot.yaml"
@@ -169,8 +169,8 @@ class PlannerExample:
 
         duration = 10
         samples = 20
-        collision_check_distance = 0.18
-        collision_safe_distance = 0.15
+        collision_check_distance = 0.15
+        collision_safe_distance = 0.10
         #
         self.planner.world.reset_joint_states(self.robot_id, start_state.values(), start_state.keys())
 

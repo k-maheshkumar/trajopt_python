@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pylab import *
 from scripts.utils.dict import DefaultOrderedDict
 from collections import OrderedDict
-from scripts.plotter.results import Plotter
+
 
 class Trajectory:
     def __init__(self):
@@ -80,7 +80,7 @@ class Trajectory:
     def plot_trajectories(self):
         # print self.trajectory_by_name
         # print self.final
-        # self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.initial, self.trajectory_by_name.values(),
+        # self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.initial.T, self.final.T,
         #                           "Time steps (t)", "Joint angle (q)")
         pass
         # # print self.trajectories[0]

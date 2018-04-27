@@ -52,8 +52,8 @@ class Plotter:
         #                       ncol=2, shadow=True, title="Legend", fancybox=True)
         fig.suptitle("Trajetory Optimization: Initial vs Final trajectory", fontsize=14)
 
-        plt.show()
-        # plt.show(block=False)
+        #plt.show()
+        plt.show(block=False)
 
         # for index, trajectory in enumerate(start_state):
             # if (index == 0 or index == len(self.trajectories) - 1):

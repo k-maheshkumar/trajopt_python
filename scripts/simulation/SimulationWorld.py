@@ -155,7 +155,7 @@ class SimulationWorld(ISimulationWorldBase):
                 col_id = sim.createCollisionShape(shape, halfExtents=size)
                 vis_id = sim.createCollisionShape(shape, halfExtents=size)
             shape_id = sim.createMultiBody(mass, col_id, vis_id, position)
-        self.scene_items[name] = shape_id
+        self.scene_items[shape_id] = name
 
         return shape_id
 
@@ -169,7 +169,7 @@ class SimulationWorld(ISimulationWorldBase):
         else:
             urdf_id = sim.loadURDF(urdf_file, basePosition=position,
                                    baseOrientation=orientation, useFixedBase=use_fixed_base)
-        self.scene_items[name] = urdf_id
+        self.scene_items[urdf_id] = name
 
         return urdf_id
 
@@ -392,7 +392,10 @@ class SimulationWorld(ISimulationWorldBase):
     def print_contact_points(self, cp, time, index):
 
         link_a = self.joint_id_to_info[cp.link_index_a].link_name
-        link_b = self.joint_id_to_info[cp.link_index_b].link_name
+        if cp.body_unique_id_a == cp.body_unique_id_b:
+            link_b = self.joint_id_to_info[cp.link_index_b].link_name
+        else:
+            link_b = JointInfo(*sim.getJointInfo(cp.body_unique_id_b, cp.link_index_b)).link_name
 
         print ("-----------cast points--------------")
         print ("time_step_count", time)
@@ -708,10 +711,9 @@ class SimulationWorld(ISimulationWorldBase):
     def execute_trajectory(self, robot, trajectory, step_time=None):
         if step_time is None:
             sleep_time = trajectory.duration / float(trajectory.no_of_samples)
-            for each_time_step_trajectory in trajectory.final.T:
+            for each_time_step_trajectory in trajectory.final:
                 # print each_time_step_trajectory
                 # print trajectory.trajectory_by_name.keys()
-
                 self.reset_joint_states_to(robot.id, each_time_step_trajectory, trajectory.trajectory_by_name.keys())
                 time.sleep(0.5)
             # for joint_name, corresponding_trajectory in trajectory.final:
@@ -809,64 +811,57 @@ class SimulationWorld(ISimulationWorldBase):
             for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
                                                                                   current_link_states,
                                                                                   next_link_states):
+                if next_link_state is not None:
 
-                for constraint in self.collision_constraints:
-                    if next_link_state is not None:
-                        cast_closest_points = sim.getConvexSweepClosestPoints(robot_id, constraint,
-                                                                              linkIndexA=link_index,
-                                                                              distance=collision_safe_distance,
-                                                                              bodyAfromPosition=current_link_state[0],
-                                                                              bodyAfromOrientation=current_link_state[
-                                                                                  1],
-                                                                              # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                              bodyAtoPosition=next_link_state[0],
-                                                                              bodyAtoOrientation=next_link_state[1],
-                                                                              # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                              )
+                    for constraint in self.collision_constraints:
 
-                        if len(cast_closest_points) > 0:
-                            distance = cast_closest_points[0][9]
-                    else:
-                        closest_points = sim.getClosestPoints(robot_id, constraint,
-                                                              linkIndexA=link_index, distance=collision_safe_distance)
-                        if len(closest_points) > 0:
-                            distance = cast_closest_points[0][8]
+                        cast_closest_points = [CastClosestPointInfo(*x) for x in
+                                               sim.getConvexSweepClosestPoints(robot_id, constraint,
+                                                                               linkIndexA=link_index,
+                                                                               distance=collision_safe_distance,
+                                                                               bodyAfromPosition=current_link_state[0],
+                                                                               bodyAfromOrientation=current_link_state[
+                                                                                   1],
+                                                                               # bodyAfromOrientation=[0, 0, 0, 1],
+                                                                               bodyAtoPosition=next_link_state[0],
+                                                                               bodyAtoOrientation=next_link_state[1],
+                                                                               # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                               )]
 
-                    if distance < 0:
-                        collision = False
-                        print ("collision between")
-                        self.print_contact_points(cp, time_step_count, link_index)
-                        break
-
-                cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                       sim.getConvexSweepClosestPoints(robot_id, robot_id,
-                                                                       # linkIndexA=link_index_A,
-                                                                       # linkIndexB=link_index_B,
-                                                                       distance=distance,
-                                                                       bodyAfromPosition=current_link_state[
-                                                                           0],
-                                                                       bodyAfromOrientation=
-                                                                       current_link_state[1],
-                                                                       # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                       bodyAtoPosition=next_link_state[0],
-                                                                       bodyAtoOrientation=next_link_state[1],
-                                                                       # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                       )]
-
-                for cp in cast_closest_points:
-                    if cp.link_index_a > -1 and cp.link_index_b > -1:
-                        link_a = self.joint_id_to_info[cp.link_index_a].link_name
-                        link_b = self.joint_id_to_info[cp.link_index_b].link_name
-
-
-                        if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not \
-                        self.ignored_collisions[link_a, link_b]:
+                        for cp in cast_closest_points:
                             dist = cp.contact_distance
-                            if dist < 0:
-                                print ("self collision between")
+                            if dist < 0 and cp.body_unique_id_a != cp.body_unique_id_b:
                                 self.print_contact_points(cp, time_step_count, link_index)
                                 collision = False
                                 break
+
+                    cast_closest_points = [CastClosestPointInfo(*x) for x in
+                                           sim.getConvexSweepClosestPoints(robot_id, robot_id,
+                                                                           # linkIndexA=link_index_A,
+                                                                           # linkIndexB=link_index_B,
+                                                                           distance=distance,
+                                                                           bodyAfromPosition=current_link_state[
+                                                                               0],
+                                                                           bodyAfromOrientation=
+                                                                           current_link_state[1],
+                                                                           # bodyAfromOrientation=[0, 0, 0, 1],
+                                                                           bodyAtoPosition=next_link_state[0],
+                                                                           bodyAtoOrientation=next_link_state[1],
+                                                                           # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                           )]
+
+                    for cp in cast_closest_points:
+                        if cp.link_index_a > -1 and cp.link_index_b > -1:
+                            link_a = self.joint_id_to_info[cp.link_index_a].link_name
+                            link_b = self.joint_id_to_info[cp.link_index_b].link_name
+
+                            if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not \
+                                    self.ignored_collisions[link_a, link_b]:
+                                dist = cp.contact_distance
+                                if dist < 0:
+                                    self.print_contact_points(cp, time_step_count, link_index)
+                                    collision = False
+                                    break
 
                 if not collision:
                     break

@@ -16,7 +16,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": "DEBUG",
+            # "verbose": "DEBUG",
             "log_file": False,
             # "save_problem": True,
             "robot_config": "robot_config_kukka_arm.yaml"
@@ -34,7 +34,7 @@ class PlannerExample:
 
         table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
 
-        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.25],
+        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
                                                   position=[0.28, -0.43, 0.9], mass=100)
 
         self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],

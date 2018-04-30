@@ -151,10 +151,10 @@ class SimulationWorld(ISimulationWorldBase):
         if position is not None:
             if radius is not None:
                 col_id = sim.createCollisionShape(shape, radius=radius, height=height)
-                vis_id = sim.createCollisionShape(shape, radius=radius, height=height)
+                vis_id = sim.createVisualShape(shape, radius=radius, height=height)
             if size is not None:
                 col_id = sim.createCollisionShape(shape, halfExtents=size)
-                vis_id = sim.createCollisionShape(shape, halfExtents=size)
+                vis_id = sim.createVisualShape(shape, halfExtents=size)
             shape_id = sim.createMultiBody(mass, col_id, vis_id, position)
         self.scene_items[shape_id] = name
 
@@ -417,58 +417,79 @@ class SimulationWorld(ISimulationWorldBase):
         print ("fraction ", cp.contact_fraction)
         print ("*************************************")
 
+    def closest_point_to_cast_point_info(self, closest_point):
+        cast_points = []
+        for point in closest_point:
+            cp = CastClosestPointInfo(point.contact_flag, point.body_unique_id_a, point.body_unique_id_b,
+                                      point.link_index_a, point.link_index_b, point.position_on_a, point.position_on_a,
+                                      point.position_on_b, point.contact_normal_on_b,
+                                      point.contact_distance, 0, point.normal_force)
+            cast_points.append(cp)
+        return cast_points
+
     def get_convex_sweep_closest_points(self, body_a, body_b, link_index_a, current_state, next_state, distance=0.1):
         start = time.time()
-        # cast_closest_points = [CastClosestPointInfo(*x) for x in
-        #                        sim.getConvexSweepClosestPoints(body_a,
-        #                                                        # bodyB=constraint,
+        # cast_closest_points = []
+        cast_closest_points = [CastClosestPointInfo(*x) for x in
+                               sim.getConvexSweepClosestPoints(body_a,
+                                                               # bodyB=constraint,
+                                                               bodyB=body_b,
+                                                               linkIndexA=link_index_a,
+                                                               # linkIndexB=link_index_B,
+                                                               distance=distance,
+                                                               bodyAfromPosition=current_state[0],
+                                                               bodyAfromOrientation=current_state[1],
+                                                               # bodyAfromOrientation=[0, 0, 0, 1],
+                                                               bodyAtoPosition=next_state[0],
+                                                               bodyAtoOrientation=next_state[1],
+                                                               # bodyAtoOrientation=[0, 0, 0, 1],
+                                                               # bodyUniqueIdBIndices=[2, 3, 4, 5],
+                                                               #  bodyUniqueIdBIndices=constraint,
+                                                               # linkIndexBIndices=[2, 3, 4, 5]
+                                                               )]
+        # if len(cast_closest_points) <= 0:
+        #     closest_points = [ClosestPointInfo(*x) for x in
+        #                        sim.getClosestPoints(body_a, # bodyB=constraint,
         #                                                        bodyB=body_b,
         #                                                        linkIndexA=link_index_a,
         #                                                        # linkIndexB=link_index_B,
         #                                                        distance=distance,
-        #                                                        bodyAfromPosition=current_state[0],
-        #                                                        bodyAfromOrientation=current_state[1],
-        #                                                        # bodyAfromOrientation=[0, 0, 0, 1],
-        #                                                        bodyAtoPosition=next_state[0],
-        #                                                        bodyAtoOrientation=next_state[1],
-        #                                                        # bodyAtoOrientation=[0, 0, 0, 1],
-        #                                                        # bodyUniqueIdBIndices=[2, 3, 4, 5],
-        #                                                        #  bodyUniqueIdBIndices=constraint,
-        #                                                        # linkIndexBIndices=[2, 3, 4, 5]
         #                                                        )]
-        if type(body_b) is long:
-            cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                   sim.getConvexSweepClosestPoints(body_a,
-                                                                   # bodyB=constraint,
-                                                                   bodyB=body_b,
-                                                                   linkIndexA=link_index_a,
-                                                                   # linkIndexB=link_index_B,
-                                                                   distance=distance,
-                                                                   bodyAfromPosition=current_state[0],
-                                                                   bodyAfromOrientation=current_state[1],
-                                                                   # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                   bodyAtoPosition=next_state[0],
-                                                                   bodyAtoOrientation=next_state[1],
-                                                                   # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                   # bodyUniqueIdBIndices=[2, 3, 4, 5],
-                                                                   #  bodyUniqueIdBIndices=constraint,
-                                                                   # linkIndexBIndices=[2, 3, 4, 5]
-                                                                   )]
-        elif type(body_b) is list or type(body_b) is tuple:
-            cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                   sim.getConvexSweepClosestPoints(body_a,
-                                                                   bodyB=-1,
-                                                                   linkIndexA=link_index_a,
-                                                                   # linkIndexB=link_index_B,
-                                                                   distance=distance,
-                                                                   bodyAfromPosition=current_state[0],
-                                                                   bodyAfromOrientation=current_state[1],
-                                                                   # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                   bodyAtoPosition=next_state[0],
-                                                                   bodyAtoOrientation=next_state[1],
-                                                                   # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                    bodyUniqueIdBIndices=body_b,
-                                                                   )]
+        #     cast_closest_points = self.closest_point_to_cast_point_info(closest_points)
+
+        # if type(body_b) is long:
+        #     cast_closest_points = [CastClosestPointInfo(*x) for x in
+        #                            sim.getConvexSweepClosestPoints(body_a,
+        #                                                            # bodyB=constraint,
+        #                                                            bodyB=body_b,
+        #                                                            linkIndexA=link_index_a,
+        #                                                            # linkIndexB=link_index_B,
+        #                                                            distance=distance,
+        #                                                            bodyAfromPosition=current_state[0],
+        #                                                            bodyAfromOrientation=current_state[1],
+        #                                                            # bodyAfromOrientation=[0, 0, 0, 1],
+        #                                                            bodyAtoPosition=next_state[0],
+        #                                                            bodyAtoOrientation=next_state[1],
+        #                                                            # bodyAtoOrientation=[0, 0, 0, 1],
+        #                                                            # bodyUniqueIdBIndices=[2, 3, 4, 5],
+        #                                                            #  bodyUniqueIdBIndices=constraint,
+        #                                                            # linkIndexBIndices=[2, 3, 4, 5]
+        #                                                            )]
+        # elif type(body_b) is list or type(body_b) is tuple:
+        #     cast_closest_points = [CastClosestPointInfo(*x) for x in
+        #                            sim.getConvexSweepClosestPoints(body_a,
+        #                                                            bodyB=-1,
+        #                                                            linkIndexA=link_index_a,
+        #                                                            # linkIndexB=link_index_B,
+        #                                                            distance=distance,
+        #                                                            bodyAfromPosition=current_state[0],
+        #                                                            bodyAfromOrientation=current_state[1],
+        #                                                            # bodyAfromOrientation=[0, 0, 0, 1],
+        #                                                            bodyAtoPosition=next_state[0],
+        #                                                            bodyAtoOrientation=next_state[1],
+        #                                                            # bodyAtoOrientation=[0, 0, 0, 1],
+        #                                                             bodyUniqueIdBIndices=body_b,
+        #                                                            )]
 
         end = time.time()
         self.collision_check_time += end - start
@@ -492,8 +513,25 @@ class SimulationWorld(ISimulationWorldBase):
         current_position_jacobian1 = []
         # current_position_jacobian1.append(
         #     [jac[-len(robot_state):] for jac in position_jacobian])
+        # print position_jacobian
+        # if len(group) < len(robot_state):
+        #     current_position_jacobian1.append(
+        #         # [jac[4:] for jac in position_jacobian]
+        #         [jac[3:9] for jac in position_jacobian]
+        #         # [jac[-len(robot_state):] for jac in position_jacobian]
+        #     )
+        # else:
+        #     current_position_jacobian1.append(
+        #         # [jac[4:] for jac in position_jacobian]
+        #         # [jac[3:9] for jac in position_jacobian]
+        #         [jac[-len(robot_state):] for jac in position_jacobian]
+        #     )
         current_position_jacobian1.append(
-            [jac[3:9] for jac in position_jacobian])
+            # [jac[4:] for jac in position_jacobian]
+            [jac[0:9] for jac in position_jacobian]
+            # [jac[-len(robot_state):] for jac in position_jacobian]
+        )
+        # print current_position_jacobian1
 
         jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian1[0],
                                                                  len(trajectory),
@@ -507,18 +545,19 @@ class SimulationWorld(ISimulationWorldBase):
                                        zero_vec, trajectory, group, time_step_count,
                                        initial_signed_distance_,
                                        current_normal_T_times_jacobian_,
-                                       next_normal_T_times_jacobian_, checked_collisions_pairs, to_plot):
+                                       next_normal_T_times_jacobian_, visited, to_plot):
 
         cast_closest_points = self.get_convex_sweep_closest_points(robot_id, robot_id, link_index,
                                                                    current_link_state, next_link_state, distance)
         # print self.ignored_collisions
         # print self.joint_id_to_info
+        visited = DefaultOrderedDict(bool)
 
         for cp in cast_closest_points:
             if True or cp.link_index_a > -1 and cp.link_index_b > -1:
                 link_a = self.joint_id_to_info[cp.link_index_a].link_name
                 link_b = self.joint_id_to_info[cp.link_index_b].link_name
-                visited = checked_collisions_pairs[time_step_count, link_a, link_b]
+                # visited = checked_collisions_pairs[time_step_count, link_a, link_b]
 
                 if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not self.ignored_collisions[link_a, link_b]:
 
@@ -529,8 +568,11 @@ class SimulationWorld(ISimulationWorldBase):
                     dist = cp.contact_distance
                     fraction = cp.contact_fraction
 
-                    if dist < 0:
-                        checked_collisions_pairs[time_step_count, link_a, link_b] = True
+                    if not visited and dist < 0:
+                        # self.print_contact_points(cp, time_step_count, link_index)
+                        # checked_collisions_pairs[time_step_count, link_a, link_b] = True
+                        # visited[time_step_count, link_a, link_b] = True
+                        # visited[time_step_count, link_b, link_a] = True
 
                         # collision_data = OrderedDict()
                         # collision_data["link_index"] = link_index
@@ -563,11 +605,12 @@ class SimulationWorld(ISimulationWorldBase):
                                             zero_vec, trajectory, group, time_step_count,
                                             initial_signed_distance_,
                                             current_normal_T_times_jacobian_,
-                                            next_normal_T_times_jacobian_):
+                                            next_normal_T_times_jacobian_, visited):
 
+        visited = DefaultOrderedDict(bool)
         for constraint in self.collision_constraints:
         # if robot.id != 1:
-            if robot.id != constraint:
+            if True or robot.id != constraint:
 
                 cast_closest_points = self.get_convex_sweep_closest_points(robot.id,
                                                                            # self.collision_constraints,
@@ -583,14 +626,16 @@ class SimulationWorld(ISimulationWorldBase):
                     closest_pt_on_A_at_t = closest_point.position_on_a
                     closest_pt_on_A_at_t_plus_1 = closest_point.position_on_a1
                     closest_pt_on_B = closest_point.position_on_b
-                    normal_ = np.vstack(closest_point.contact_normal_on_b).reshape(3, 1)
+                    normal_ = -1 * np.vstack(closest_point.contact_normal_on_b).reshape(3, 1)
                     closest_point._replace(contact_normal_on_b=utils.normalize_vector(normal_))
                     dist = closest_point.contact_distance
                     fraction = closest_point.contact_fraction
 
                     # if dist < 0 and link_a is not None and link_b is not None:
                     if closest_point.link_index_a == link_index and dist < 0:
-                        # self.print_contact_points(closest_point, time_step_count, link_index)
+                        # visited[time_step_count, link_a, link_b] = True
+                        # visited[time_step_count, link_b, link_a] = True
+                        self.print_contact_points(closest_point, time_step_count, link_index)
                         current_state_jacobian_matrix = self.formulate_jacbian_matrix(robot.id, link_index,
                                                                                       current_robot_state,
                                                                                       current_link_state,
@@ -658,7 +703,7 @@ class SimulationWorld(ISimulationWorldBase):
                                                              zero_vec, trajectory, group, time_step_count,
                                                              initial_signed_distance_,
                                                              current_normal_T_times_jacobian_,
-                                                             next_normal_T_times_jacobian_)
+                                                             next_normal_T_times_jacobian_, checked_collisions_pairs)
                     end = time.time()
 
                     # print "each constraints collision check time:", str(end - start)
@@ -673,8 +718,8 @@ class SimulationWorld(ISimulationWorldBase):
                                                             next_normal_T_times_jacobian_, checked_collisions_pairs,
                                                             to_plot)
 
-                    # end = time.time()
-                    # print "each self collision check time:", str(end - start)
+                        # end = time.time()
+                        # print "each self collision check time:", str(end - start)
                 if len(initial_signed_distance_) > 0:
                     initial_signed_distance.append(initial_signed_distance_)
                 if len(current_normal_T_times_jacobian_) > 0:
@@ -861,7 +906,7 @@ class SimulationWorld(ISimulationWorldBase):
                 if next_link_state is not None:
 
                     for constraint in self.collision_constraints:
-
+                    # if True:
                         cast_closest_points = [CastClosestPointInfo(*x) for x in
                                                sim.getConvexSweepClosestPoints(robot_id, constraint,
                                                                                linkIndexA=link_index,
@@ -873,6 +918,7 @@ class SimulationWorld(ISimulationWorldBase):
                                                                                bodyAtoPosition=next_link_state[0],
                                                                                bodyAtoOrientation=next_link_state[1],
                                                                                # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                               # bodyBindices=self.collision_constraints
                                                                                )]
 
                         for cp in cast_closest_points:

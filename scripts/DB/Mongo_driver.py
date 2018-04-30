@@ -45,10 +45,11 @@ def main():
     }
     # db.insert(request)
     # db.drop()
-    result = (db.find({"is_collision_free": True}))
-    print result
+    result = (db.find({}))
+    # print result
     for i in result:
-        print i["trajectory"]
+        print i["samples"]
+        # print i["trajectory"]
 
 
 if __name__ == '__main__':

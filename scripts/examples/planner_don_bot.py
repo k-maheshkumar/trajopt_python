@@ -16,6 +16,7 @@ class PlannerExample:
         urdf_file = location_prefix + "iai_donbot_description/robots/don_bot.urdf"
 
         shelf_file = home + "/catkin_ws/src/iai_shelf_description/urdf/shelf.urdf"
+        box_file = home + "/catkin_ws/src/iai_shelf_description/urdf/box.urdf"
         srdf_file = home + "/catkin_ws/src/iai_robots/iai_donbot_description/ur5_moveit_config/config/ur5.srdf"
 
         config = {
@@ -43,11 +44,23 @@ class PlannerExample:
         # # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         # #                                                  position=[0, 0, 0.0])
         # #
-        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
-                                                  position=[0, 0.3, 0.62], mass=100)
-        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
-                                                  position=[0, -0.2, 0.62], mass=100)
+        # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+        #                                           position=[0.15, 0.3, 0.62], mass=100)
+        # self.box_id = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+        #                                           position=[0.15, -0.2, 0.62], mass=100)
+        # self.box_id = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+        #                                           position=[0.15, -0.2, 1.0], mass=100)
+        # self.box_id = self.planner.add_constraint("box4", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+        #                                           position=[0.15, 0.3, 1.0], mass=100)
         #
+        # self.box_id = self.planner.add_constraint("box5", shape=self.planner.world.BOX, size=[0.05, 0.6, 0.03],
+        #                                           position=[0.15, 0.3, 0.8], mass=100)
+        #
+        self.box_id = self.planner.add_constraint_from_urdf("box1", urdf_file=box_file, position=[0.15, 0.3, 0.62])
+        self.box_id = self.planner.add_constraint_from_urdf("box2", urdf_file=box_file, position=[0.15, -0.2, 0.62])
+        # self.box_id = self.planner.add_constraint_from_urdf("box3", urdf_file=box_file, position=[0.15, -0.2, 1.0])
+        self.box_id = self.planner.add_constraint_from_urdf("box4", urdf_file=box_file, position=[0.15, 0.3, 1.0])
+
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
@@ -71,13 +84,14 @@ class PlannerExample:
         start_state["ur5_wrist_2_joint"] = 1.5855963769735366
         start_state["ur5_wrist_3_joint"] = -1.5770985888989753
 
-        start_state["gripper_joint"] = 0
-        start_state["gripper_base_gripper_left_joint"] = 0
-        start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
+        # start_state["gripper_joint"] = 0
+        # start_state["gripper_base_gripper_left_joint"] = 0
 
-        goal_state["odom_x_joint"] = 0.1
+        goal_state["odom_x_joint"] = 0.12
         goal_state["odom_y_joint"] = 0.35
-        goal_state["odom_z_joint"] = 0.01
+        goal_state["odom_z_joint"] = 0.51
+        # goal_state["odom_z_joint"] = 0.01
+        # goal_state["odom_z_joint"] = 0.1
 
         goal_state["ur5_shoulder_pan_joint"] = 1.9823357809267463
         goal_state["ur5_shoulder_lift_joint"] = -1.8299975516996142
@@ -86,8 +100,8 @@ class PlannerExample:
         goal_state["ur5_wrist_2_joint"] = 1.5855963769735366
         goal_state["ur5_wrist_3_joint"] = -1.5770985888989753
         #
-        goal_state["gripper_joint"] = 0
-        goal_state["gripper_base_gripper_left_joint"] = 0
+        # goal_state["gripper_joint"] = 0
+        # goal_state["gripper_base_gripper_left_joint"] = 0
 
         # start_state = OrderedDict()
         # goal_state = OrderedDict()
@@ -171,8 +185,8 @@ class PlannerExample:
 
         duration = 10
         samples = 20
-        collision_check_distance = 0.15
-        collision_safe_distance = 0.10
+        collision_check_distance = 0.2
+        collision_safe_distance = 0.05
         #
         self.planner.world.reset_joint_states(self.robot_id, start_state.values(), start_state.keys())
 
@@ -186,7 +200,7 @@ class PlannerExample:
 
         goal_state1 = OrderedDict()
         goal_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
-        goal_state1["ur5_shoulder_lift_joint"] = -2.7299975516996142
+        goal_state1["ur5_shoulder_lift_joint"] = -1.8299975516996142
         goal_state1["ur5_elbow_joint"] = -1.9762726255540713
         goal_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         goal_state1["ur5_wrist_2_joint"] = 1.5855963769735366
@@ -194,8 +208,8 @@ class PlannerExample:
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 
-        _, status, trajectory = self.planner.get_trajectory(group=group1, start_state=start_state1,
-                                                         goal_state=goal_state1, samples=samples, duration=duration,
+        _, status, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
+                                                         goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)

@@ -148,11 +148,14 @@ class SQPsolver:
 
     def analyse_inputs(self):
         if self.lbG is not None:
-            self.lbG = 1 * np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
-                                 for lb in self.lbG])
+            # self.lbG = 1 * np.asarray([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
+            #                      for lb in self.lbG])
+            self.lbG = np.asarray([float(lb) if lb is not None else -1 * float(self.solver_config["replace_none_with"]) for lb in self.lbG])
         if self.ubG is not None:
-            self.ubG = np.nan_to_num([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
-                                 for ub in self.ubG])
+            # self.ubG = np.asarray([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
+            #                      for ub in self.ubG])
+            self.ubG = np.asarray(
+                [float(ub) if ub is not None else float(self.solver_config["replace_none_with"]) for ub in self.ubG])
 
         if self.G is not None and self.lbG is None and self.ubG is not None:
             # self.lbG = np.ones(self.ubG.shape) * -1000

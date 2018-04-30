@@ -32,7 +32,7 @@ class PlannerExample:
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
         self.robot_id = self.planner.load_robot(urdf_file,
-                                                # use_fixed_base=True
+                                                use_fixed_base=True
                                                 )
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
@@ -74,6 +74,19 @@ class PlannerExample:
         start_state["lbr_iiwa_joint_6"] = 1.2149
         start_state["lbr_iiwa_joint_7"] = 0.0
 
+        # start_state["front_left_wheel"] = 0.0
+        # start_state["front_right_wheel"] = 0.0
+        # start_state["rear_left_wheel"] = 0.0
+        # start_state["rear_right_wheel"] = 0.0
+        #
+        # start_state["lbr_iiwa_joint_1"] = 0.0933
+        # start_state["lbr_iiwa_joint_2"] = 1.5694
+        # start_state["lbr_iiwa_joint_3"] = 0.1404
+        # start_state["lbr_iiwa_joint_4"] = -2.0499
+        # start_state["lbr_iiwa_joint_5"] = -0.5409
+        # start_state["lbr_iiwa_joint_6"] = 1.2149
+        # start_state["lbr_iiwa_joint_7"] = 0.0
+
         # start_state["lbr_iiwa_joint_1"] = -1.3933
         # start_state["lbr_iiwa_joint_2"] = 0.9694
         # start_state["lbr_iiwa_joint_3"] = 0.9404
@@ -97,7 +110,7 @@ class PlannerExample:
         goal_state["lbr_iiwa_joint_6"] = 1.2149
         goal_state["lbr_iiwa_joint_7"] = 0.0
 
-        # self.planner.world.reset_joint_states(self.planner.robot.id, start_state.values(), start_state.keys())
+        self.planner.world.reset_joint_states(self.planner.robot.id, start_state.values(), start_state.keys())
         # self.planner.world.step_simulation_for(0.2)
 
         duration = 20
@@ -112,7 +125,7 @@ class PlannerExample:
                                                                             collision_safe_distance=collision_safe_distance,
                                                                             collision_check_distance=collision_check_distance
                                                                             )
-        # print("is trajectory free from collision: ", is_collision_free)
+        print("is trajectory free from collision: ", is_collision_free)
         print status
         # print trajectory.final
         self.planner.execute_trajectory()
@@ -173,15 +186,16 @@ class PlannerExample:
         start_state["rear_left_wheel"] = 0.0
         start_state["rear_right_wheel"] = 0.0
 
-        start_state["lbr_iiwa_joint_1"] = -1.8933
+        start_state["lbr_iiwa_joint_1"] = 0.0933
         start_state["lbr_iiwa_joint_2"] = 1.5694
-        start_state["lbr_iiwa_joint_3"] = 0.9404
-        start_state["lbr_iiwa_joint_4"] = -1.0499
+        start_state["lbr_iiwa_joint_3"] = 0.1404
+        start_state["lbr_iiwa_joint_4"] = -2.0499
         start_state["lbr_iiwa_joint_5"] = -0.5409
         start_state["lbr_iiwa_joint_6"] = 1.2149
         start_state["lbr_iiwa_joint_7"] = 0.0
 
         import pybullet as p
+        from scripts.simulation.bulletTypes import ClosestPointInfo
         p.connect(p.SHARED_MEMORY, "localhost")
         joints = [i for i in range(p.getNumJoints(self.robot_id))]
 
@@ -191,6 +205,9 @@ class PlannerExample:
         zero_vec = [0] * p.getNumJoints(self.robot_id)
         # for i in range(p.getNumJoints(self.robot_id)):
         #     print p.getJointInfo(self.robot_id, i)
+
+        self.planner.world.reset_joint_states(self.planner.robot.id, start_state.values(), start_state.keys())
+
         current_robot_state = self.planner.world.get_joint_states_at(self.robot_id, start_state.values(), start_state.keys())
         zero_vec = [0] * len(current_robot_state[0])
 
@@ -207,12 +224,35 @@ class PlannerExample:
         print current_position_jacobian
         print len(current_position_jacobian[0])
 
+        cast_points = [ClosestPointInfo(*x) for x in p.getClosestPoints(self.robot_id, self.box_id, distance=0.1)]
+        cast_points1 = [ClosestPointInfo(*x) for x in p.getClosestPoints(self.robot_id, self.robot_id, distance=0.1)]
+
+        for cp in cast_points:
+            if cp.contact_distance < 0:
+                print cp
+
+        print "----------------------------------------------------------"
+
+        print "self collision"
+
+        for cp in cast_points1:
+            link_a = self.planner.world.joint_id_to_info[cp.link_index_a].link_name
+            link_b = self.planner.world.joint_id_to_info[cp.link_index_b].link_name
+            coll = self.planner.robot.ignored_collisions[link_a, link_b]
+            coll1 = cp.link_index_a != cp.link_index_b
+
+            if cp.contact_distance < 0 and coll1 and not coll:
+                print cp
+
+        print "*********************************"
+
+
 def main():
     example = PlannerExample()
     # example.load_srdf()
+    example.connect_directly()
     example.run()
     # example.manual_control()
-    # example.connect_directly()
     while True:
         pass
 

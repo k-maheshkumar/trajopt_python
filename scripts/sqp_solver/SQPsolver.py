@@ -7,6 +7,7 @@ import logging
 import os
 import time
 from collections import OrderedDict
+from scipy import sparse
 
 elapsed_time = 0
 
@@ -251,8 +252,8 @@ class SQPsolver:
             end = time.time()
         else:
             start = time.time()
-            # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
-            result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
+            result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
+            # result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
             end = time.time()
         self.solving_time += end - start
 

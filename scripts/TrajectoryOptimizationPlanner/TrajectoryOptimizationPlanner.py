@@ -150,9 +150,10 @@ class TrajectoryOptimizationPlanner():
         print "prob_model_time: ", self.robot.planner.prob_model_time
         print "total time: ", total
 
-        is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
-                                                         group,
-                                                         0.02)
+        is_collision_free = True
+        # is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
+        #                                                  group,
+        #                                                  0.02)
         self.world.toggle_rendering_while_planning(True)
 
 

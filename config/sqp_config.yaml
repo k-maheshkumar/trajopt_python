@@ -13,9 +13,9 @@ sqp:
   min_model_improve: 1e-4
   min_trust_region_size: 1e-4
   min_x_redution: 1e-4
-  penalty_norm: 1
-#  replace_none_with: 10e5
-  replace_none_with: 1e-2
+  penalty_norm: 2
+  replace_none_with: 10e5
+#  replace_none_with: 1e-2
   solver:
   - ECOS
   - SCS
@@ -25,5 +25,5 @@ sqp:
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
   trust_region_norm: inf
-  trust_region_size: 6.0
+  trust_region_size: 5.0
   trust_shrink_ratio: 0.25

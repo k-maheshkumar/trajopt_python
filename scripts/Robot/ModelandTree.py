@@ -74,8 +74,31 @@ if __name__ == '__main__':
 
     urdf_file = location_prefix + "kuka_iiwa/model.urdf"
     base_link, end_link = "lbr_iiwa_link_0", "lbr_iiwa_link_7"
+
+    location_prefix = home
+    urdf_file = location_prefix + "/catkin_ws/src/iai_robots/iai_donbot_description/robots/" + "don_bot.urdf"
+    print urdf_file
+    base_link, end_link = "ur5_base_link", "ur5_ee_link"
     start_state = [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
-                 1.5855963769735366, 1.5770985888989753, 1.5704531145724918]
+                 # 1.5855963769735366, 1.5770985888989753, 1.5704531145724918]
+                 1.5855963769735366, 1.5770985888989753]
+
+    start_state = [0.0, 0.0, 0.0, -2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103, 1.5855963769735366, 1.5770985888989753, 0.0, 0.0]
+
+    ur5_ee_link = 14
+    zero_vec = [0] * len(start_state)
+    import pybullet as p
+
+    p.connect(p.DIRECT)
+    robot = p.loadURDF(urdf_file)
+
+    current_position_jacobian, _ = p.calculateJacobian(robot, ur5_ee_link,
+                                                           # closest_pt_on_A_at_t,
+                                                           [0, 0, 0],
+                                                       start_state,
+                                                           zero_vec, zero_vec)
+
+    print current_position_jacobian
 
     # location_prefix = home + "/catkin_ws/src/iai_robots/"
     #
@@ -95,6 +118,6 @@ if __name__ == '__main__':
 
 
 
-    jacobian = tree.get_jacobian_of_a_chain(start_state, base_link, end_link)
+    jacobian = tree.get_jacobian_of_a_chain(start_state)
     print jacobian
 

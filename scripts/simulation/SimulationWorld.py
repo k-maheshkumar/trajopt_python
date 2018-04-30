@@ -63,6 +63,7 @@ class SimulationWorld(ISimulationWorldBase):
 
         if use_gui:
             self.gui = sim.connect(sim.GUI_SERVER)
+            # self.gui = sim.connect(sim.GUI)
         else:
             self.gui = sim.connect(sim.DIRECT)
 
@@ -395,7 +396,8 @@ class SimulationWorld(ISimulationWorldBase):
         if cp.body_unique_id_a == cp.body_unique_id_b:
             link_b = self.joint_id_to_info[cp.link_index_b].link_name
         else:
-            link_b = JointInfo(*sim.getJointInfo(cp.body_unique_id_b, cp.link_index_b)).link_name
+            # link_b = JointInfo(*sim.getJointInfo(cp.body_unique_id_b, cp.link_index_b)).link_name
+            link_b = self.joint_id_to_info[cp.link_index_b].link_name
 
         print ("-----------cast points--------------")
         print ("time_step_count", time)
@@ -417,18 +419,57 @@ class SimulationWorld(ISimulationWorldBase):
 
     def get_convex_sweep_closest_points(self, body_a, body_b, link_index_a, current_state, next_state, distance=0.1):
         start = time.time()
-        cast_closest_points = [CastClosestPointInfo(*x) for x in
-                               sim.getConvexSweepClosestPoints(body_a, body_b,
-                                                               linkIndexA=link_index_a,
-                                                               # linkIndexB=link_index_B,
-                                                               distance=distance,
-                                                               bodyAfromPosition=current_state[0],
-                                                               bodyAfromOrientation=current_state[1],
-                                                               # bodyAfromOrientation=[0, 0, 0, 1],
-                                                               bodyAtoPosition=next_state[0],
-                                                               bodyAtoOrientation=next_state[1],
-                                                               # bodyAtoOrientation=[0, 0, 0, 1],
-                                                               )]
+        # cast_closest_points = [CastClosestPointInfo(*x) for x in
+        #                        sim.getConvexSweepClosestPoints(body_a,
+        #                                                        # bodyB=constraint,
+        #                                                        bodyB=body_b,
+        #                                                        linkIndexA=link_index_a,
+        #                                                        # linkIndexB=link_index_B,
+        #                                                        distance=distance,
+        #                                                        bodyAfromPosition=current_state[0],
+        #                                                        bodyAfromOrientation=current_state[1],
+        #                                                        # bodyAfromOrientation=[0, 0, 0, 1],
+        #                                                        bodyAtoPosition=next_state[0],
+        #                                                        bodyAtoOrientation=next_state[1],
+        #                                                        # bodyAtoOrientation=[0, 0, 0, 1],
+        #                                                        # bodyUniqueIdBIndices=[2, 3, 4, 5],
+        #                                                        #  bodyUniqueIdBIndices=constraint,
+        #                                                        # linkIndexBIndices=[2, 3, 4, 5]
+        #                                                        )]
+        if type(body_b) is long:
+            cast_closest_points = [CastClosestPointInfo(*x) for x in
+                                   sim.getConvexSweepClosestPoints(body_a,
+                                                                   # bodyB=constraint,
+                                                                   bodyB=body_b,
+                                                                   linkIndexA=link_index_a,
+                                                                   # linkIndexB=link_index_B,
+                                                                   distance=distance,
+                                                                   bodyAfromPosition=current_state[0],
+                                                                   bodyAfromOrientation=current_state[1],
+                                                                   # bodyAfromOrientation=[0, 0, 0, 1],
+                                                                   bodyAtoPosition=next_state[0],
+                                                                   bodyAtoOrientation=next_state[1],
+                                                                   # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                   # bodyUniqueIdBIndices=[2, 3, 4, 5],
+                                                                   #  bodyUniqueIdBIndices=constraint,
+                                                                   # linkIndexBIndices=[2, 3, 4, 5]
+                                                                   )]
+        elif type(body_b) is list or type(body_b) is tuple:
+            cast_closest_points = [CastClosestPointInfo(*x) for x in
+                                   sim.getConvexSweepClosestPoints(body_a,
+                                                                   bodyB=-1,
+                                                                   linkIndexA=link_index_a,
+                                                                   # linkIndexB=link_index_B,
+                                                                   distance=distance,
+                                                                   bodyAfromPosition=current_state[0],
+                                                                   bodyAfromOrientation=current_state[1],
+                                                                   # bodyAfromOrientation=[0, 0, 0, 1],
+                                                                   bodyAtoPosition=next_state[0],
+                                                                   bodyAtoOrientation=next_state[1],
+                                                                   # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                    bodyUniqueIdBIndices=body_b,
+                                                                   )]
+
         end = time.time()
         self.collision_check_time += end - start
 
@@ -449,8 +490,10 @@ class SimulationWorld(ISimulationWorldBase):
             robot_state, zero_vec, zero_vec)
 
         current_position_jacobian1 = []
+        # current_position_jacobian1.append(
+        #     [jac[-len(robot_state):] for jac in position_jacobian])
         current_position_jacobian1.append(
-            [jac[-len(robot_state):] for jac in position_jacobian])
+            [jac[3:9] for jac in position_jacobian])
 
         jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian1[0],
                                                                  len(trajectory),
@@ -523,9 +566,13 @@ class SimulationWorld(ISimulationWorldBase):
                                             next_normal_T_times_jacobian_):
 
         for constraint in self.collision_constraints:
+        # if robot.id != 1:
             if robot.id != constraint:
 
-                cast_closest_points = self.get_convex_sweep_closest_points(robot.id, constraint, link_index,
+                cast_closest_points = self.get_convex_sweep_closest_points(robot.id,
+                                                                           # self.collision_constraints,
+                                                                           constraint,
+                                                                           link_index,
                                                                            current_link_state, next_link_state,
                                                                            distance)
 

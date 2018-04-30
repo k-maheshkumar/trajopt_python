@@ -16,7 +16,7 @@ class Trajectory:
         self.__trajectories = []
         self.__final = None
         self.__trajectory_group = None
-        self.__plotter = Plotter()
+        # self.__plotter = Plotter()
 
     def get_single_joint_trajectory(self, joint_index):
         if joint_index == self.__trajectory.shape[0]:
@@ -61,12 +61,12 @@ class Trajectory:
 
     def update(self, trajectory, group):
         self.__trajectory = trajectory
-        self.__final = np.array(trajectory).T
+        self.__final = np.array(trajectory)
         self.extract_trajectory_of_individual_joints(group)
         # self.add_trajectory(trajectory)
 
     def extract_trajectory_of_individual_joints(self, group):
-        self.__trajectory_by_joint_name = OrderedDict(zip(group, self.final))
+        self.__trajectory_by_joint_name = OrderedDict(zip(group, self.final.T))
 
     def add_trajectory(self, trajectory):
 

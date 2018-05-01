@@ -175,7 +175,8 @@ class SimulationWorld(ISimulationWorldBase):
         return urdf_id
 
     def load_robot(self, urdf_file, position, orientation=[0, 0, 0, 1], use_fixed_base=False):
-
+        # utils.replace_paths(urdf_file)
+        # urdf_file = "/tmp/robot.urdf"
         robot_id = sim.loadURDF(urdf_file, basePosition=position, baseOrientation=orientation,
                                 useFixedBase=use_fixed_base,
                                     # flags=sim.URDF_USE_SELF_COLLISION
@@ -419,56 +420,56 @@ class SimulationWorld(ISimulationWorldBase):
 
     def get_convex_sweep_closest_points(self, body_a, body_b, link_index_a, current_state, next_state, distance=0.1):
         start = time.time()
-        # cast_closest_points = [CastClosestPointInfo(*x) for x in
-        #                        sim.getConvexSweepClosestPoints(body_a,
-        #                                                        # bodyB=constraint,
-        #                                                        bodyB=body_b,
-        #                                                        linkIndexA=link_index_a,
-        #                                                        # linkIndexB=link_index_B,
-        #                                                        distance=distance,
-        #                                                        bodyAfromPosition=current_state[0],
-        #                                                        bodyAfromOrientation=current_state[1],
-        #                                                        # bodyAfromOrientation=[0, 0, 0, 1],
-        #                                                        bodyAtoPosition=next_state[0],
-        #                                                        bodyAtoOrientation=next_state[1],
-        #                                                        # bodyAtoOrientation=[0, 0, 0, 1],
-        #                                                        # bodyUniqueIdBIndices=[2, 3, 4, 5],
-        #                                                        #  bodyUniqueIdBIndices=constraint,
-        #                                                        # linkIndexBIndices=[2, 3, 4, 5]
-        #                                                        )]
-        if type(body_b) is long:
-            cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                   sim.getConvexSweepClosestPoints(body_a,
-                                                                   # bodyB=constraint,
-                                                                   bodyB=body_b,
-                                                                   linkIndexA=link_index_a,
-                                                                   # linkIndexB=link_index_B,
-                                                                   distance=distance,
-                                                                   bodyAfromPosition=current_state[0],
-                                                                   bodyAfromOrientation=current_state[1],
-                                                                   # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                   bodyAtoPosition=next_state[0],
-                                                                   bodyAtoOrientation=next_state[1],
-                                                                   # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                   # bodyUniqueIdBIndices=[2, 3, 4, 5],
-                                                                   #  bodyUniqueIdBIndices=constraint,
-                                                                   # linkIndexBIndices=[2, 3, 4, 5]
-                                                                   )]
-        elif type(body_b) is list or type(body_b) is tuple:
-            cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                   sim.getConvexSweepClosestPoints(body_a,
-                                                                   bodyB=-1,
-                                                                   linkIndexA=link_index_a,
-                                                                   # linkIndexB=link_index_B,
-                                                                   distance=distance,
-                                                                   bodyAfromPosition=current_state[0],
-                                                                   bodyAfromOrientation=current_state[1],
-                                                                   # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                   bodyAtoPosition=next_state[0],
-                                                                   bodyAtoOrientation=next_state[1],
-                                                                   # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                    bodyUniqueIdBIndices=body_b,
-                                                                   )]
+        cast_closest_points = [CastClosestPointInfo(*x) for x in
+                               sim.getConvexSweepClosestPoints(body_a,
+                                                               # bodyB=constraint,
+                                                               bodyB=body_b,
+                                                               linkIndexA=link_index_a,
+                                                               # linkIndexB=link_index_B,
+                                                               distance=distance,
+                                                               bodyAfromPosition=current_state[0],
+                                                               bodyAfromOrientation=current_state[1],
+                                                               # bodyAfromOrientation=[0, 0, 0, 1],
+                                                               bodyAtoPosition=next_state[0],
+                                                               bodyAtoOrientation=next_state[1],
+                                                               # bodyAtoOrientation=[0, 0, 0, 1],
+                                                               # bodyUniqueIdBIndices=[2, 3, 4, 5],
+                                                               #  bodyUniqueIdBIndices=constraint,
+                                                               # linkIndexBIndices=[2, 3, 4, 5]
+                                                               )]
+        # if type(body_b) is long:
+        #     cast_closest_points = [CastClosestPointInfo(*x) for x in
+        #                            sim.getConvexSweepClosestPoints(body_a,
+        #                                                            # bodyB=constraint,
+        #                                                            bodyB=body_b,
+        #                                                            linkIndexA=link_index_a,
+        #                                                            # linkIndexB=link_index_B,
+        #                                                            distance=distance,
+        #                                                            bodyAfromPosition=current_state[0],
+        #                                                            bodyAfromOrientation=current_state[1],
+        #                                                            # bodyAfromOrientation=[0, 0, 0, 1],
+        #                                                            bodyAtoPosition=next_state[0],
+        #                                                            bodyAtoOrientation=next_state[1],
+        #                                                            # bodyAtoOrientation=[0, 0, 0, 1],
+        #                                                            # bodyUniqueIdBIndices=[2, 3, 4, 5],
+        #                                                            #  bodyUniqueIdBIndices=constraint,
+        #                                                            # linkIndexBIndices=[2, 3, 4, 5]
+        #                                                            )]
+        # elif type(body_b) is list or type(body_b) is tuple:
+        #     cast_closest_points = [CastClosestPointInfo(*x) for x in
+        #                            sim.getConvexSweepClosestPoints(body_a,
+        #                                                            bodyB=-1,
+        #                                                            linkIndexA=link_index_a,
+        #                                                            # linkIndexB=link_index_B,
+        #                                                            distance=distance,
+        #                                                            bodyAfromPosition=current_state[0],
+        #                                                            bodyAfromOrientation=current_state[1],
+        #                                                            # bodyAfromOrientation=[0, 0, 0, 1],
+        #                                                            bodyAtoPosition=next_state[0],
+        #                                                            bodyAtoOrientation=next_state[1],
+        #                                                            # bodyAtoOrientation=[0, 0, 0, 1],
+        #                                                             bodyUniqueIdBIndices=body_b,
+        #                                                            )]
 
         end = time.time()
         self.collision_check_time += end - start
@@ -492,8 +493,13 @@ class SimulationWorld(ISimulationWorldBase):
         current_position_jacobian1 = []
         # current_position_jacobian1.append(
         #     [jac[-len(robot_state):] for jac in position_jacobian])
-        current_position_jacobian1.append(
-            [jac[3:9] for jac in position_jacobian])
+        if len(group) < len(robot_state):
+            current_position_jacobian1.append(
+                [jac[3:9] for jac in position_jacobian])
+        else:
+            current_position_jacobian1.append(
+                [jac[-len(robot_state):] for jac in position_jacobian])
+
 
         jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian1[0],
                                                                  len(trajectory),

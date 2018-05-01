@@ -14,6 +14,7 @@ class PlannerExample:
         location_prefix = home + "/catkin_ws/src/iai_robots/"
 
         urdf_file = location_prefix + "iai_donbot_description/robots/don_bot.urdf"
+        # urdf_file = location_prefix + "iai_donbot_description/robots/robot.urdf"
 
         shelf_file = home + "/catkin_ws/src/iai_shelf_description/urdf/shelf.urdf"
         srdf_file = home + "/catkin_ws/src/iai_robots/iai_donbot_description/ur5_moveit_config/config/ur5.srdf"
@@ -77,7 +78,7 @@ class PlannerExample:
 
         goal_state["odom_x_joint"] = 0.1
         goal_state["odom_y_joint"] = 0.35
-        goal_state["odom_z_joint"] = 0.01
+        goal_state["odom_z_joint"] = 0.51
 
         goal_state["ur5_shoulder_pan_joint"] = 1.9823357809267463
         goal_state["ur5_shoulder_lift_joint"] = -1.8299975516996142
@@ -186,7 +187,7 @@ class PlannerExample:
 
         goal_state1 = OrderedDict()
         goal_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
-        goal_state1["ur5_shoulder_lift_joint"] = -2.7299975516996142
+        goal_state1["ur5_shoulder_lift_joint"] = -1.7299975516996142
         goal_state1["ur5_elbow_joint"] = -1.9762726255540713
         goal_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         goal_state1["ur5_wrist_2_joint"] = 1.5855963769735366
@@ -194,7 +195,7 @@ class PlannerExample:
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 
-        _, status, trajectory = self.planner.get_trajectory(group=group1, start_state=start_state1,
+        _, status, trajectory = self.planner.get_trajectory(group=group1,
                                                          goal_state=goal_state1, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)

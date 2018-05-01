@@ -113,9 +113,9 @@ class Utils:
         logger.addHandler(log_console_handler)
 
     @classmethod
-    def replace_none(cls, x, v):
+    def replace_none(cls, x, v, negative=False):
         if x is None:
-            return v
+            return v if not negative else -v
         return x
 
     @classmethod

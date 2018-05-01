@@ -7,7 +7,6 @@ import logging
 import os
 import time
 from collections import OrderedDict
-from scipy import sparse
 
 elapsed_time = 0
 
@@ -148,10 +147,10 @@ class SQPsolver:
 
     def analyse_inputs(self):
         if self.lbG is not None:
-            self.lbG = 1 * np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
+            self.lbG = np.array([utils.replace_none(lb, float(self.solver_config["replace_none_with"]), negative=True)
                                  for lb in self.lbG])
         if self.ubG is not None:
-            self.ubG = np.nan_to_num([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
+            self.ubG = np.array([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
                                  for ub in self.ubG])
 
         if self.G is not None and self.lbG is None and self.ubG is not None:
@@ -251,6 +250,7 @@ class SQPsolver:
             result = problem.solve(solver=self.solver, warm_start=True, kktsolver=cvxpy.ROBUST_KKTSOLVER, verbose=False)
             end = time.time()
         else:
+            # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
             start = time.time()
             result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
             # result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
@@ -386,7 +386,7 @@ class SQPsolver:
                     if p_k is None:
                         x_k -= last_p_k
                         p.value = last_p_k
-                        p_k = last_p_k
+                        p_k = copy.deepcopy(last_p_k)
                     if p_k is not None:
                         actual_objective_at_x_plus_p_k = self.get_actual_objective(x_k + p_k, penalty)
                         model_objective_at_p_0 = self.get_model_objective(x_k, penalty, p_0)[0]

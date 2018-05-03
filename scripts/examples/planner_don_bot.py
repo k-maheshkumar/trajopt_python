@@ -46,8 +46,10 @@ class PlannerExample:
         # #
         self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
                                                   position=[0, 0.3, 0.62], mass=100)
-        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
-                                                  position=[0, -0.2, 0.62], mass=100)
+        self.box_id = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.2],
+                                                  position=[0.15, -0.2, 0.62], mass=100)
+        self.box_id = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.05, 0.1],
+                                                  position=[0.15, 0.4, 1], mass=100)
         #
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
@@ -187,7 +189,7 @@ class PlannerExample:
 
         goal_state1 = OrderedDict()
         goal_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
-        goal_state1["ur5_shoulder_lift_joint"] = -1.7299975516996142
+        goal_state1["ur5_shoulder_lift_joint"] = -1.6299975516996142
         goal_state1["ur5_elbow_joint"] = -1.9762726255540713
         goal_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         goal_state1["ur5_wrist_2_joint"] = 1.5855963769735366

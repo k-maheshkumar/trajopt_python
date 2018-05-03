@@ -201,11 +201,11 @@ class SimulationWorld(ISimulationWorldBase):
             self.link_pairs[body_a].append(body_b)
             self.link_pairs[body_b].append(body_a)
 
-        initial_distances = self.check_self_collision(robot_id, distance=0.05)
+        # initial_distances = self.check_self_collision(robot_id, distance=0.05)
         # file_name1 = home + '/temp/initial_collision.xml'
-        for (link_a, link_b) in initial_distances:
-            self.ignored_collisions[link_a, link_b] = True
-            self.ignored_collisions[link_b, link_a] = True
+        # for (link_a, link_b) in initial_distances:
+        #     self.ignored_collisions[link_a, link_b] = True
+        #     self.ignored_collisions[link_b, link_a] = True
         #     with open(file_name1, 'a') as file_:
         #         file_.write( "<disable_collisions link1=\""+link_a+"\" link2=\""+ link_b + "\" reason=\"initial_collision\" />")
         #         file_.write("\n")
@@ -521,7 +521,7 @@ class SimulationWorld(ISimulationWorldBase):
         # print self.joint_id_to_info
 
         for cp in cast_closest_points:
-            if True or cp.link_index_a > -1 and cp.link_index_b > -1:
+            if cp.link_index_a > -1 and cp.link_index_b > -1:
                 link_a = self.joint_id_to_info[cp.link_index_a].link_name
                 link_b = self.joint_id_to_info[cp.link_index_b].link_name
                 visited = checked_collisions_pairs[time_step_count, link_a, link_b]
@@ -530,12 +530,15 @@ class SimulationWorld(ISimulationWorldBase):
 
                     closest_pt_on_A_at_t = cp.position_on_a
                     closest_pt_on_A_at_t_plus_1 = cp.position_on_a1
-                    normal_ = np.vstack(cp.contact_normal_on_b).reshape(3, 1)
+                    normal_ = 1 * np.vstack(cp.contact_normal_on_b).reshape(3, 1)
                     cp._replace(contact_normal_on_b=utils.normalize_vector(normal_))
                     dist = cp.contact_distance
                     fraction = cp.contact_fraction
 
                     if dist < 0:
+                        # print link_a, link_b, self.ignored_collisions[link_a, link_b]
+                        # self.print_contact_points(cp, time_step_count, link_index)
+
                         checked_collisions_pairs[time_step_count, link_a, link_b] = True
 
                         # collision_data = OrderedDict()
@@ -563,6 +566,8 @@ class SimulationWorld(ISimulationWorldBase):
 
                         next_normal_T_times_jacobian_.append(np.matmul((1 - fraction) * normal_.T,
                                                                        next_state_jacobian_matrix))
+        # if len(initial_signed_distance_):
+        #     print "self", len(initial_signed_distance_)
 
     def get_collision_infos_for_constraints(self, robot, link_index, current_link_state, next_link_state, distance,
                                             current_robot_state, next_robot_state,
@@ -572,7 +577,8 @@ class SimulationWorld(ISimulationWorldBase):
                                             next_normal_T_times_jacobian_):
 
         for constraint in self.collision_constraints:
-        # if robot.id != 1:
+        # if robot.id != -1:
+        #     if robot.id != -1:
             if robot.id != constraint:
 
                 cast_closest_points = self.get_convex_sweep_closest_points(robot.id,
@@ -589,7 +595,7 @@ class SimulationWorld(ISimulationWorldBase):
                     closest_pt_on_A_at_t = closest_point.position_on_a
                     closest_pt_on_A_at_t_plus_1 = closest_point.position_on_a1
                     closest_pt_on_B = closest_point.position_on_b
-                    normal_ = np.vstack(closest_point.contact_normal_on_b).reshape(3, 1)
+                    normal_ = 1 * np.vstack(closest_point.contact_normal_on_b).reshape(3, 1)
                     closest_point._replace(contact_normal_on_b=utils.normalize_vector(normal_))
                     dist = closest_point.contact_distance
                     fraction = closest_point.contact_fraction
@@ -679,8 +685,9 @@ class SimulationWorld(ISimulationWorldBase):
                                                             next_normal_T_times_jacobian_, checked_collisions_pairs,
                                                             to_plot)
 
-                    # end = time.time()
-                    # print "each self collision check time:", str(end - start)
+                        # end = time.time()
+                        # print "each self collision check time:", str(end - start)
+
                 if len(initial_signed_distance_) > 0:
                     initial_signed_distance.append(initial_signed_distance_)
                 if len(current_normal_T_times_jacobian_) > 0:

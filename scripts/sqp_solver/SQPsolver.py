@@ -147,7 +147,7 @@ class SQPsolver:
 
     def analyse_inputs(self):
         if self.lbG is not None:
-            self.lbG = np.array([utils.replace_none(lb, float(self.solver_config["replace_none_with"]), negative=True)
+            self.lbG = np.array([utils.replace_none(lb, float(self.solver_config["replace_none_with"]), negate=True)
                                  for lb in self.lbG])
         if self.ubG is not None:
             self.ubG = np.array([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))

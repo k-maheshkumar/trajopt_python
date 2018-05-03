@@ -115,7 +115,7 @@ class ProblemModelling:
         start_and_goal_lower_limits = []
         start_and_goal_upper_limits = []
 
-        for joint in self.joints:
+        for i, joint in enumerate(self.joints):
             if type(joint) is list:
                 max_vel = joint[2].velocity
                 min_vel = -joint[2].velocity
@@ -123,6 +123,7 @@ class ProblemModelling:
                 joint_upper_limit = joint[2].upper
                 start_state = joint[0]
                 end_state = joint[1]
+                joint_type = joint[3]
             elif type(joint) is dict:
                 max_vel = self.joints[joint]["limit"]["velocity"]
                 min_vel = -self.joints[joint]["limit"]["velocity"]
@@ -148,6 +149,10 @@ class ProblemModelling:
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)
 
+            # if joint_type == "prismatic" or "continuous":
+            #     self.start_and_goal_matrix[i, len(self.joints)] = 0
+            #     self.start_and_goal_matrix[i + len(self.joints), len(self.joints)] = 0
+            #     self.start_and_goal_matrix[i + (2 * len(self.joints)), len(self.joints)] = 0
 
             self.velocity_lower_limits.append(np.full((1, self.samples - 1), min_vel))
             self.velocity_upper_limits.append(np.full((1, self.samples - 1), max_vel))

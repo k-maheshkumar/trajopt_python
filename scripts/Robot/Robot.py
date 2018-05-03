@@ -119,7 +119,8 @@ class Robot:
                 assert len(current_state) == len(goal_state) == len(joint_group)
                 for joint, current_state, next_state in itertools.izip(joint_group, current_state, goal_state):
                     if joint in self.model.joint_map:
-                        joints.append([current_state, next_state, self.model.joint_map[joint].limit])
+                        joints.append([current_state, next_state, self.model.joint_map[joint].limit,
+                                       self.model.joint_map[joint].type])
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,

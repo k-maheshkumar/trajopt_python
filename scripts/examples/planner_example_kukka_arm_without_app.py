@@ -3,16 +3,18 @@ from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import 
 from collections import OrderedDict
 from scripts.utils.dict import DefaultOrderedDict
 from srdfdom.srdf import SRDF
+from random import randrange, uniform
 
 home = os.path.expanduser('~')
-
+import cvxpy
+print cvxpy.installed_solvers()
 class PlannerExample:
     def __init__(self):
 
         location_prefix = home + '/masterThesis/bullet3/data/'
 
-        # urdf_file = location_prefix + "kuka_iiwa/model.urdf"
-        urdf_file = location_prefix + "kuka_iiwa/stomp_model.urdf"
+        urdf_file = location_prefix + "kuka_iiwa/model.urdf"
+        # urdf_file = location_prefix + "kuka_iiwa/stomp_model.urdf"
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
@@ -30,13 +32,18 @@ class PlannerExample:
 
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
+        x = uniform(0, 0.5)
+        y = uniform(0, 0.5)
+        print x, y
         self.robot_id = self.planner.load_robot(urdf_file, position=[0, 0.25, 0.6])
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
         table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
 
-        # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.25],
-        #                                           position=[0.28, -0.43, 0.9], mass=100)
+        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.25],
+                                                  # position=[0.28, -0.43, 0.9],
+                                                  position=[x, -y, 0.9],
+                                                  mass=100)
 
         # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
         #                                           position=[-0.48, -0.43, 0.9], mass=100)

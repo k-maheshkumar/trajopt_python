@@ -19,7 +19,6 @@ sqp:
 #  replace_none_with: 1e-2
   solver:
   - ECOS
-  - SCS
   - ECOS_BB
   - SCS
   - CVXOPT

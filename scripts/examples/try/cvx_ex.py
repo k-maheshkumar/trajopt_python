@@ -26,7 +26,7 @@ if __name__ == '__main__':
     example = Example(problem)
 
     # start = time.time()
-    # example.calculate()
+    example.calculate()
     # end = time.time()
     # # plan.display_problem()
     # # example.plan.display_problem()

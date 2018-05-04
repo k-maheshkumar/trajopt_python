@@ -145,6 +145,12 @@ class TrajectoryOptimizationPlanner():
         self.logger.info(status)
 
         total = self.robot.planner.sqp_solver.solving_time + self.world.collision_check_time + self.robot.planner.prob_model_time
+        improve = self.robot.planner.sqp_solver.initial_cost - self.robot.planner.sqp_solver.final_cost
+        improve /= (self.robot.planner.sqp_solver.initial_cost + 0.000000001)
+        improve *= 100
+        print "initial cost: ", self.robot.planner.sqp_solver.initial_cost
+        print "final cost: ", self.robot.planner.sqp_solver.final_cost
+        print "cost improvement: ", improve
         print "collision check time: ", self.world.collision_check_time
         print "solving_time: ", self.robot.planner.sqp_solver.solving_time
         print "prob_model_time: ", self.robot.planner.prob_model_time

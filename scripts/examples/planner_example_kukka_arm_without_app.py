@@ -34,7 +34,7 @@ class PlannerExample:
         self.planner.world.toggle_rendering(0)
         x = uniform(0, 0.5)
         y = uniform(0, 0.5)
-        print x, y
+
         self.robot_id = self.planner.load_robot(urdf_file, position=[0, 0.25, 0.6])
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 

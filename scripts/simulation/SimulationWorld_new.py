@@ -4,6 +4,7 @@ import pybullet_data
 import time
 import numpy as np
 from scripts.interfaces.ISimulationWorldBase import ISimulationWorldBase
+import PyKDL as kdl
 import itertools
 from scripts.utils.utils import Utils as utils
 from scripts.utils.yaml_paser import ConfigParser as config
@@ -87,6 +88,7 @@ class SimulationWorld(ISimulationWorldBase):
         self.collision_safe_distance = 0.4
         self.collision_check_distance = 0.2
         self.collision_check_time = 0
+
 
         self.robot = None
 
@@ -478,7 +480,7 @@ class SimulationWorld(ISimulationWorldBase):
                                  time_step_count, zero_vec):
         link_position_in_world_frame = link_state[4]
         link_orentation_in_world_frame = link_state[5]
-        closest_point_on_link_in_link_frame, _ = self.get_point_in_local_frame(
+        closest_point_on_link_in_link_frame = self.get_point_in_local_frame(
             link_position_in_world_frame, link_orentation_in_world_frame,
             cp)
 
@@ -708,14 +710,21 @@ class SimulationWorld(ISimulationWorldBase):
 
         return initial_signed_distance, current_normal_T_times_jacobian, next_normal_T_times_jacobian
 
-    def get_point_in_local_frame(self, frame_position, frame_orientation, point, orn=[0, 0, 0, 1], inverse=True):
-        if inverse:
-            inv_trans, inv_orn = sim.invertTransform(frame_position, frame_orientation)
-            point_on_frame = sim.multiplyTransforms(inv_trans, inv_orn, point, [0, 0, 0, 1])
-        else:
-            point_on_frame = sim.multiplyTransforms(frame_position, frame_orientation, point, orn)
+    def get_point_in_local_frame(self, frame_position, frame_orientation, point, inverse=True):
+        # frame = kdl.Frame()
+        # print frame_orientation
+        rotation = kdl.Rotation.Quaternion(frame_orientation[0], frame_orientation[1], frame_orientation[2],
+                                           frame_orientation[3])
+        position = kdl.Vector(frame_position[0], frame_position[1], frame_position[2])
+        frame = kdl.Frame(rotation, position)
+        point = kdl.Vector(point[0], point[1], point[2])
 
-        return point_on_frame
+        if inverse:
+            point_on_frame = frame.Inverse() * point
+        else:
+            point_on_frame = frame * point
+
+        return [point_on_frame[0], point_on_frame[1], point_on_frame[2]]
 
     def update_collsion_infos(self, no_of_samples, new_trajectory, delta_trajectory=None):
         trajectory = np.array((np.split(new_trajectory, no_of_samples)))

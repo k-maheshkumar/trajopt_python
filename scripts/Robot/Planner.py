@@ -4,7 +4,8 @@ import numpy as np
 from scripts.utils.utils import Utils as utils
 import scripts.sqp_solver.ProblemModelling as model
 from scripts.Robot import Trajectory
-from scripts.sqp_solver import SQPsolver
+# from scripts.sqp_solver import SQPsolver
+from scripts.sqp_solver import SQPsolver_d as SQPsolver
 from collections import OrderedDict
 
 
@@ -149,10 +150,17 @@ class TrajectoryPlanner:
                                  lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,
                                  A=self.problem_model.start_and_goal_matrix, b=self.problem_model.start_and_goal_limits,
                                  initial_guess=self.problem_model.initial_guess, solver_config=self.solver_config)
-            self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
-                                 , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
+            # self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
+            #                      , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
             # self.trajectory.init(np.array(self.problem_model.initial_guess), self.problem_model.samples, self.problem_model.duration)
 
+            # self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
+            #                      , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
+            self.trajectory.init(
+                np.array((np.split(self.problem_model.initial_guess[: self.num_of_joints * self.no_of_samples],
+                                   self.no_of_samples))),
+                self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
+            # self.trajectory.init(np.array(self.problem_model.initial_guess), self.problem_model.samples, self.problem_model.duration)
 
     def update_prob(self):
         self.sqp_solver.update_prob(G=self.problem_model.robot_constraints_matrix,
@@ -168,7 +176,10 @@ class TrajectoryPlanner:
         self.solver_status, trajectory = self.sqp_solver.solve(initial_guess, callback_function)
         end = time.time()
         planning_time = end - start
-        trajectory = np.array((np.split(trajectory, self.no_of_samples)))
+        # trajectory = np.array((np.split(trajectory, self.no_of_samples)))
+
+        # trajectory = np.array((np.split(trajectory, self.no_of_samples)))
+        trajectory = np.array((np.split(trajectory[: self.num_of_joints * self.no_of_samples], self.no_of_samples)))
         self.trajectory.update(trajectory, self.current_planning_joint_group)
         self.trajectory.plot_trajectories()
         status = "-1"

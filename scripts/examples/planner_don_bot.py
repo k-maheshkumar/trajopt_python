@@ -5,6 +5,7 @@ from scripts.utils.dict import DefaultOrderedDict
 from srdfdom.srdf import SRDF
 import pybullet as p
 from scripts.simulation.bulletTypes import *
+from random import randint
 
 home = os.path.expanduser('~')
 
@@ -21,7 +22,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": True,
+            "verbose": "INFO",
             "log_file": True,
             "robot_config": "robot_config_don_bot.yaml"
 
@@ -41,16 +42,18 @@ class PlannerExample:
         shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[0, 0, 0.0],
                                                 orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
 
-        # # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
-        # #                                                  position=[0, 0, 0.0])
+        # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
+        #                                                  position=[0, 0, 0.0])
         # #
         self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
                                                   position=[0, 0.3, 0.62], mass=100)
-        self.box_id = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.2],
-                                                  position=[0.15, -0.2, 0.62], mass=100)
-        self.box_id = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.05, 0.1],
-                                                  position=[0.15, 0.4, 1], mass=100)
-        #
+        # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.2],
+        #                                           position=[0.15, -0.2, 0.62], mass=100)
+        # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.05, 0.1],
+        #                                           position=[0.15, 0.4, 1], mass=100)
+        # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 1, 0.02],
+        #                                           position=[0.15, 0.4, 0.9], mass=100)
+
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
@@ -79,8 +82,8 @@ class PlannerExample:
         start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
 
         goal_state["odom_x_joint"] = 0.1
-        goal_state["odom_y_joint"] = 0.35
-        goal_state["odom_z_joint"] = 0.51
+        goal_state["odom_y_joint"] = 0.3
+        goal_state["odom_z_joint"] = 0.01
 
         goal_state["ur5_shoulder_pan_joint"] = 1.9823357809267463
         goal_state["ur5_shoulder_lift_joint"] = -1.8299975516996142
@@ -180,7 +183,7 @@ class PlannerExample:
         self.planner.world.reset_joint_states(self.robot_id, start_state.values(), start_state.keys())
 
         start_state1 = OrderedDict()
-        start_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
+        start_state1["ur5_shoulder_pan_joint"] = 2.5823357809267463
         start_state1["ur5_shoulder_lift_joint"] = -2.4299975516996142
         start_state1["ur5_elbow_joint"] = -1.9762726255540713
         start_state1["ur5_wrist_1_joint"] = 0.8666279970481103
@@ -197,8 +200,8 @@ class PlannerExample:
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 
-        _, status, trajectory = self.planner.get_trajectory(group=group1,
-                                                         goal_state=goal_state1, samples=samples, duration=duration,
+        _, status, trajectory = self.planner.get_trajectory(group=group,
+                                                         goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)

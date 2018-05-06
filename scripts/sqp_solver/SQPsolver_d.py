@@ -50,6 +50,9 @@ class SQPsolver:
 
         self.num_iterations = 0
         self.solving_time = 0
+        self.initial_cost = 0
+        self.final_cost = 0
+        self.is_initialised = False
 
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
@@ -234,7 +237,9 @@ class SQPsolver:
         cons2_cond = np.isclose(np.matmul(-self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
         cons3_cond = np.isclose(np.matmul(self.A, x_k), self.b, rtol=tolerance, atol=tolerance)
         if self.D is not None:
-            p_k = np.hstack([p.value] * (self.D.shape[1] / p.shape[0]))
+            # p_k = np.hstack([p.value] * (self.D.shape[1] / p.shape[0]))
+            p_k = np.hstack([x_k] * (self.D.shape[1] / p.shape[0]))
+            # p_k = x_k
             cons4_cond = np.isclose(np.matmul(-self.D, p_k) >= self.lbD, 1, rtol=tolerance, atol=tolerance).all()
         else:
             cons4_cond = True
@@ -246,7 +251,9 @@ class SQPsolver:
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
         cons2 = np.add(np.matmul(-self.G, x_k), self.lbG)
         cons3 = np.subtract(np.matmul(self.A, x_k), self.b)
-        p_k = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
+        # p_k = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
+        p_k = np.hstack([x_k] * (self.D.shape[1] / p.shape[0]))
+        # p_k = x_k
         cons4 = self.lbD - cvxpy.matmul(self.D, p_k)
         # print cons1, cons2, cons3
         return cons1.flatten(), cons2.flatten(), cons3.flatten(), cons4
@@ -269,10 +276,12 @@ class SQPsolver:
         cons1_model = cons1_at_xk + cons1_grad_at_xk * p
         cons2_model = cons2_at_xk + cons2_grad_at_xk * p
         cons3_model = cons3_at_xk + cons3_grad_at_xk * p
-
         p1 = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
+        # p1 = x_k
 
-        cons4_model = cons4_at_xk + cvxpy.matmul(cons4_grad_at_xk, p1)
+
+        # cons4_model = cons4_at_xk + cvxpy.matmul(cons4_grad_at_xk, p1)
+        cons4_model = cons4_at_xk + cons4_grad_at_xk * p1
 
         objective_grad_at_xk, objective_hess_at_xk = self.get_objective_gradient_and_hessian(x_k)
         objective_at_xk = self.get_actual_objective(x_k, p, penalty)
@@ -291,13 +300,16 @@ class SQPsolver:
         constraints1 = cvxpy.norm(self.G * x - self.ubG.flatten(), self.penalty_norm)
         constraints2 = cvxpy.norm(-self.G * x + self.lbG.flatten(), self.penalty_norm)
         constraints3 = cvxpy.norm(self.A * x - self.b.flatten(), self.penalty_norm)
-        p1 = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
+        # p1 = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
+        p1 = np.hstack([xk] * (self.D.shape[1] / p.shape[0]))
+        # p1 = xk
         constraints4 = cvxpy.norm(self.lbD - cvxpy.matmul(self.D, p1), self.penalty_norm)
         objective += penalty * (constraints1 + constraints2 + constraints3 + constraints4)
         return objective
 
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, p, penalizer)
+        # print self.D.shape, p.shape, delta, penalizer.value
         # if constraints is not None:
         #     # print lower_limit, delta
         #     if constraints.shape[1] == 2 * p.shape[0]:
@@ -328,7 +340,7 @@ class SQPsolver:
         else:
             # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
             start = time.time()
-            result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
+            result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=100)
             # result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
             end = time.time()
         self.solving_time += end - start
@@ -431,6 +443,15 @@ class SQPsolver:
                 if callback_function is not None:
                     # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                     self.D, self.lbD, self.ubD = callback_function(x_k, p_k)
+                    # dynamic_constraints_count = self.D.shape[0]
+                    # if dynamic_constraints_count > last_dynamic_constraints_count:
+                    #     x_k -= last_p_k
+                    #     p.value = last_p_k
+                    #     trust_box_size /= 4
+                    #     # penalty *= 2
+                    #
+                    # last_p_k = copy.deepcopy(p_k)
+                    # last_dynamic_constraints_count = dynamic_constraints_count
                 while trust_box_size >= min_trust_box_size:
                     self.num_iterations += 1
                     if callback_function is not None:
@@ -475,6 +496,12 @@ class SQPsolver:
                         if predicted_reduction == 0:
                             predicted_reduction = 0.0000001
                         rho_k = actual_reduction / predicted_reduction
+
+                        if not self.is_initialised:
+                            self.is_initialised = True
+                            self.initial_cost = predicted_reduction
+                        else:
+                            self.final_cost = predicted_reduction
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(rho_k))
@@ -523,8 +550,8 @@ class SQPsolver:
                         last_p_k = p_k
 
                 # trust_box_size = np.fmin(max_trust_box_size, trust_box_size / trust_shrink_ratio * 0.5)
-                # trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 0.5)
-
+                trust_box_size = np.fmax(trust_box_size, min_trust_box_size / trust_shrink_ratio * 0.5)
+                # trust_box_size = float(self.solver_config["trust_region_size"])
 
                 if is_adjust_penalty or dynamic_constraints_satisfied:
                     break
@@ -547,7 +574,7 @@ class SQPsolver:
                     self.logger.info(inter_status)
                     self.status = "Solved"
                     break
-
+            trust_box_size = float(self.solver_config["trust_region_size"])
             if self.is_constraints_satisfied(x_k, p, const_violation_tolerance):
                 # print "constrains satisfied .. . . ..  ."
                 if callback_function is not None:
@@ -585,6 +612,7 @@ class SQPsolver:
             penalty.value *= 10
             iteration_count = 0
             is_adjust_penalty = False
+            trust_box_size = float(self.solver_config["trust_region_size"])
         self.logger.debug("\n initial x_0 " + str(x_0))
         self.logger.debug("\n final x_k " + str(x_k))
         self.logger.debug("solver status: " + self.status)

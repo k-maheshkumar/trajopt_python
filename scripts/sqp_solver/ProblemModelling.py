@@ -66,12 +66,39 @@ class ProblemModelling:
         self.fill_start_and_goal_matrix()
         self.fill_velocity_limits()
         self.fill_robot_constraints_matrix()
+        # self.duplicate_matrices()
 
         main_logger_name = "Trajectory_Planner"
         # verbose = "DEBUG"
         verbose = False
         self.logger = logging.getLogger(main_logger_name)
         self.setup_logger(main_logger_name, verbose)
+
+    def duplicate_matrices(self):
+        self.cost_matrix_P1 = np.hstack(
+            [self.cost_matrix_P, np.zeros((self.cost_matrix_P.shape[0], self.cost_matrix_P.shape[1]))])
+        self.cost_matrix_P2 = np.hstack(
+            [np.zeros((self.cost_matrix_P.shape[0], self.cost_matrix_P.shape[1])), self.cost_matrix_P])
+        self.cost_matrix_P = np.vstack([self.cost_matrix_P1, self.cost_matrix_P2])
+        self.cost_matrix_q = np.hstack([self.cost_matrix_q, self.cost_matrix_q])
+        self.start_and_goal_matrix1 = np.hstack([self.start_and_goal_matrix, np.zeros(
+            (self.start_and_goal_matrix.shape[0], self.start_and_goal_matrix.shape[1]))])
+        self.start_and_goal_matrix2 = np.hstack(
+            [np.zeros((self.start_and_goal_matrix.shape[0], self.start_and_goal_matrix.shape[1])),
+             self.start_and_goal_matrix])
+        self.start_and_goal_matrix = np.vstack([self.start_and_goal_matrix1, self.start_and_goal_matrix2])
+        self.robot_constraints_matrix1 = np.hstack([self.robot_constraints_matrix,
+                                                    np.zeros((self.robot_constraints_matrix.shape[0],
+                                                              self.robot_constraints_matrix.shape[1]))])
+        self.robot_constraints_matrix2 = np.hstack(
+            [np.zeros((self.robot_constraints_matrix.shape[0], self.robot_constraints_matrix.shape[1])),
+             self.robot_constraints_matrix])
+        self.robot_constraints_matrix = np.vstack([self.robot_constraints_matrix1, self.robot_constraints_matrix2])
+        self.initial_guess = np.hstack([self.initial_guess, self.initial_guess])
+        # print self.initial_guess
+        self.constraints_lower_limits = np.hstack([self.constraints_lower_limits, self.constraints_lower_limits])
+        self.constraints_upper_limits = np.hstack([self.constraints_upper_limits, self.constraints_upper_limits])
+        self.start_and_goal_limits = np.hstack([self.start_and_goal_limits, self.start_and_goal_limits])
 
     def fill_cost_matrix(self):
 
@@ -98,8 +125,9 @@ class ProblemModelling:
         self.start_and_goal_matrix[i == j] = [1] * self.no_of_joints + [0] * self.no_of_joints
         self.start_and_goal_matrix[i == j - (shape - 2* self.no_of_joints) ] = [0] * self.no_of_joints + [1] * self.no_of_joints
 
-        self.start_and_goal_matrix = np.vstack([self.start_and_goal_matrix, self.start_and_goal_matrix,
-                                                self.start_and_goal_matrix])
+        # self.start_and_goal_matrix = np.vstack([self.start_and_goal_matrix, self.start_and_goal_matrix,
+        #                                         self.start_and_goal_matrix])
+        self.start_and_goal_matrix = np.vstack([self.start_and_goal_matrix])
 
     def fill_velocity_matrix(self):
 
@@ -114,7 +142,6 @@ class ProblemModelling:
     def fill_velocity_limits(self):
         start_and_goal_lower_limits = []
         start_and_goal_upper_limits = []
-
         for i, joint in enumerate(self.joints):
             if type(joint) is list:
                 max_vel = joint[2].velocity
@@ -149,10 +176,11 @@ class ProblemModelling:
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)
 
-            # if joint_type == "prismatic" or "continuous":
-            #     self.start_and_goal_matrix[i, len(self.joints)] = 0
-            #     self.start_and_goal_matrix[i + len(self.joints), len(self.joints)] = 0
-            #     self.start_and_goal_matrix[i + (2 * len(self.joints)), len(self.joints)] = 0
+            if joint_type == "prismatic" or "continuous":
+                self.start_and_goal_matrix[i + len(self.joints), i + self.samples + len(self.joints) + 1] = 0
+                # self.start_and_goal_matrix[i + len(self.joints), len(self.joints)] = 0
+                # self.start_and_goal_matrix[i + (2 * len(self.joints)), len(self.joints)] = 0
+
 
             self.velocity_lower_limits.append(np.full((1, self.samples - 1), min_vel))
             self.velocity_upper_limits.append(np.full((1, self.samples - 1), max_vel))
@@ -170,15 +198,21 @@ class ProblemModelling:
         self.velocity_lower_limits = np.hstack(self.velocity_lower_limits)
         self.velocity_upper_limits = np.hstack(self.velocity_upper_limits)
 
+        # self.start_and_goal_limits = np.hstack(
+        #     [start_and_goal_lower_limits, start_and_goal_upper_limits, start_and_goal_lower_limits,
+        #      start_and_goal_upper_limits, start_and_goal_lower_limits,
+        #      start_and_goal_upper_limits])
+
         self.start_and_goal_limits = np.hstack(
-            [start_and_goal_lower_limits, start_and_goal_upper_limits, start_and_goal_lower_limits,
-             start_and_goal_upper_limits, start_and_goal_lower_limits,
-             start_and_goal_upper_limits])
+            [start_and_goal_lower_limits, start_and_goal_upper_limits])
 
         self.constraints_lower_limits = np.hstack([self.velocity_lower_limits.flatten(),
                                                    self.joints_lower_limits.flatten()])
         self.constraints_upper_limits = np.hstack([self.velocity_upper_limits.flatten(),
                                                    self.joints_upper_limits.flatten()])
+
+        # self.constraints_lower_limits = np.hstack([self.velocity_lower_limits.flatten()])
+        # self.constraints_upper_limits = np.hstack([self.velocity_upper_limits.flatten()])
 
         self.initial_guess = (np.asarray(self.initial_guess).T).flatten()
 
@@ -199,6 +233,7 @@ class ProblemModelling:
                     lower_collision_limit = lower_collision_limit.flatten()
                     # upper_collision_limit = initial_signed_distance - self.collision_safe_distance
                     # upper_collision_limit = upper_collision_limit.flatten()
+
         return np.hstack([current_state_normal_times_jacobian, next_state_normal_times_jacobian]), \
                lower_collision_limit, None
 
@@ -225,7 +260,6 @@ class ProblemModelling:
         self.robot_constraints_matrix.append(self.velocity_matrix)
         self.robot_constraints_matrix.append(self.joints_matrix)
         self.robot_constraints_matrix = np.vstack(self.robot_constraints_matrix)
-
 
     def formulate_collision_constraints(self, initial_singed_distance, normal, jacbian, safe_distance):
         pass

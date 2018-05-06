@@ -1,8 +1,8 @@
 sqp:
   const_violation_tolerance: 1e-2
-  decimals_to_round: 5.0
+  decimals_to_round: 3.0
   improve_ratio_threshold: 0.25
-  initial_penalty: 200
+  initial_penalty: 20
   max_iteration: 50
   max_penalty: 1e4
   max_trust_region_size: 80
@@ -19,12 +19,12 @@ sqp:
 #  replace_none_with: 1e-2
   solver:
   - ECOS
-  - ECOS_BB
   - SCS
   - CVXOPT
+  - ECOS_BB
   trust_bad_region_ratio: 0.25
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
   trust_region_norm: inf
-  trust_region_size: 1.0
+  trust_region_size: 2.0
   trust_shrink_ratio: 0.25

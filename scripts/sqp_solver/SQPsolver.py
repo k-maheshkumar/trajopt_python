@@ -240,10 +240,16 @@ class SQPsolver:
                                cvxpy.matmul(constraints, p1) <= upper_limit]
             elif lower_limit is None:
                 constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               cvxpy.matmul(constraints, p1) <= upper_limit]
+                               cvxpy.matmul(constraints, p1) >= upper_limit]
             elif upper_limit is None:
-                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               lower_limit <= cvxpy.matmul(constraints, p1)]
+
+                cons2 = lower_limit + cvxpy.matmul(constraints, p1.value)
+                cons_model = cons2 - constraints * p1
+                constraints = [
+                    cvxpy.norm(p, self.trust_region_norm) <= delta,
+                               # lower_limit <= cvxpy.matmul(constraints, p1)
+                ]
+                model_objective += penalizer * cvxpy.norm(cons_model, self.penalty_norm)
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
@@ -255,7 +261,7 @@ class SQPsolver:
         else:
             # result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
             start = time.time()
-            result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=5000)
+            result = problem.solve(solver=self.solver, warm_start=True, verbose=False, max_iters=100)
             # result = problem.solve(solver=self.solver, warm_start=True, verbose=False)
             end = time.time()
         self.solving_time += end - start
@@ -341,6 +347,7 @@ class SQPsolver:
         dynamic_constraints_count = 0
 
         dynamic_constraints_satisfied = False
+        p.value = copy.deepcopy(p_0.value)
 
         global elapsed_time
 

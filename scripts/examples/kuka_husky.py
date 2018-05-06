@@ -43,7 +43,7 @@ class PlannerExample:
                                                   position=[0.68, 0.35, 0.9], mass=100)
 
         self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-                                                  position=[0.68, 0.05, 0.9], mass=100)
+                                                  position=[-0.68, 0.05, 0.9], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
         #                                           position=[-0.48, 0.43, 0.9], mass=100)
 

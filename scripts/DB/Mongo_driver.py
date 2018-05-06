@@ -3,7 +3,7 @@ from pymongo import MongoClient
 
 
 class MongoDriver():
-    def __init__(self, db_name, host='localhost', port=27017):
+    def __init__(self, db_name="Trajectory_planner_results", host='localhost', port=27017):
         self.client = MongoClient(host, port)
         # self.client = Connection()
         self.db_collection = self.client[db_name]
@@ -16,7 +16,7 @@ class MongoDriver():
         return self.db.find(query)
 
     def insert(self, request):
-        print request
+        # print request
         self.db.insert(request)
         print "saved request into database . . . . . . .  ."
 
@@ -29,7 +29,8 @@ class MongoDriver():
 
 def main():
 
-    db = MongoDriver("trajectory_planner")
+    # db = MongoDriver("Trajectory_planner_results")
+    db = MongoDriver()
     request = {
         "samples": 5,
         "duration": 16,
@@ -45,10 +46,13 @@ def main():
     }
     # db.insert(request)
     # db.drop()
-    result = (db.find({"is_collision_free": True}))
-    print result
+    # result = (db.find({"is_collision_free": True}))
+    result = (db.find({"num_iterations": 90}))
+    # result = (db.find({}))
+    # print result
     for i in result:
-        print i["trajectory"]
+        print i["num_iterations"]
+
 
 
 if __name__ == '__main__':

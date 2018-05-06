@@ -6,8 +6,7 @@ from srdfdom.srdf import SRDF
 from random import randrange, uniform
 
 home = os.path.expanduser('~')
-import cvxpy
-print cvxpy.installed_solvers()
+
 class PlannerExample:
     def __init__(self):
 
@@ -19,9 +18,10 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            # "verbose": "INFO",
+            "verbose": "INFO",
             "log_file": False,
             # "save_problem": True,
+            "db_name": "Trajectory_planner_results",
             "robot_config": "robot_config_kukka_arm.yaml"
 
         }
@@ -64,7 +64,9 @@ class PlannerExample:
         group = "full_arm"
 
         duration = 20
+        # samples = randrange(5, 30) + randrange(1, 10)
         samples = 20
+
         collision_check_distance = 0.15
         collision_safe_distance = 0.1
 
@@ -73,7 +75,7 @@ class PlannerExample:
                                                         collision_safe_distance=collision_safe_distance,
                                                         collision_check_distance=collision_check_distance
                                                         )
-        # print("is trajectory free from collision: ", is_collision_free)
+        print("is trajectory free from collision: ", is_collision_free)
         print (status)
         self.planner.execute_trajectory()
         self.planner.world.step_simulation_for(2)
@@ -105,9 +107,11 @@ def main():
     example = PlannerExample()
     # example.load_srdf()
     example.run()
-    while True:
-        pass
+    # while True:
+    #     pass
 
 
 if __name__ == '__main__':
-    main()
+    for i in range(1):
+        print "planning iteration . . .. . . . . . . .. ", i
+        main()

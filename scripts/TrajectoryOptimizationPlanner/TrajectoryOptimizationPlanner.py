@@ -37,7 +37,7 @@ class TrajectoryOptimizationPlanner():
             if "db_name" in kwargs:
                 db_name = kwargs["db_name"]
             else:
-                db_name = "trajectory_planner"
+                db_name = "Trajectory_planner_results"
 
             self.db_driver = MongoDriver(db_name)
         else:
@@ -148,6 +148,9 @@ class TrajectoryOptimizationPlanner():
         improve = self.robot.planner.sqp_solver.initial_cost - self.robot.planner.sqp_solver.final_cost
         improve /= (self.robot.planner.sqp_solver.initial_cost + 0.000000001)
         improve *= 100
+        print "samples", samples
+        print "no of links", len(self.world.robot_info["joint_infos"])
+        print "number of iterations: ", self.robot.planner.sqp_solver.num_iterations
         print "initial cost: ", self.robot.planner.sqp_solver.initial_cost
         print "final cost: ", self.robot.planner.sqp_solver.final_cost
         print "cost improvement: ", improve
@@ -156,25 +159,34 @@ class TrajectoryOptimizationPlanner():
         print "prob_model_time: ", self.robot.planner.prob_model_time
         print "total time: ", total
 
-        is_collision_free = True
-        # is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
-        #                                                  group,
-        #                                                  0.02)
+        # is_collision_free = True
+        is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
+                                                         group,
+                                                         0.02)
         self.world.toggle_rendering_while_planning(True)
 
 
 
-        if self.save_problem and self.db_driver is not None:
+        if self.save_problem and self.db_driver is not None and improve < 101:
             planning_request = OrderedDict()
             planning_request["samples"] = samples
             planning_request["duration"] = duration
             planning_request["group"] = group
             planning_request["start_state"] = current_robot_state
             planning_request["goal_state"] = goal_state
+            planning_request["no of links"] = len(self.world.robot_info["joint_infos"])
             planning_request["collision_safe_distance"] = collision_safe_distance
             planning_request["collision_check_distance"] = collision_check_distance
             result = OrderedDict()
-            result["planning_time"] = self.elapsed_time
+            result["num_iterations"] = self.robot.planner.sqp_solver.num_iterations
+            result["initial_cost"] = self.robot.planner.sqp_solver.initial_cost
+            result["final_cost"] = self.robot.planner.sqp_solver.final_cost
+            result["cost_improvement"] = improve
+            result["collision_check_time"] = self.world.collision_check_time
+            result["solving_time"] = self.robot.planner.sqp_solver.solving_time
+            result["prob_model_time"] = self.robot.planner.prob_model_time
+            # result["total_time"] = total
+            result["planning_time"] = total
             result["is_collision_free"] = is_collision_free
             result["planning_request"] = planning_request
             result["trajectory"] = self.robot.planner.trajectory.final.tolist()
@@ -220,6 +232,7 @@ class TrajectoryOptimizationPlanner():
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
 
         constraints, lower_limit, upper_limit = None, None, None
+        new_trajectory = new_trajectory[:self.robot.planner.no_of_samples * self.robot.planner.num_of_joints]
         trajectory = np.split(new_trajectory, self.robot.planner.no_of_samples)
         self.robot.planner.trajectory.add_trajectory(trajectory)
         start = time.time()

@@ -676,9 +676,9 @@ class SimulationWorld(ISimulationWorldBase):
                         self.get_collision_infos_for_constraints(robot, link_index, current_link_state, next_link_state,
                                                              distance, current_robot_state, next_robot_state,
                                                              zero_vec, trajectory, group, time_step_count,
-                                                             initial_signed_distance_,
-                                                             current_normal_T_times_jacobian_,
-                                                             next_normal_T_times_jacobian_)
+                                                             initial_signed_distance,
+                                                             current_normal_T_times_jacobian,
+                                                             next_normal_T_times_jacobian)
                     end = time.time()
 
                     # print "each constraints collision check time:", str(end - start)
@@ -689,34 +689,34 @@ class SimulationWorld(ISimulationWorldBase):
                         self.get_robot_self_collision_infos(robot.id, link_index, current_link_state, next_link_state,
                                                             distance, current_robot_state, next_robot_state,
                                                             zero_vec, trajectory, group, time_step_count,
-                                                            initial_signed_distance_,
-                                                            current_normal_T_times_jacobian_,
-                                                            next_normal_T_times_jacobian_, checked_collisions_pairs,
+                                                            initial_signed_distance,
+                                                            current_normal_T_times_jacobian,
+                                                            next_normal_T_times_jacobian, checked_collisions_pairs,
                                                             to_plot)
 
                         # end = time.time()
                         # print "each self collision check time:", str(end - start)
-
-                    if len(initial_signed_distance_) > 0:
-                        initial_signed_distance.append(initial_signed_distance_)
-                    if len(current_normal_T_times_jacobian_) > 0:
-                        current_normal_T_times_jacobian.append(current_normal_T_times_jacobian_)
-                    if len(next_normal_T_times_jacobian_) > 0:
-                        next_normal_T_times_jacobian.append(next_normal_T_times_jacobian_)
+                    #
+                    # if len(initial_signed_distance_) > 0:
+                    #     initial_signed_distance.append(initial_signed_distance_)
+                    # if len(current_normal_T_times_jacobian_) > 0:
+                    #     current_normal_T_times_jacobian.append(current_normal_T_times_jacobian_)
+                    # if len(next_normal_T_times_jacobian_) > 0:
+                    #     next_normal_T_times_jacobian.append(next_normal_T_times_jacobian_)
 
         # print to_plot
         # config.save_to_file(home + "/temp/collision_data.yaml", to_plot, mode="a")
 
         if len(initial_signed_distance) > 0:
-            initial_signed_distance = np.vstack(itertools.chain.from_iterable(initial_signed_distance))
-            # initial_signed_distance = np.vstack(initial_signed_distance)
+            # initial_signed_distance = np.vstack(itertools.chain.from_iterable(initial_signed_distance))
+            initial_signed_distance = np.vstack(initial_signed_distance)
         if len(current_normal_T_times_jacobian) > 0:
-            current_normal_T_times_jacobian = np.vstack(itertools.chain.from_iterable(current_normal_T_times_jacobian))
-            # current_normal_T_times_jacobian = np.vstack(current_normal_T_times_jacobian)
+            # current_normal_T_times_jacobian = np.vstack(itertools.chain.from_iterable(current_normal_T_times_jacobian))
+            current_normal_T_times_jacobian = np.vstack(current_normal_T_times_jacobian)
 
         if len(next_normal_T_times_jacobian) > 0:
-            next_normal_T_times_jacobian = np.vstack(itertools.chain.from_iterable(next_normal_T_times_jacobian))
-            # next_normal_T_times_jacobian = np.vstack(next_normal_T_times_jacobian)
+            # next_normal_T_times_jacobian = np.vstack(itertools.chain.from_iterable(next_normal_T_times_jacobian))
+            next_normal_T_times_jacobian = np.vstack(next_normal_T_times_jacobian)
 
         self.reset_joint_states(robot.id, start_state, group)
 

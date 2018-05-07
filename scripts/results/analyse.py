@@ -127,11 +127,11 @@ class Analyzer:
                     self.collision_check_time[i] /= count
                     self.prob_model_time[i] /= count
                     self.planning_time[i] /= count
-        # print self.num_iterations
-        # print self.cost_improvement
-        # print self.collision_check_time
-        # print self.prob_model_time
-        # print self.planning_time
+        print self.num_iterations
+        print self.cost_improvement
+        print self.collision_check_time
+        print self.prob_model_time
+        print self.planning_time
 
         for (k,v), (k1,v1), (k2,v2), (k3,v3) in zip(self.num_iterations.items(), self.planning_time.items(),
                                            self.collision_check_time.items(), self.prob_model_time.items()):

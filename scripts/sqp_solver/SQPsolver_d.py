@@ -48,7 +48,8 @@ class SQPsolver:
         self.penalty_norm = 1
         self.trust_region_norm = np.inf
 
-        self.num_iterations = 0
+        self.num_qp_iterations = 0
+        self.num_sqp_iterations = 0
         self.solving_time = 0
         self.initial_cost = 0
         self.final_cost = 0
@@ -533,17 +534,18 @@ class SQPsolver:
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
-            self.num_iterations += 1
+            self.num_qp_iterations += 1
+            self.num_sqp_iterations += 1
             while iteration_count < max_iteration:
                 iteration_count += 1
-                self.num_iterations += 1
+                self.num_qp_iterations += 1
                 # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
                     # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                     self.D, self.lbD, self.ubD = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
-                    self.num_iterations += 1
+                    self.num_qp_iterations += 1
                     if callback_function is not None:
                         if self.D is not None:
                             dynamic_constraints_count = self.D.shape[0]

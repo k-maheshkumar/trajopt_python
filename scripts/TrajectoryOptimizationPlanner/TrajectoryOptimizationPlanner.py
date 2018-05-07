@@ -150,7 +150,8 @@ class TrajectoryOptimizationPlanner():
         improve *= 100
         print "samples", samples
         print "no of links", len(self.world.robot_info["joint_infos"])
-        print "number of iterations: ", self.robot.planner.sqp_solver.num_iterations
+        print "number of qp iterations: ", self.robot.planner.sqp_solver.num_qp_iterations
+        print "number of sqp iterations: ", self.robot.planner.sqp_solver.num_sqp_iterations
         print "initial cost: ", self.robot.planner.sqp_solver.initial_cost
         print "final cost: ", self.robot.planner.sqp_solver.final_cost
         print "cost improvement: ", improve
@@ -178,7 +179,8 @@ class TrajectoryOptimizationPlanner():
             planning_request["collision_safe_distance"] = collision_safe_distance
             planning_request["collision_check_distance"] = collision_check_distance
             result = OrderedDict()
-            result["num_iterations"] = self.robot.planner.sqp_solver.num_iterations
+            result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
+            result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
             result["initial_cost"] = self.robot.planner.sqp_solver.initial_cost
             result["final_cost"] = self.robot.planner.sqp_solver.final_cost
             result["cost_improvement"] = improve

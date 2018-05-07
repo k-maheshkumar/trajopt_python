@@ -198,7 +198,7 @@ class SQPsolver:
     def get_objective_gradient_and_hessian(self, x_k):
         model_grad = 0.5 * np.matmul((self.P + self.P.T), x_k)
         model_hess = 0.5 * (self.P + self.P.T)
-        return model_grad, model_hess
+        return model_grad, model_hess   `
 
     def get_model_objective(self, x_k, penalty, p):
         cons1_at_xk, cons2_at_xk, cons3_at_xk = self.evaluate_constraints(x_k)

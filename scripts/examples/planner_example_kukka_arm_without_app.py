@@ -12,8 +12,8 @@ class PlannerExample:
 
         location_prefix = home + '/masterThesis/bullet3/data/'
 
-        urdf_file = location_prefix + "kuka_iiwa/model.urdf"
-        # urdf_file = location_prefix + "kuka_iiwa/stomp_model.urdf"
+        # urdf_file = location_prefix + "kuka_iiwa/model.urdf"
+        urdf_file = location_prefix + "kuka_iiwa/stomp_model.urdf"
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {

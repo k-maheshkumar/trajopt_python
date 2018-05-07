@@ -178,12 +178,12 @@ class PlannerExample:
         duration = 10
         samples = 20
         collision_check_distance = 0.15
-        collision_safe_distance = 0.10
+        collision_safe_distance = 0.1
         #
         self.planner.world.reset_joint_states(self.robot_id, start_state.values(), start_state.keys())
 
         start_state1 = OrderedDict()
-        start_state1["ur5_shoulder_pan_joint"] = 2.5823357809267463
+        start_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
         start_state1["ur5_shoulder_lift_joint"] = -2.4299975516996142
         start_state1["ur5_elbow_joint"] = -1.9762726255540713
         start_state1["ur5_wrist_1_joint"] = 0.8666279970481103
@@ -200,8 +200,8 @@ class PlannerExample:
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 
-        _, status, trajectory = self.planner.get_trajectory(group=group,
-                                                         goal_state=goal_state, samples=samples, duration=duration,
+        _, status, trajectory = self.planner.get_trajectory(group=group1,
+                                                         goal_state=goal_state1, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)

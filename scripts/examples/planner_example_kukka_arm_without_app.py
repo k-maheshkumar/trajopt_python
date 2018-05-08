@@ -56,7 +56,7 @@ class PlannerExample:
         #                                                            orientation=[1.57, 0, 0, 1],
         #                                                            )
         salt_urdf = "/home/mahesh/catkin_ws/src/food_items/urdf/salt.urdf"
-        salt_id = self.planner.add_constraint_from_urdf("table", urdf_file=salt_urdf,
+        salt_id = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
                                                         position=[0.28, -0.43, 0.9])
 
         self.planner.robot.load_srdf(srdf_file)

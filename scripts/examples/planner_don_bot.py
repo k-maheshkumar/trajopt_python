@@ -46,14 +46,26 @@ class PlannerExample:
         # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         #                                                  position=[0, 0, 0.0])
         # #
-        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
-                                                  position=[0, 0.3, 0.62], mass=100)
+        # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+        #                                           position=[0, 0.3, 0.62], mass=100)
         # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.2],
         #                                           position=[0.15, -0.2, 0.62], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.05, 0.1],
         #                                           position=[0.15, 0.4, 1], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 1, 0.02],
         #                                           position=[0.15, 0.4, 0.9], mass=100)
+
+        salt_urdf = "/home/mahesh/catkin_ws/src/food_items/urdf/salt.urdf"
+        salt_id = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
+                                                        position=[0, 0.3, 0.52])
+        salt_id1 = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
+                                                        position=[0.1, 0.3, 0.52])
+
+        salt_id2 = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
+                                                        position=[0.2, 0.3, 0.52])
+
+        salt_id2 = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
+                                                        position=[0.2, -0.3, 0.52])
 
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()

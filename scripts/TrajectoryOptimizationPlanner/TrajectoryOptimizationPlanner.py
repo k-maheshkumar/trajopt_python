@@ -131,6 +131,12 @@ class TrajectoryOptimizationPlanner():
             collision_check_distance = kwargs["collision_check_distance"]
         else:
             collision_check_distance = 0.1
+        #
+        status, is_collision_free, trajectory = "goal state in collision", False, -1
+        is_goal_in_collision = self.world.is_given_state_in_collision(self.robot.id, goal_state, group)
+        print "is_goal_in_collision", is_goal_in_collision
+        if is_goal_in_collision:
+            return status, is_collision_free, trajectory
 
         current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
 
@@ -141,69 +147,22 @@ class TrajectoryOptimizationPlanner():
 
         # self.world.toggle_rendering_while_planning(False)
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
-        status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
-        self.logger.info(status)
-
-        total = self.robot.planner.sqp_solver.solving_time + self.world.collision_check_time + self.robot.planner.prob_model_time
-        improve = self.robot.planner.sqp_solver.initial_cost - self.robot.planner.sqp_solver.final_cost
-        improve /= (self.robot.planner.sqp_solver.initial_cost + 0.000000001)
-        improve *= 100
-        print "samples", samples
-        print "no of links", len(self.world.robot_info["joint_infos"])
-        print "number of qp iterations: ", self.robot.planner.sqp_solver.num_qp_iterations
-        print "number of sqp iterations: ", self.robot.planner.sqp_solver.num_sqp_iterations
-        print "initial cost: ", self.robot.planner.sqp_solver.initial_cost
-        print "final cost: ", self.robot.planner.sqp_solver.final_cost
-        print "cost improvement: ", improve
-        print "collision check time: ", self.world.collision_check_time
-        print "solving_time: ", self.robot.planner.sqp_solver.solving_time
-        print "prob_model_time: ", self.robot.planner.prob_model_time
-        print "total time: ", total
+        trajectory = self.robot.planner.get_trajectory()
 
         # is_collision_free = True
         is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
-                                                         group,
-                                                         0.02)
+                                                                    group,
+                                                                    0.02)
         self.world.toggle_rendering_while_planning(True)
 
+        status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
+        self.logger.info(status)
 
+        if self.save_problem:
+            self.save_to_db(samples, duration, current_robot_state, goal_state, group, collision_safe_distance,
+                            collision_check_distance, is_collision_free)
 
-        if self.save_problem and self.db_driver is not None and improve < 101:
-            planning_request = OrderedDict()
-            planning_request["samples"] = samples
-            planning_request["duration"] = duration
-            planning_request["group"] = group
-            planning_request["start_state"] = current_robot_state
-            planning_request["goal_state"] = goal_state
-            planning_request["no of links"] = len(self.world.robot_info["joint_infos"])
-            planning_request["collision_safe_distance"] = collision_safe_distance
-            planning_request["collision_check_distance"] = collision_check_distance
-            result = OrderedDict()
-            result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
-            result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
-            result["initial_cost"] = self.robot.planner.sqp_solver.initial_cost
-            result["final_cost"] = self.robot.planner.sqp_solver.final_cost
-            result["cost_improvement"] = improve
-            result["collision_check_time"] = self.world.collision_check_time
-            result["solving_time"] = self.robot.planner.sqp_solver.solving_time
-            result["prob_model_time"] = self.robot.planner.prob_model_time
-            # result["total_time"] = total
-            result["planning_time"] = total
-            result["is_collision_free"] = is_collision_free
-            result["planning_request"] = planning_request
-            result["trajectory"] = self.robot.planner.trajectory.final.tolist()
-            result["solver_config"] = self.robot.planner.sqp_solver.solver_config
-
-            self.db_driver.insert(result)
-            # res = self.db_driver.find({"is_collision_free": True})
-            # res = self.db_driver.find({"planning_request.samples": 10})
-
-            # print "ghfdkghdghdl: ", res
-
-            # for i in res:
-            #     print i
-
-        return status, is_collision_free, self.robot.planner.get_trajectory()
+        return status, is_collision_free, trajectory
 
     def plan_trajectory(self, planning_group, goal_state, samples=20, duration=10,
                         collision_safe_distance=0.1,
@@ -257,6 +216,76 @@ class TrajectoryOptimizationPlanner():
     #     db_driver = MongoDriver("trajectory_planner")
     #     db_driver.insert(request)
 
+    def save_to_db(self, samples, duration, current_robot_state, goal_state, group, d_safe, d_check, is_collision_free):
+
+        self.elapsed_time = self.robot.planner.sqp_solver.solving_time + self.world.collision_check_time + self.robot.planner.prob_model_time
+        improve = self.robot.planner.sqp_solver.initial_cost - self.robot.planner.sqp_solver.final_cost
+        improve /= (self.robot.planner.sqp_solver.initial_cost + 0.000000001)
+        improve *= 100
+        improve1 = self.robot.planner.sqp_solver.initial_cost1 - self.robot.planner.sqp_solver.final_cost1
+        improve1 /= (self.robot.planner.sqp_solver.initial_cost1 + 0.000000001)
+        improve1 *= 100
+        improve2 = self.robot.planner.sqp_solver.initial_cost2 - self.robot.planner.sqp_solver.final_cost2
+        improve2 /= (self.robot.planner.sqp_solver.initial_cost2 + 0.000000001)
+        improve2 *= 100
+        improve3 = self.robot.planner.sqp_solver.initial_cost3 - self.robot.planner.sqp_solver.final_cost3
+        improve3 /= (self.robot.planner.sqp_solver.initial_cost3 + 0.000000001)
+        improve3 *= 100
+        print "samples", samples
+        print "no of links", len(self.world.robot_info["joint_infos"])
+        print "number of qp iterations: ", self.robot.planner.sqp_solver.num_qp_iterations
+        print "number of sqp iterations: ", self.robot.planner.sqp_solver.num_sqp_iterations
+        print "initial cost: ", self.robot.planner.sqp_solver.initial_cost
+        print "final cost: ", self.robot.planner.sqp_solver.final_cost
+        print "initial cost 1: ", self.robot.planner.sqp_solver.initial_cost1
+        print "final cost 1: ", self.robot.planner.sqp_solver.final_cost1
+        print "initial cost 2: ", self.robot.planner.sqp_solver.initial_cost2
+        print "final cost 2: ", self.robot.planner.sqp_solver.final_cost2
+        print "initial cost 3: ", self.robot.planner.sqp_solver.initial_cost2
+        print "final cost 3: ", self.robot.planner.sqp_solver.final_cost2
+        print "cost improvement: ", improve
+        print "cost improvement 1: ", improve1
+        print "cost improvement 2: ", improve2
+        print "cost improvement 3: ", improve3
+        print "collision check time: ", self.world.collision_check_time
+        print "solving_time: ", self.robot.planner.sqp_solver.solving_time
+        print "prob_model_time: ", self.robot.planner.prob_model_time
+        print "total elapsed_time time: ", self.elapsed_time
+
+        if self.save_problem and self.db_driver is not None and improve < 101:
+            planning_request = OrderedDict()
+            planning_request["samples"] = samples
+            planning_request["duration"] = duration
+            planning_request["group"] = group
+            planning_request["start_state"] = current_robot_state
+            planning_request["goal_state"] = goal_state
+            planning_request["no of links"] = len(self.world.robot_info["joint_infos"])
+            planning_request["collision_safe_distance"] = d_safe
+            planning_request["collision_check_distance"] = d_check
+            result = OrderedDict()
+            result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
+            result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
+            result["initial_cost"] = self.robot.planner.sqp_solver.initial_cost
+            result["final_cost"] = self.robot.planner.sqp_solver.final_cost
+            result["cost_improvement"] = improve
+            result["collision_check_time"] = self.world.collision_check_time
+            result["solving_time"] = self.robot.planner.sqp_solver.solving_time
+            result["prob_model_time"] = self.robot.planner.prob_model_time
+            # result["total_time"] = elapsed_time
+            result["planning_time"] = self.elapsed_time
+            result["is_collision_free"] = is_collision_free
+            result["planning_request"] = planning_request
+            result["trajectory"] = self.robot.planner.trajectory.final.tolist()
+            result["solver_config"] = self.robot.planner.sqp_solver.solver_config
+
+            # self.db_driver.insert(result)
+            # res = self.db_driver.find({"is_collision_free": True})
+            # res = self.db_driver.find({"planning_request.samples": 10})
+
+            # print "ghfdkghdghdl: ", res
+
+            # for i in res:
+            #     print i
 
 if __name__ == '__main__':
 

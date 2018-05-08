@@ -53,6 +53,12 @@ class SQPsolver:
         self.solving_time = 0
         self.initial_cost = 0
         self.final_cost = 0
+        self.initial_cost1 = 0
+        self.final_cost1 = 0
+        self.initial_cost2 = 0
+        self.final_cost2 = 0
+        self.initial_cost3 = 0
+        self.final_cost3 = 0
         self.is_initialised = False
 
         self.logger = logging.getLogger(main_logger_name + __name__)
@@ -241,7 +247,7 @@ class SQPsolver:
             # p_k = np.hstack([p.value] * (self.D.shape[1] / p.shape[0]))
             p_k = np.hstack([x_k] * (self.D.shape[1] / p.shape[0]))
             # p_k = x_k
-            cons4_cond = np.isclose(np.matmul(-self.D, p_k) >= self.lbD, 1, rtol=tolerance, atol=tolerance).all()
+            cons4_cond = np.isclose(np.matmul(self.D, p_k) >= self.lbD, 1, rtol=tolerance, atol=tolerance).all()
         else:
             cons4_cond = True
         # return cons2_cond.all() and cons3_cond.all() or cons1_cond.all() and cons3_cond.all()
@@ -346,7 +352,7 @@ class SQPsolver:
             end = time.time()
         self.solving_time += end - start
 
-        return p.value, model_objective, actual_objective, problem.status
+        return p.value, model_objective, actual_objective, problem.status, problem.value
 
     def is_constraints_satisfied2(self, x_k, p, tolerance=1e-3):
         cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
@@ -560,7 +566,7 @@ class SQPsolver:
 
                             start = time.time()
                             p_k, model_objective_at_p_k, \
-                            actual_objective_at_x_k, solver_status = self.solve_problem(x_k, penalty, p, trust_box_size,
+                            actual_objective_at_x_k, solver_status, prob_value = self.solve_problem(x_k, penalty, p, trust_box_size,
                                                                                         self.D, self.lbD, self.ubD)
                             end = time.time()
                             elapsed_time += end - start
@@ -579,7 +585,7 @@ class SQPsolver:
 
                             break
                     else:
-                        p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
+                        p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status, prob_value = self.solve_problem(x_k,
                                                                                                                  penalty,
                                                                                                                  p,
                                                                                                                  trust_box_size)
@@ -602,8 +608,14 @@ class SQPsolver:
                         if not self.is_initialised:
                             self.is_initialised = True
                             self.initial_cost = predicted_reduction
+                            self.initial_cost1 = actual_objective_at_x_k.value
+                            self.initial_cost2 = actual_reduction
+                            self.initial_cost3 = prob_value
                         else:
                             self.final_cost = predicted_reduction
+                            self.final_cost1 = actual_objective_at_x_k.value
+                            self.final_cost2 = actual_reduction
+                            self.final_cost3 = prob_value
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(rho_k))

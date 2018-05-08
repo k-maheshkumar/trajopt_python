@@ -492,15 +492,16 @@ class SimulationWorld(ISimulationWorldBase):
             robot_state, zero_vec, zero_vec)
 
         current_position_jacobian1 = []
+
         # current_position_jacobian1.append(
         #     [jac[-len(robot_state):] for jac in position_jacobian])
         if len(group) < len(robot_state):
             current_position_jacobian1.append(
                 [jac[3:9] for jac in position_jacobian])
+                # [jac[3:] for jac in position_jacobian])
         else:
             current_position_jacobian1.append(
                 [jac[-len(robot_state):] for jac in position_jacobian])
-
 
         jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian1[0],
                                                                  len(trajectory),
@@ -862,31 +863,53 @@ class SimulationWorld(ISimulationWorldBase):
     def is_trajectory_collision_free(self, robot_id, trajectory, group, collision_safe_distance=0.05):
         collision = True
         start_state = self.get_current_states_for_given_joints(robot_id, group)
-        distance = 10
         time_step_count = 0
+
         for previous_time_step_of_trajectory, current_time_step_of_trajectory, \
             next_time_step_of_trajectory in utils.iterate_with_previous_and_next(trajectory):
             time_step_count += 1
             if next_time_step_of_trajectory is not None:
                 next_link_states = self.get_link_states_at(robot_id, next_time_step_of_trajectory, group)
-            current_link_states = self.get_link_states_at(robot_id, current_time_step_of_trajectory, group)
+                current_link_states = self.get_link_states_at(robot_id, current_time_step_of_trajectory, group)
 
-            self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
+                self.reset_joint_states_to(robot_id, current_time_step_of_trajectory, group)
 
-            for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
-                                                                                  current_link_states,
-                                                                                  next_link_states):
-                if next_link_state is not None:
+                for link_index, current_link_state, next_link_state in itertools.izip(self.planning_group_ids,
+                                                                                      current_link_states,
+                                                                                      next_link_states):
+                    if next_link_state is not None:
+                        for constraint in self.collision_constraints:
 
-                    for constraint in self.collision_constraints:
+                            cast_closest_points = [CastClosestPointInfo(*x) for x in
+                                                   sim.getConvexSweepClosestPoints(robot_id, constraint,
+                                                                                   linkIndexA=link_index,
+                                                                                   distance=collision_safe_distance,
+                                                                                   bodyAfromPosition=current_link_state[0],
+                                                                                   bodyAfromOrientation=current_link_state[
+                                                                                       1],
+                                                                                   # bodyAfromOrientation=[0, 0, 0, 1],
+                                                                                   bodyAtoPosition=next_link_state[0],
+                                                                                   bodyAtoOrientation=next_link_state[1],
+                                                                                   # bodyAtoOrientation=[0, 0, 0, 1],
+                                                                                   )]
+
+
+                            for cp in cast_closest_points:
+                                dist = cp.contact_distance
+                                if dist < 0 and cp.body_unique_id_a != cp.body_unique_id_b:
+                                    # self.print_contact_points(cp, time_step_count, link_index)
+                                    collision = False
+                                    break
 
                         cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                               sim.getConvexSweepClosestPoints(robot_id, constraint,
+                                               sim.getConvexSweepClosestPoints(robot_id, robot_id,
                                                                                linkIndexA=link_index,
+                                                                               # linkIndexB=link_index_B,
                                                                                distance=collision_safe_distance,
-                                                                               bodyAfromPosition=current_link_state[0],
-                                                                               bodyAfromOrientation=current_link_state[
-                                                                                   1],
+                                                                               bodyAfromPosition=current_link_state[
+                                                                                   0],
+                                                                               bodyAfromOrientation=
+                                                                               current_link_state[1],
                                                                                # bodyAfromOrientation=[0, 0, 0, 1],
                                                                                bodyAtoPosition=next_link_state[0],
                                                                                bodyAtoOrientation=next_link_state[1],
@@ -894,43 +917,74 @@ class SimulationWorld(ISimulationWorldBase):
                                                                                )]
 
                         for cp in cast_closest_points:
-                            dist = cp.contact_distance
-                            if dist < 0 and cp.body_unique_id_a != cp.body_unique_id_b:
-                                # self.print_contact_points(cp, time_step_count, link_index)
-                                collision = False
-                                break
+                            if cp.link_index_a > -1 and cp.link_index_b > -1:
+                                link_a = self.joint_id_to_info[cp.link_index_a].link_name
+                                link_b = self.joint_id_to_info[cp.link_index_b].link_name
 
-                    cast_closest_points = [CastClosestPointInfo(*x) for x in
-                                           sim.getConvexSweepClosestPoints(robot_id, robot_id,
-                                                                           # linkIndexA=link_index_A,
-                                                                           # linkIndexB=link_index_B,
-                                                                           distance=distance,
-                                                                           bodyAfromPosition=current_link_state[
-                                                                               0],
-                                                                           bodyAfromOrientation=
-                                                                           current_link_state[1],
-                                                                           # bodyAfromOrientation=[0, 0, 0, 1],
-                                                                           bodyAtoPosition=next_link_state[0],
-                                                                           bodyAtoOrientation=next_link_state[1],
-                                                                           # bodyAtoOrientation=[0, 0, 0, 1],
-                                                                           )]
+                                if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not \
+                                        self.ignored_collisions[link_a, link_b]:
+                                    dist = cp.contact_distance
+                                    if dist < 0:
+                                        # self.print_contact_points(cp, time_step_count, link_index)
+                                        collision = False
+                                        break
 
-                    for cp in cast_closest_points:
-                        if cp.link_index_a > -1 and cp.link_index_b > -1:
-                            link_a = self.joint_id_to_info[cp.link_index_a].link_name
-                            link_b = self.joint_id_to_info[cp.link_index_b].link_name
-
-                            if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not \
-                                    self.ignored_collisions[link_a, link_b]:
-                                dist = cp.contact_distance
-                                if dist < 0:
-                                    # self.print_contact_points(cp, time_step_count, link_index)
-                                    collision = False
-                                    break
-
+                    if not collision:
+                        break
                 if not collision:
                     break
-            if not collision:
+
+        self.reset_joint_states(robot_id, start_state, group)
+
+        return collision
+
+    def is_given_state_in_collision(self, robot_id, state, group, distance=0.02):
+
+        # self.reset_joint_states(robot_id, state, group)
+        #
+        # cast_point = [ClosestPointInfo(*x) for x in p.getClosestPoints(robot_id, box_id2, 0.1)]
+        #
+        # for cp in cast_point:
+        #     if cp.contact_distance < 0:
+        #         print cp.body_unique_id_a, cp.link_index_a
+        #         print self.planner.world.joint_id_to_info[cp.link_index_a].link_name
+
+        collision = False
+        start_state = self.get_current_states_for_given_joints(robot_id, group)
+        time_step_count = 0
+        self.reset_joint_states_to(robot_id, state, group)
+        for link_index in group:
+            link_index = self.joint_name_to_id[link_index]
+            for constraint in self.collision_constraints:
+                closest_points = [ClosestPointInfo(*x) for x in
+                                       sim.getClosestPoints(robot_id, constraint,
+                                                            linkIndexA=link_index, distance=distance)]
+
+                for cp in closest_points:
+                    dist = cp.contact_distance
+                    if dist < 0 and cp.body_unique_id_a != cp.body_unique_id_b:
+                        # self.print_contact_points(cp, time_step_count, link_index)
+                        collision = True
+                        break
+
+            closest_points = [ClosestPointInfo(*x) for x in
+                                   sim.getClosestPoints(robot_id, robot_id,
+                                                        linkIndexA=link_index, distance=distance)]
+
+            for cp in closest_points:
+                if cp.link_index_a > -1 and cp.link_index_b > -1:
+                    link_a = self.joint_id_to_info[cp.link_index_a].link_name
+                    link_b = self.joint_id_to_info[cp.link_index_b].link_name
+
+                    if cp.link_index_a == link_index and cp.link_index_a != cp.link_index_b and not \
+                            self.ignored_collisions[link_a, link_b]:
+                        dist = cp.contact_distance
+                        if dist < 0:
+                            # self.print_contact_points(cp, time_step_count, link_index)
+                            collision = True
+                            break
+
+            if collision:
                 break
 
         self.reset_joint_states(robot_id, start_state, group)

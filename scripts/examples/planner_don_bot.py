@@ -24,6 +24,7 @@ class PlannerExample:
             "use_gui": True,
             "verbose": "INFO",
             "log_file": True,
+            "save_problem": True,
             "robot_config": "robot_config_don_bot.yaml"
 
         }
@@ -39,7 +40,7 @@ class PlannerExample:
                                                 orientation=p.getQuaternionFromEuler([0, 0, -1.57])
                                                 )
 
-        shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[0, 0, 0.0],
+        shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[0.0, 0, 0.0],
                                                 orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
 
         # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
@@ -189,6 +190,8 @@ class PlannerExample:
         start_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         start_state1["ur5_wrist_2_joint"] = 1.5855963769735366
         start_state1["ur5_wrist_3_joint"] = -1.5770985888989753
+        # start_state1["gripper_joint"] = 0
+        # start_state1["gripper_base_gripper_left_joint"] = 0
 
         goal_state1 = OrderedDict()
         goal_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
@@ -197,6 +200,8 @@ class PlannerExample:
         goal_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         goal_state1["ur5_wrist_2_joint"] = 1.5855963769735366
         goal_state1["ur5_wrist_3_joint"] = -1.5770985888989753
+        # goal_state1["gripper_joint"] = 0
+        # goal_state1["gripper_base_gripper_left_joint"] = 0
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 

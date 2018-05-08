@@ -10,24 +10,24 @@ class Analyzer:
     def __init__(self):
         print "hello"
         self.db = MongoDriver("Trajectory_planner_results")
-        # result = self.db.find({})
+        result = self.db.find({})
         # print result[0]
-        # x = []
-        # y = []
-        # print result
-        # for res in result:
-        #     print res
-        #     if res["is_collision_free"]:
-        #         print "cost improvement", res["cost_improvement"]
-        #         print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
-        #         # print "cost improvement", res["cost improvement"]
-        #
-        #     # print d
-        #     x.append(res["planning_request"]["samples"])
-        #     y.append(res["planning_time"])
-        #     # y.append(res["cost_improvement"])
-        #
-        # plotter.plot_xy(x, y, "samples", "planning_time")
+        x = []
+        y = []
+        print result
+        for res in result:
+            print res
+            if res["is_collision_free"]:
+                print "cost improvement", res["cost_improvement"]
+                print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
+                # print "cost improvement", res["cost improvement"]
+
+            # print d
+            x.append(res["planning_request"]["samples"])
+            y.append(res["planning_time"])
+            # y.append(res["cost_improvement"])
+
+        plotter.plot_xy(x, y, "samples", "planning_time")
 
 
         data = []
@@ -90,13 +90,13 @@ class Analyzer:
         #         data[samples].append(d)
 
         # print data[23]
-        self.num_iterations = DefaultOrderedDict(float)
-        self.cost_improvement = DefaultOrderedDict(float)
-        self.collision_check_time = DefaultOrderedDict(float)
-        self.prob_model_time = DefaultOrderedDict(float)
-        self.planning_time = DefaultOrderedDict(float)
-
-        self.get_result()
+        # self.num_iterations = DefaultOrderedDict(float)
+        # self.cost_improvement = DefaultOrderedDict(float)
+        # self.collision_check_time = DefaultOrderedDict(float)
+        # self.prob_model_time = DefaultOrderedDict(float)
+        # self.planning_time = DefaultOrderedDict(float)
+        #
+        # self.get_result()
 
     def get_avg(self):
         for k, v in data.iteritems():

@@ -47,8 +47,8 @@ def main():
     # db.insert(request)
     # db.drop()
     # result = (db.find({"is_collision_free": True}))
-    result = (db.find({"num_iterations": 90}))
-    # result = (db.find({}))
+    # result = (db.find({"num_iterations": 90}))
+    result = (db.find({}))
     # print result
     for i in result:
         print i["num_iterations"]

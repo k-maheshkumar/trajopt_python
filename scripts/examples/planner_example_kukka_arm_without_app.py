@@ -17,7 +17,7 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
-            # "use_gui": True,
+            "use_gui": True,
             # "verbose": "INFO",
             "log_file": False,
             "save_problem": True,
@@ -77,7 +77,8 @@ class PlannerExample:
                                                         )
         print("is trajectory free from collision: ", is_collision_free)
         print (status)
-        # self.planner.execute_trajectory()
+        if is_collision_free:
+            self.planner.execute_trajectory()
         # self.planner.world.step_simulation_for(2)
         # import sys
         # sys.exit(0)

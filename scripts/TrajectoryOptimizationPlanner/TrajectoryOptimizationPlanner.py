@@ -84,7 +84,7 @@ class TrajectoryOptimizationPlanner():
         return urdf_id
 
     def add_constraint(self, name, shape, mass, position, size=None, radius=None, height=None, orientation=None):
-        shape_id = self.world.create_constraint(name, shape, mass, position, size, radius, height, orientation)
+        shape_id = self.world.create_constraint(name, shape, mass, position, orientation, size, radius, height)
         self.world.add_collision_constraints(shape_id)
         return shape_id
 

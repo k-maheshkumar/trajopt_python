@@ -56,6 +56,7 @@ class SimulationWorld(ISimulationWorldBase):
 
         self.CYLINDER = sim.GEOM_CYLINDER
         self.BOX = sim.GEOM_BOX
+        self.MESH = sim.GEOM_MESH
 
         self.logger = logging.getLogger(logger_name + __name__)
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
@@ -146,7 +147,10 @@ class SimulationWorld(ISimulationWorldBase):
     def set_gravity(self, x=0, y=0, z=-10):
         sim.setGravity(x, y, z)
 
-    def create_constraint(self, name, shape, mass, position, size=None, radius=None, height=None, orientation=None):
+    def create_constraint(self, name, shape, mass, position, orientation=None,
+                          size=None, radius=None, height=None):
+        if orientation is None:
+            orientation = [0, 0, 0, 1]
         if position is not None:
             if radius is not None:
                 col_id = sim.createCollisionShape(shape, radius=radius, height=height)
@@ -154,7 +158,46 @@ class SimulationWorld(ISimulationWorldBase):
             if size is not None:
                 col_id = sim.createCollisionShape(shape, halfExtents=size)
                 vis_id = sim.createCollisionShape(shape, halfExtents=size)
-            shape_id = sim.createMultiBody(mass, col_id, vis_id, position)
+
+        shape_id = sim.createMultiBody(mass, col_id, vis_id, basePosition=position, baseOrientation=orientation)
+        self.scene_items[shape_id] = name
+
+        return shape_id
+
+    def create_constraint_from_mesh(self, name, file_name, mass=1, position=None, orientation=None,
+                                    mesh_scale=None,
+                                    visual_frame_shift=None, collision_frame_shift=None,
+                                    specularColor=None,
+                                    rgba_color=None, use_maximalcoordinates=True):
+        if position is None:
+            position = [0, 0, 0]
+        if orientation is None:
+            orientation = [0, 0, 0, 1]
+        if mesh_scale is None:
+            mesh_scale = [1, 1, 1]
+        if rgba_color is None:
+            rgba_color = [1, 1, 1, 1]
+        if visual_frame_shift is None:
+            visual_frame_shift = [0, 0, 0]
+        if collision_frame_shift is None:
+            collision_frame_shift = [0, 0, 0]
+        if specularColor is None:
+            specularColor = [0, 0, 0]
+
+        if file_name is not None:
+            vis_id = sim.createVisualShape(shapeType=sim.GEOM_MESH, fileName=file_name,
+                                                rgbaColor=rgba_color,
+                                                specularColor=specularColor,
+                                                visualFramePosition=visual_frame_shift,
+                                                meshScale=mesh_scale
+                                                )
+            col_id = sim.createCollisionShape(shapeType=sim.GEOM_MESH, fileName=file_name,
+                                                      collisionFramePosition=collision_frame_shift,
+                                                      meshScale=mesh_scale
+                                                      )
+        shape_id = sim.createMultiBody(baseMass=mass, basePosition=position, baseOrientation=orientation,
+                                       baseCollisionShapeIndex=col_id,
+                                        baseVisualShapeIndex=vis_id, useMaximalCoordinates=use_maximalcoordinates)
         self.scene_items[shape_id] = name
 
         return shape_id

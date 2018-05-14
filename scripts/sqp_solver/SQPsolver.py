@@ -45,10 +45,27 @@ class SQPsolver:
         self.penalty_norm = 1
         self.trust_region_norm = np.inf
 
-        self.num_iterations = 0
+        self.num_qp_iterations = 0
+        self.num_sqp_iterations = 0
         self.solving_time = 0
         self.initial_cost = 0
         self.final_cost = 0
+        self.initial_cost1 = 0
+        self.final_cost1 = 0
+        self.initial_cost2 = 0
+        self.final_cost2 = 0
+        self.initial_cost3 = 0
+        self.final_cost3 = 0
+
+        self.initial_costs = []
+        self.final_costs = []
+        self.initial_costs1 = []
+        self.final_costs1 = []
+        self.initial_costs2 = []
+        self.final_costs2 = []
+        self.initial_costs3 = []
+        self.final_costs3 = []
+
         self.is_initialised = False
 
         self.logger = logging.getLogger(main_logger_name + __name__)
@@ -198,7 +215,7 @@ class SQPsolver:
     def get_objective_gradient_and_hessian(self, x_k):
         model_grad = 0.5 * np.matmul((self.P + self.P.T), x_k)
         model_hess = 0.5 * (self.P + self.P.T)
-        return model_grad, model_hess   `
+        return model_grad, model_hess
 
     def get_model_objective(self, x_k, penalty, p):
         cons1_at_xk, cons2_at_xk, cons3_at_xk = self.evaluate_constraints(x_k)
@@ -266,7 +283,7 @@ class SQPsolver:
             end = time.time()
         self.solving_time += end - start
 
-        return p.value, model_objective, actual_objective, problem.status
+        return p.value, model_objective, actual_objective, problem.status, problem.value
 
     def approx_equal(self, x, y, tolerance=0.001):
         return abs(x - y) <= 0.5 * tolerance * (x + y)
@@ -354,21 +371,22 @@ class SQPsolver:
         while penalty.value <= max_penalty:
             # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
-            self.num_iterations += 1
+            self.num_qp_iterations += 1
+            self.num_sqp_iterations += 1
             while iteration_count < max_iteration:
                 iteration_count += 1
-                self.num_iterations += 1
+                self.num_qp_iterations += 1
                 # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
                     constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
-                    self.num_iterations += 1
+                    self.num_qp_iterations += 1
                     if callback_function is not None:
                         if constraints is not None:
                             start = time.time()
                             p_k, model_objective_at_p_k, \
-                            actual_objective_at_x_k, solver_status = self.solve_problem(x_k, penalty, p, trust_box_size,
+                            actual_objective_at_x_k, solver_status, prob_value = self.solve_problem(x_k, penalty, p, trust_box_size,
                                                                                         constraints, lower_limit,
                                                                                         upper_limit)
                             end = time.time()
@@ -388,7 +406,7 @@ class SQPsolver:
 
                             break
                     else:
-                        p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status = self.solve_problem(x_k,
+                        p_k, model_objective_at_p_k, actual_objective_at_x_k, solver_status, prob_value = self.solve_problem(x_k,
                                                                                                                  penalty,
                                                                                                                  p,
                                                                                                                  trust_box_size)
@@ -408,11 +426,28 @@ class SQPsolver:
                             predicted_reduction = 0.0000001
                         rho_k = actual_reduction / predicted_reduction
 
+                        self.initial_costs.append(predicted_reduction)
+                        self.initial_costs1.append(actual_objective_at_x_k.value)
+                        self.initial_costs2.append(actual_reduction)
+                        self.initial_costs3.append(prob_value)
+
                         if not self.is_initialised:
                             self.is_initialised = True
                             self.initial_cost = predicted_reduction
+                            self.initial_cost1 = actual_objective_at_x_k.value
+                            self.initial_cost2 = actual_reduction
+                            self.initial_cost3 = prob_value
+
                         else:
                             self.final_cost = predicted_reduction
+                            self.final_cost1 = actual_objective_at_x_k.value
+                            self.final_cost2 = actual_reduction
+                            self.final_cost3 = prob_value
+
+                            self.final_costs.append(predicted_reduction)
+                            self.final_costs1.append(actual_objective_at_x_k.value)
+                            self.final_costs2.append(actual_reduction)
+                            self.final_costs3.append(prob_value)
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(rho_k))

@@ -243,6 +243,16 @@ class TrajectoryOptimizationPlanner():
         print "final cost 2: ", self.robot.planner.sqp_solver.final_cost2
         print "initial cost 3: ", self.robot.planner.sqp_solver.initial_cost2
         print "final cost 3: ", self.robot.planner.sqp_solver.final_cost2
+
+        print "initial costs: ", self.robot.planner.sqp_solver.initial_costs
+        print "final costs: ", self.robot.planner.sqp_solver.final_costs
+        print "initial costs 1: ", self.robot.planner.sqp_solver.initial_costs1
+        print "final costs 1: ", self.robot.planner.sqp_solver.final_costs1
+        print "initial costs 2: ", self.robot.planner.sqp_solver.initial_costs2
+        print "final costs 2: ", self.robot.planner.sqp_solver.final_costs2
+        print "initial costs 3: ", self.robot.planner.sqp_solver.initial_costs2
+        print "final costs 3: ", self.robot.planner.sqp_solver.final_costs2
+
         print "cost improvement: ", improve
         print "cost improvement 1: ", improve1
         print "cost improvement 2: ", improve2

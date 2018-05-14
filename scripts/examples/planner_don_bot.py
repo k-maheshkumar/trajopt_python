@@ -6,6 +6,7 @@ from srdfdom.srdf import SRDF
 import pybullet as p
 from scripts.simulation.bulletTypes import *
 from random import randint
+from collections import OrderedDict
 
 home = os.path.expanduser('~')
 
@@ -55,17 +56,32 @@ class PlannerExample:
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 1, 0.02],
         #                                           position=[0.15, 0.4, 0.9], mass=100)
 
-        salt_urdf = "/home/mahesh/catkin_ws/src/food_items/urdf/salt.urdf"
-        salt_id = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
-                                                        position=[0, 0.3, 0.52])
-        salt_id1 = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
-                                                        position=[0.1, 0.3, 0.52])
+        shelf_item_prefix = home + "/catkin_ws/src/shelf_item_descriptions/urdf/"
+        salt_urdf = shelf_item_prefix + "salt.urdf"
+        salt_id = OrderedDict()
 
-        salt_id2 = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
-                                                        position=[0.2, 0.3, 0.52])
-
-        salt_id2 = self.planner.add_constraint_from_urdf("salt", urdf_file=salt_urdf,
-                                                        position=[0.2, -0.3, 0.52])
+        y, z = 0.3, 0.62
+        offset = -0.14
+        for x in range(4):
+            salt_id[x] = self.planner.add_constraint_from_urdf("salt" + str(x), urdf_file=salt_urdf,
+                                                        position=[offset + 0.1 * x, y, z])
+        gel_urdf = shelf_item_prefix + "duschGel.urdf"
+        gel_id = OrderedDict()
+        y, z = -0.3, 0.62
+        offset = -0.14
+        for x in range(1):
+            gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+                                                        position=[offset + 0.1 * x, y, z])
+        for x in range(1):
+            gel_id[x+4] = self.planner.add_constraint_from_urdf("gel" + str(x+4), urdf_file=gel_urdf,
+                                                        position=[offset + 0.1 * x, y - 0.14, z])
+        lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
+        lotion_id = OrderedDict()
+        y, z = -0.4, 0.92
+        offset = -0.14
+        for x in range(1):
+            lotion_id[x] = self.planner.add_constraint_from_urdf("lotion" + str(x), urdf_file=lotion_urdf,
+                                                        position=[offset + 0.1 * x, y, z])
 
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()

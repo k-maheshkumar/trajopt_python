@@ -233,8 +233,11 @@ class ProblemModelling:
                     lower_collision_limit = lower_collision_limit.flatten()
                     # upper_collision_limit = initial_signed_distance - self.collision_safe_distance
                     # upper_collision_limit = upper_collision_limit.flatten()
-
-        return np.hstack([current_state_normal_times_jacobian, next_state_normal_times_jacobian]), \
+                    temp = np.hstack([current_state_normal_times_jacobian, next_state_normal_times_jacobian]).tolist()
+                    # print temp.shape, lower_collision_limit.shape
+                    temp = np.vstack([temp, temp])
+                    lower_collision_limit = np.hstack([lower_collision_limit, lower_collision_limit])
+        return temp, \
                lower_collision_limit, None
 
     def get_velocity_matrix(self):

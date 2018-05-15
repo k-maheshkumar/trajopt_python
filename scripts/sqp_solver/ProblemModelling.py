@@ -233,8 +233,13 @@ class ProblemModelling:
                     lower_collision_limit = lower_collision_limit.flatten()
                     # upper_collision_limit = initial_signed_distance - self.collision_safe_distance
                     # upper_collision_limit = upper_collision_limit.flatten()
+                    vel = self.get_velocity_matrix1()
 
-        return np.hstack([current_state_normal_times_jacobian, next_state_normal_times_jacobian]), \
+                    current_state_normal_times_jacobian = np.matmul(current_state_normal_times_jacobian, vel)
+                    next_state_normal_times_jacobian = np.matmul(next_state_normal_times_jacobian, vel)
+                    temp = np.hstack([current_state_normal_times_jacobian, next_state_normal_times_jacobian])
+
+        return temp, \
                lower_collision_limit, None
 
     def get_velocity_matrix(self):
@@ -246,6 +251,17 @@ class ProblemModelling:
 
         # to slice zero last row
         velocity_matrix.resize(velocity_matrix.shape[0] - self.no_of_joints, velocity_matrix.shape[1])
+        return velocity_matrix
+
+    def get_velocity_matrix1(self):
+
+        velocity_matrix = np.zeros((self.no_of_joints * self.samples, self.samples * self.no_of_joints))
+        np.fill_diagonal(velocity_matrix, 1.0)
+        i, j = np.indices(velocity_matrix.shape)
+        velocity_matrix[i == j - self.no_of_joints] = 1.0
+
+        # to slice zero last row
+        # velocity_matrix.resize(velocity_matrix.shape[0] - self.no_of_joints, velocity_matrix.shape[1])
         return velocity_matrix
 
     def get_joints_matrix(self):

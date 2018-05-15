@@ -261,12 +261,13 @@ class SQPsolver:
             elif upper_limit is None:
 
                 cons2 = lower_limit - cvxpy.matmul(constraints, p1.value)
-                cons_model = cons2 - constraints * p1
+                # cons_model = cons2 - constraints * p1
+                cons_model = constraints * p1
                 constraints = [
                     cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               lower_limit <= cvxpy.matmul(constraints, p1)
+                               # lower_limit <= cvxpy.matmul(constraints, p1)
                 ]
-                # model_objective += penalizer * cvxpy.norm(cons_model, self.penalty_norm)
+                model_objective += penalizer * cvxpy.norm(cons_model, self.penalty_norm)
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)

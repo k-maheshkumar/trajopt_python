@@ -497,8 +497,8 @@ class SimulationWorld(ISimulationWorldBase):
         #     [jac[-len(robot_state):] for jac in position_jacobian])
         if len(group) < len(robot_state):
             current_position_jacobian1.append(
-                [jac[3:9] for jac in position_jacobian])
-                # [jac[3:] for jac in position_jacobian])
+                # [jac[3:9] for jac in position_jacobian])
+                [jac[3:] for jac in position_jacobian])
         else:
             current_position_jacobian1.append(
                 [jac[-len(robot_state):] for jac in position_jacobian])

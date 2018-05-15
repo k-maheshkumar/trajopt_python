@@ -42,18 +42,22 @@ class PlannerExample:
 
         shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[0.0, 0, 0.0],
                                                 orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
-
+        #
         # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         #                                                  position=[0, 0, 0.0])
         # #
-        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
-                                                  position=[0, 0.3, 0.62], mass=100)
-        # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.2],
-        #                                           position=[0.15, -0.2, 0.62], mass=100)
+        # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
+        #                                           position=[0, 0.3, 0.62], mass=100)
+        # # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.2],
+        # #                                           position=[0.15, -0.3, 0.62], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.05, 0.1],
         #                                           position=[0.15, 0.4, 1], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 1, 0.02],
-        #                                           position=[0.15, 0.4, 0.9], mass=100)
+        #                                           position=[0.1, 0.4, 0.9], mass=100)
+        # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 1, 0.02],
+        #                                           position=[0.1, 0.4, 0.5], mass=100)
+        # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.02, 1, 1.8],
+        #                                           position=[-0.2, 0.4, 0.9], mass=100)
 
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
@@ -190,8 +194,8 @@ class PlannerExample:
         start_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         start_state1["ur5_wrist_2_joint"] = 1.5855963769735366
         start_state1["ur5_wrist_3_joint"] = -1.5770985888989753
-        # start_state1["gripper_joint"] = 0
-        # start_state1["gripper_base_gripper_left_joint"] = 0
+        start_state1["gripper_joint"] = 0
+        start_state1["gripper_base_gripper_left_joint"] = 0
 
         goal_state1 = OrderedDict()
         goal_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
@@ -200,18 +204,19 @@ class PlannerExample:
         goal_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         goal_state1["ur5_wrist_2_joint"] = 1.5855963769735366
         goal_state1["ur5_wrist_3_joint"] = -1.5770985888989753
-        # goal_state1["gripper_joint"] = 0
-        # goal_state1["gripper_base_gripper_left_joint"] = 0
+        goal_state1["gripper_joint"] = 0
+        goal_state1["gripper_base_gripper_left_joint"] = 0
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 
-        _, status, trajectory = self.planner.get_trajectory(group=group1,
-                                                         goal_state=goal_state1, samples=samples, duration=duration,
+        _, status, trajectory = self.planner.get_trajectory(group=group,
+                                                         goal_state=goal_state, samples=samples, duration=duration,
                                                          collision_safe_distance=collision_safe_distance,
                                                          collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)
         # # print trajectory.final
-        self.planner.execute_trajectory()
+        if status:
+            self.planner.execute_trajectory()
         # self.planner.world.step_simulation_for(1)
         # time.sleep(5)
         # import sys

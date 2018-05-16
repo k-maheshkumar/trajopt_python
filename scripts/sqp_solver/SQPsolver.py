@@ -49,25 +49,9 @@ class SQPsolver:
         self.num_qp_iterations = 0
         self.num_sqp_iterations = 0
         self.solving_time = 0
-        self.initial_cost = 0
-        self.final_cost = 0
-        self.initial_cost1 = 0
-        self.final_cost1 = 0
-        self.initial_cost2 = 0
-        self.final_cost2 = 0
-        self.initial_cost3 = 0
-        self.final_cost3 = 0
-
-        self.initial_costs = []
-        self.final_costs = []
-        self.initial_costs1 = []
-        self.final_costs1 = []
-        self.initial_costs2 = []
-        self.final_costs2 = []
-        self.initial_costs3 = []
-        self.final_costs3 = []
-
-        self.is_initialised = False
+        self.predicted_costs = []
+        self.actual_costs = []
+        self.problem_costs = []
 
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
@@ -360,7 +344,7 @@ class SQPsolver:
             self.num_qp_iterations += 1
             self.num_sqp_iterations += 1
             while iteration_count < max_iteration:
-                # self.is_initialised = False
+
                 iteration_count += 1
                 self.num_qp_iterations += 1
                 # print "iteration_count", iteration_count
@@ -405,29 +389,9 @@ class SQPsolver:
                         if predicted_reduction == 0:
                             predicted_reduction = 0.0000001
                         rho_k = actual_reduction / predicted_reduction
-                        self.initial_costs.append(predicted_reduction)
-                        self.initial_costs1.append(actual_objective_at_x_k.value)
-                        self.initial_costs2.append(actual_reduction)
-                        self.initial_costs3.append(prob_value)
-
-                        if not self.is_initialised:
-                            self.is_initialised = True
-                            self.initial_cost = predicted_reduction
-                            self.initial_cost1 = actual_objective_at_x_k.value
-                            self.initial_cost2 = actual_reduction
-                            self.initial_cost3 = prob_value
-
-
-                        else:
-                            self.final_cost = predicted_reduction
-                            self.final_cost1 = actual_objective_at_x_k.value
-                            self.final_cost2 = actual_reduction
-                            self.final_cost3 = prob_value
-
-                            self.final_costs.append(predicted_reduction)
-                            self.final_costs1.append(actual_objective_at_x_k.value)
-                            self.final_costs2.append(actual_reduction)
-                            self.final_costs3.append(prob_value)
+                        self.predicted_costs.append(predicted_reduction)
+                        self.actual_costs.append(actual_reduction)
+                        self.problem_costs.append(prob_value)
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(rho_k))

@@ -47,7 +47,6 @@ class TrajectoryOptimizationPlanner():
             self.if_plot_traj = kwargs["plot_trajectory"]
         else:
             self.if_plot_traj = False
-            self.save_problem = None
 
         self.robot = Robot(main_logger_name, verbose, log_file)
         self.world = SimulationWorld(**kwargs)

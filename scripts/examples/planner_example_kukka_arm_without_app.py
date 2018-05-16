@@ -17,7 +17,7 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
-            # "use_gui": True,
+            "use_gui": True,
             # "verbose": "DEBUG",
             "log_file": False,
             "save_problem": True,
@@ -40,10 +40,10 @@ class PlannerExample:
 
         table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
 
-        # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.25],
-        #                                           position=[0.28, -0.43, 0.9],
+        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.25],
+                                                  position=[0.28, -0.43, 0.9],
                                                   # position=[x, -y, 0.9],
-                                                  # mass=100)
+                                                  mass=100)
         # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
         #                                           position=[-0.48, -0.43, 0.9], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],

@@ -56,24 +56,56 @@ class PlannerExample:
         #                                           position=[0.15, 0.4, 1], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 1, 0.02],
         #                                           position=[0.15, 0.4, 0.9], mass=100)
+        #
+        # shelf_item_prefix = home + "/catkin_ws/src/shelf_item_descriptions/urdf/"
+        # salt_urdf = shelf_item_prefix + "salt.urdf"
+        # salt_urdf = shelf_item_prefix + "duschGel.urdf"
+        # salt_id = OrderedDict()
+        #
+        # y, z = 0.3, 1.0
+        # offset = -0.29
+        # for x in range(4):
+        #     salt_id[x] = self.planner.add_constraint_from_urdf("salt" + str(x), urdf_file=salt_urdf,
+        #                                                        position=[offset + 0.1 * x, y, z])
+        # gel_urdf = shelf_item_prefix + "duschGel.urdf"
+        # gel_id = OrderedDict()
+        # y, z = -0.3, 0.62
+        # offset = -0.14
+        # for x in range(1):
+        #     gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+        #                                                       position=[offset + 0.1 * x, y, z])
+        # for x in range(1):
+        #     gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x + 4), urdf_file=gel_urdf,
+        #                                                           position=[offset + 0.1 * x, y - 0.14, z])
+        # lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
+        # lotion_id = OrderedDict()
+        # y, z = -0.4, 1
+        # offset = -0.14
+        # for x in range(1):
+        #     lotion_id[x] = self.planner.add_constraint_from_urdf("lotion" + str(x), urdf_file=lotion_urdf,
+        #                                                          position=[offset + 0.1 * x, y, z])
 
         shelf_item_prefix = home + "/catkin_ws/src/shelf_item_descriptions/urdf/"
         salt_urdf = shelf_item_prefix + "salt.urdf"
-        salt_urdf = shelf_item_prefix + "duschGel.urdf"
+        gel_urdf = shelf_item_prefix + "duschGel.urdf"
         salt_id = OrderedDict()
 
         y, z = 0.3, 1.0
         offset = -0.29
         for x in range(4):
-            salt_id[x] = self.planner.add_constraint_from_urdf("salt" + str(x), urdf_file=salt_urdf,
+            salt_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
                                                                position=[offset + 0.1 * x, y, z])
-        gel_urdf = shelf_item_prefix + "duschGel.urdf"
+            # salt_id[x + 1] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+            #                                                    position=[offset + 0.1 * x, y-0.38, z])
         gel_id = OrderedDict()
         y, z = -0.3, 0.62
-        offset = -0.14
-        for x in range(1):
+        offset = -0.29
+        for x in range(4):
             gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
                                                               position=[offset + 0.1 * x, y, z])
+        for x in range(4):
+            gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=salt_urdf,
+                                                              position=[offset + 0.1 * x, 0.3, z])
         for x in range(1):
             gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x + 4), urdf_file=gel_urdf,
                                                                   position=[offset + 0.1 * x, y - 0.14, z])
@@ -156,8 +188,8 @@ class PlannerExample:
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 
-        _, status, trajectory = self.planner.get_trajectory(group=group,
-                                                            goal_state=goal_state, samples=samples, duration=duration,
+        _, status, trajectory = self.planner.get_trajectory(group=group1,
+                                                            goal_state=goal_state1, samples=samples, duration=duration,
                                                             collision_safe_distance=collision_safe_distance,
                                                             collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)

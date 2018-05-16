@@ -193,7 +193,7 @@ class ProblemModelling:
                 initial_signed_distance = collision_infos[0]
                 current_state_normal_times_jacobian = collision_infos[1]
                 next_state_normal_times_jacobian = collision_infos[2]
-
+                constraint = None
                 if len(initial_signed_distance) > 0:
                     upper_collision_limit = None
                     np.full((1, initial_signed_distance.shape[0]), self.collision_check_distance)
@@ -205,9 +205,9 @@ class ProblemModelling:
                     current_state_normal_times_jacobian = np.matmul(current_state_normal_times_jacobian, vel)
                     next_state_normal_times_jacobian = np.matmul(next_state_normal_times_jacobian, vel)
                     constraint = np.hstack([current_state_normal_times_jacobian, next_state_normal_times_jacobian])
+                    constraint *= -1  # because, normal is pointed from object B and the Object A moves towards Object B
 
-        return constraint, \
-               lower_collision_limit, upper_collision_limit
+        return constraint, lower_collision_limit, upper_collision_limit
 
     def get_velocity_matrix(self):
 

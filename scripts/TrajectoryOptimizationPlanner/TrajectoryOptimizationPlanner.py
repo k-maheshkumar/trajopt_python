@@ -43,6 +43,11 @@ class TrajectoryOptimizationPlanner():
         else:
             self.db_driver = None
             self.save_problem = None
+        if "plot_trajectory" in kwargs:
+            self.if_plot_traj = kwargs["plot_trajectory"]
+        else:
+            self.if_plot_traj = False
+            self.save_problem = None
 
         self.robot = Robot(main_logger_name, verbose, log_file)
         self.world = SimulationWorld(**kwargs)
@@ -157,6 +162,9 @@ class TrajectoryOptimizationPlanner():
 
         status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
         self.logger.info(status)
+
+        if self.if_plot_traj:
+            self.robot.planner.trajectory.plot_trajectories()
 
         if self.save_problem:
             self.save_to_db(samples, duration, current_robot_state, goal_state, group, collision_safe_distance,

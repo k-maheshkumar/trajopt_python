@@ -26,7 +26,8 @@ class PlannerExample:
             "verbose": "INFO",
             "log_file": True,
             "save_problem": True,
-            "robot_config": "robot_config_don_bot.yaml"
+            "robot_config": "robot_config_don_bot.yaml",
+            # "plot_trajectory": True
 
         }
 

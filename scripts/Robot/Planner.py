@@ -170,7 +170,6 @@ class TrajectoryPlanner:
 
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
         self.trajectory.update(trajectory, self.current_planning_joint_group)
-        self.trajectory.plot_trajectories()
         if self.solver_status == "Solved":
             can_execute_trajectory = True
             status = "Total time taken to calculate Optimal Trajectory: " + str(planning_time) + " secs"

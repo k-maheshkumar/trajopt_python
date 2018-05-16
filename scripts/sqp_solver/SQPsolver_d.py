@@ -256,7 +256,7 @@ class SQPsolver:
         if self.D is not None:
             # p_k = np.hstack([p.value] * (self.D.shape[1] / p.shape[0]))
             p_k = np.hstack([x_k] * (self.D.shape[1] / p.shape[0]))
-            p_k = x_k
+            # p_k = x_k
             cons4_cond = np.isclose(np.matmul(self.D, p_k) >= self.lbD, 1, rtol=tolerance, atol=tolerance).all()
         else:
             cons4_cond = True
@@ -270,7 +270,7 @@ class SQPsolver:
         cons3 = np.subtract(np.matmul(self.A, x_k), self.b)
         # p_k = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
         p_k = np.hstack([x_k] * (self.D.shape[1] / p.shape[0]))
-        p_k = x_k
+        # p_k = x_k
         cons4 = self.lbD - cvxpy.matmul(self.D, p_k)
         # print cons1, cons2, cons3
         return cons1.flatten(), cons2.flatten(), cons3.flatten(), cons4
@@ -319,7 +319,7 @@ class SQPsolver:
         constraints3 = cvxpy.norm(self.A * x - self.b.flatten(), self.penalty_norm)
         # p1 = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
         p1 = np.hstack([xk] * (self.D.shape[1] / p.shape[0]))
-        p1 = xk
+        # p1 = xk
         constraints4 = cvxpy.norm(self.lbD - cvxpy.matmul(self.D, p1), self.penalty_norm)
         objective += penalty * (constraints1 + constraints2 + constraints3 + constraints4)
         return objective

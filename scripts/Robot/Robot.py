@@ -3,7 +3,6 @@ from scripts.utils.utils import Utils as utils
 from urdf_parser_py.urdf import URDF
 from scripts.Robot.Planner import TrajectoryPlanner
 import itertools
-from scripts.Robot.ModelandTree import RobotTree
 from srdfdom.srdf import SRDF
 from scripts.utils.dict import DefaultOrderedDict
 
@@ -17,17 +16,11 @@ class Robot:
         self.srdf = None
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
-
-
     def load_robot_model(self, urdf_file=None):
         if urdf_file is not None:
             self.model = URDF.from_xml_file(urdf_file)
         else:
             self.model = URDF.from_parameter_server()
-
-        # base_link, end_link = "lbr_iiwa_link_0", "lbr_iiwa_link_7"
-
-        # self.tree = RobotTree(self.model, base_link, end_link)
 
     def load_srdf(self, srdf_file):
 
@@ -47,9 +40,7 @@ class Robot:
     def get_initial_trajectory(self):
         return self.planner.trajectory.initial
 
-    def init_plan_trajectory(self, *args, **kwargs):
-        status = "-1"
-
+    def init_plan_trajectory(self, **kwargs):
         if "group" in kwargs:
             joint_group = kwargs["group"]
         if "samples" in kwargs:
@@ -73,12 +64,9 @@ class Robot:
 
         if "current_state" in kwargs:
             current_state = kwargs["current_state"]
-            # current_state = OrderedDict(zip(joint_group, current_state))
 
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
-            # goal_state = OrderedDict(zip(joint_group, goal_state))
-
 
         if "collision_safe_distance" in kwargs:
             collision_safe_distance = kwargs["collision_safe_distance"]
@@ -130,11 +118,8 @@ class Robot:
                               solver_class=1, decimals_to_round=decimals_to_round, verbose=verbose)
 
     def calulate_trajecotory(self, callback_function=None):
-        status, can_execute_trajectory = "No trajectory has been found", False
         status, planning_time, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)
         return status, planning_time, can_execute_trajectory
 
-    # def get_robot_trajectory(self):
-    #     return self.planner.trajectory.get_trajectory()
 
 

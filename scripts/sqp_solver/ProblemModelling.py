@@ -256,7 +256,7 @@ class ProblemModelling:
     def get_velocity_matrix1(self):
 
         velocity_matrix = np.zeros((self.no_of_joints * self.samples, self.samples * self.no_of_joints))
-        np.fill_diagonal(velocity_matrix, 1.0)
+        np.fill_diagonal(velocity_matrix, -1.0)
         i, j = np.indices(velocity_matrix.shape)
         velocity_matrix[i == j - self.no_of_joints] = 1.0
 

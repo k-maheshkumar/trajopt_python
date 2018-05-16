@@ -7,6 +7,7 @@ import logging
 import os
 import time
 from collections import OrderedDict
+from scipy import sparse
 
 elapsed_time = 0
 
@@ -167,10 +168,10 @@ class SQPsolver:
 
     def analyse_inputs(self):
         if self.lbG is not None:
-            self.lbG = np.array([utils.replace_none(lb, float(self.solver_config["replace_none_with"]), negate=True)
+            self.lbG = 1 * np.nan_to_num([utils.replace_none(lb, float(self.solver_config["replace_none_with"]))
                                  for lb in self.lbG])
         if self.ubG is not None:
-            self.ubG = np.array([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
+            self.ubG = np.nan_to_num([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
                                  for ub in self.ubG])
 
         if self.G is not None and self.lbG is None and self.ubG is not None:
@@ -257,17 +258,10 @@ class SQPsolver:
                                cvxpy.matmul(constraints, p1) <= upper_limit]
             elif lower_limit is None:
                 constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               cvxpy.matmul(constraints, p1) >= upper_limit]
+                               cvxpy.matmul(constraints, p1) <= upper_limit]
             elif upper_limit is None:
-
-                cons2 = lower_limit - cvxpy.matmul(constraints, p1.value)
-                # cons_model = cons2 - constraints * p1
-                cons_model = constraints * p1
-                constraints = [
-                    cvxpy.norm(p, self.trust_region_norm) <= delta,
-                               # lower_limit <= cvxpy.matmul(constraints, p1)
-                ]
-                model_objective += penalizer * cvxpy.norm(cons_model, self.penalty_norm)
+                constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta,
+                               lower_limit <= cvxpy.matmul(constraints, p1)]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)

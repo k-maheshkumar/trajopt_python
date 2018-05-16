@@ -90,6 +90,7 @@ class SimulationWorld(ISimulationWorldBase):
         self.collision_check_distance = 0.2
         self.collision_check_time = 0
 
+
         self.robot = None
 
         if use_real_time_simulation:
@@ -535,7 +536,6 @@ class SimulationWorld(ISimulationWorldBase):
             robot_state, zero_vec, zero_vec)
 
         current_position_jacobian1 = []
-
         # current_position_jacobian1.append(
         #     [jac[-len(robot_state):] for jac in position_jacobian])
         if len(group) < len(robot_state):
@@ -671,8 +671,6 @@ class SimulationWorld(ISimulationWorldBase):
 
                         next_normal_T_times_jacobian_.append(np.matmul((1 - fraction) * normal_.T,
                                                                        next_state_jacobian_matrix))
-        # if len(initial_signed_distance_):
-        #     print "cons", len(initial_signed_distance_)
 
 
 

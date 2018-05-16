@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pylab import *
 from scripts.utils.dict import DefaultOrderedDict
 from collections import OrderedDict
-
+from scripts.plotter.results import Plotter
 
 class Trajectory:
     def __init__(self):

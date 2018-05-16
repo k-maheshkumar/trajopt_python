@@ -260,8 +260,9 @@ class SQPsolver:
                                cvxpy.matmul(constraints, p1) >= upper_limit]
             elif upper_limit is None:
 
-                cons2 = lower_limit + cvxpy.matmul(constraints, p1.value)
-                cons_model = cons2 - constraints * p1
+                cons2 = lower_limit - cvxpy.matmul(constraints, p1.value)
+                # cons_model = cons2 - constraints * p1
+                cons_model = constraints * p1
                 constraints = [
                     cvxpy.norm(p, self.trust_region_norm) <= delta,
                                # lower_limit <= cvxpy.matmul(constraints, p1)

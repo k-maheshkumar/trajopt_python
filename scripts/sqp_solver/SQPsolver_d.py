@@ -268,7 +268,7 @@ class SQPsolver:
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
         cons2 = np.add(np.matmul(-self.G, x_k), self.lbG)
         cons3 = np.subtract(np.matmul(self.A, x_k), self.b)
-        # p_k = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
+        # p_k = np.hstack([p.value] * (self.D.shape[1] / p.shape[0]))
         p_k = np.hstack([x_k] * (self.D.shape[1] / p.shape[0]))
         # p_k = x_k
         cons4 = self.lbD - cvxpy.matmul(self.D, p_k)
@@ -296,9 +296,8 @@ class SQPsolver:
         p1 = cvxpy.hstack([p] * (self.D.shape[1] / p.shape[0]))
         # p1 = x_k
 
-
-        # cons4_model = cons4_at_xk + cvxpy.matmul(cons4_grad_at_xk, p1)
-        cons4_model = cons4_at_xk + cons4_grad_at_xk * p1
+        cons4_model = cons4_at_xk + cvxpy.matmul(cons4_grad_at_xk, p1)
+        # cons4_model = cons4_at_xk + cons4_grad_at_xk * p1
 
         objective_grad_at_xk, objective_hess_at_xk = self.get_objective_gradient_and_hessian(x_k)
         objective_at_xk = self.get_actual_objective(x_k, p, penalty)
@@ -397,12 +396,19 @@ class SQPsolver:
         cons2_model = cons2_at_xk + cons2_grad_at_xk * p
         cons3_model = cons3_at_xk + cons3_grad_at_xk * p
 
+
+
         objective_grad_at_xk, objective_hess_at_xk = self.get_objective_gradient_and_hessian(x_k)
         objective_at_xk = self.get_actual_objective(x_k, p, penalty)
         model = objective_at_xk.value + objective_grad_at_xk * p + 0.5 * cvxpy.quad_form(p, objective_hess_at_xk)
 
         model += penalty * (cvxpy.norm(cons1_model, self.penalty_norm) + cvxpy.norm(cons2_model, self.penalty_norm)
                             + cvxpy.norm(cons3_model, self.penalty_norm))
+
+        # p1 = cvxpy.hstack([p, p])
+        # cons4_model = self.lbD - cvxpy.matmul(self.D, p1)
+
+        # model += penalty * cvxpy.norm(self.lbD - cvxpy.matmul(self.D, p1), self.penalty_norm)
 
         return model, objective_at_xk
 
@@ -414,6 +420,11 @@ class SQPsolver:
         constraints2 = cvxpy.norm(-self.G * x + self.lbG.flatten(), self.penalty_norm)
         constraints3 = cvxpy.norm(self.A * x - self.b.flatten(), self.penalty_norm)
         objective += penalty * (constraints1 + constraints2 + constraints3)
+        # p1 = cvxpy.hstack([p, p])
+        # constraints4 = cvxpy.norm(-self.D * p1 + self.lbD.flatten(), self.penalty_norm)
+
+        # objective += penalty * (constraints4)
+
         return objective
 
     def solve_problem2(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
@@ -438,11 +449,14 @@ class SQPsolver:
                                ]
         else:
             constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
-        # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
-
-        # model_objective += penalizer * cvxpy.norm(lower_limit - cvxpy.matmul(constraints, p1), "inf")
 
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
+
+        # constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
+
+        # model_objective += penalizer * cvxpy.norm(cons4 + self.lbD - cvxpy.matmul(self.D, p1), "inf")
+        # p1 = np.hstack([p.value, p.value])
+        # self.test_prob(p1, problem, constraints, penalizer, delta, self.solver, self.trust_region_norm, self.penalty_norm)
 
         # print problem.get_problem_data(self.solver)[0]
         if self.solver == "CVXOPT":
@@ -461,7 +475,7 @@ class SQPsolver:
             end = time.time()
         self.solving_time += end - start
 
-        return p.value, model_objective, actual_objective, problem.status
+        return p.value, model_objective, actual_objective, problem.status, problem.value
 
     def approx_equal(self, x, y, tolerance=0.001):
         return abs(x - y) <= 0.5 * tolerance * (x + y)
@@ -473,6 +487,10 @@ class SQPsolver:
         max_con3 = (np.linalg.norm(con3, np.inf))
 
         return max_con1, max_con2, max_con3
+
+    def test_prob(self, p, problem, constraints, penalty, delta, solver, trust_region_norm, penalty_norm):
+        from scripts.cvxpy_optimizer.solver_cvxpy2 import ConvexOptimizer
+        opt = ConvexOptimizer(p, problem, constraints, penalty, delta, solver, trust_region_norm, penalty_norm)
 
     def solve(self, initial_guess=None, callback_function=None):
         self.logger.info("Starting SQP solver . . . . . . .")

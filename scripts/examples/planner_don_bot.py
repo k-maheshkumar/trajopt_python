@@ -41,8 +41,8 @@ class PlannerExample:
                                                 orientation=p.getQuaternionFromEuler([0, 0, -1.57])
                                                 )
 
-        shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[0.0, 0, 0.0],
-                                                orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
+        shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[-0.15, 0, 0.0],
+                                                         orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
 
         # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
         #                                                  position=[0, 0, 0.0])
@@ -58,30 +58,31 @@ class PlannerExample:
 
         shelf_item_prefix = home + "/catkin_ws/src/shelf_item_descriptions/urdf/"
         salt_urdf = shelf_item_prefix + "salt.urdf"
+        salt_urdf = shelf_item_prefix + "duschGel.urdf"
         salt_id = OrderedDict()
 
-        y, z = 0.3, 0.62
-        offset = -0.14
+        y, z = 0.3, 1.0
+        offset = -0.29
         for x in range(4):
             salt_id[x] = self.planner.add_constraint_from_urdf("salt" + str(x), urdf_file=salt_urdf,
-                                                        position=[offset + 0.1 * x, y, z])
+                                                               position=[offset + 0.1 * x, y, z])
         gel_urdf = shelf_item_prefix + "duschGel.urdf"
         gel_id = OrderedDict()
         y, z = -0.3, 0.62
         offset = -0.14
         for x in range(1):
             gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
-                                                        position=[offset + 0.1 * x, y, z])
+                                                              position=[offset + 0.1 * x, y, z])
         for x in range(1):
-            gel_id[x+4] = self.planner.add_constraint_from_urdf("gel" + str(x+4), urdf_file=gel_urdf,
-                                                        position=[offset + 0.1 * x, y - 0.14, z])
+            gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x + 4), urdf_file=gel_urdf,
+                                                                  position=[offset + 0.1 * x, y - 0.14, z])
         lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
         lotion_id = OrderedDict()
         y, z = -0.4, 0.92
         offset = -0.14
         for x in range(1):
             lotion_id[x] = self.planner.add_constraint_from_urdf("lotion" + str(x), urdf_file=lotion_urdf,
-                                                        position=[offset + 0.1 * x, y, z])
+                                                                 position=[offset + 0.1 * x, y, z])
 
         self.planner.robot.load_srdf(srdf_file)
         self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
@@ -218,8 +219,8 @@ class PlannerExample:
         start_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         start_state1["ur5_wrist_2_joint"] = 1.5855963769735366
         start_state1["ur5_wrist_3_joint"] = -1.5770985888989753
-        # start_state1["gripper_joint"] = 0
-        # start_state1["gripper_base_gripper_left_joint"] = 0
+        start_state1["gripper_joint"] = 0
+        start_state1["gripper_base_gripper_left_joint"] = 0
 
         goal_state1 = OrderedDict()
         goal_state1["ur5_shoulder_pan_joint"] = 1.9823357809267463
@@ -228,15 +229,15 @@ class PlannerExample:
         goal_state1["ur5_wrist_1_joint"] = 0.8666279970481103
         goal_state1["ur5_wrist_2_joint"] = 1.5855963769735366
         goal_state1["ur5_wrist_3_joint"] = -1.5770985888989753
-        # goal_state1["gripper_joint"] = 0
-        # goal_state1["gripper_base_gripper_left_joint"] = 0
+        goal_state1["gripper_joint"] = 0
+        goal_state1["gripper_base_gripper_left_joint"] = 0
         group1 = goal_state1.keys()
         self.planner.world.reset_joint_states(self.robot_id, start_state1.values(), start_state1.keys())
 
-        _, status, trajectory = self.planner.get_trajectory(group=group1,
-                                                         goal_state=goal_state1, samples=samples, duration=duration,
-                                                         collision_safe_distance=collision_safe_distance,
-                                                         collision_check_distance=collision_check_distance)
+        _, status, trajectory = self.planner.get_trajectory(group=group,
+                                                            goal_state=goal_state, samples=samples, duration=duration,
+                                                            collision_safe_distance=collision_safe_distance,
+                                                            collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)
         # # print trajectory.final
         self.planner.execute_trajectory()
@@ -364,7 +365,7 @@ class PlannerExample:
         # start_state["ur5_ee_fixed_joint"] = 1.5704531145724918
 
         temp = [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
-                 1.5855963769735366, 1.5770985888989753]
+                1.5855963769735366, 1.5770985888989753]
         self.planner.world.reset_joint_states(self.robot_id, temp, start_state.keys())
         # ur5_wrist_3_joint = 13
         ur5_ee_link = 14
@@ -388,7 +389,8 @@ class PlannerExample:
         print current_position_jacobian
         link_state = p.getLinkState(self.robot_id, ur5_ee_link)
         print "rhgdl", link_state
-        tem = [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103, 1.5855963769735366, 1.5770985888989753]
+        tem = [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103, 1.5855963769735366,
+               1.5770985888989753]
         point1 = link_state[5]
         jac, _ = tree.get_jacobian_of_a_chain(tem, point1)
 

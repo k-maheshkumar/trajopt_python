@@ -18,7 +18,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            # "verbose": "INFO",
+            # "verbose": "DEBUG",
             "log_file": False,
             "save_problem": True,
             "db_name": "Trajectory_planner_results",

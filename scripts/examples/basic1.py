@@ -54,11 +54,11 @@ class Example:
     def init(self):
         self.plan.init(joints=self.problem.joints, samples=self.problem.samples, duration=self.problem.duration,
                   solver=None, solver_config=None, solver_class=1,
-                  decimals_to_round=4, verbose=False)
+                  decimals_to_round=4, verbose=False, joint_group=["a"] * self.problem.samples)
 
     def calculate(self):
-        # self.plan.calculate_trajectory()
-        print self.plan.display_problem()
+        self.plan.calculate_trajectory()
+        # print self.plan.display_problem()
 
 if __name__ == '__main__':
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     end = time.time()
     # plan.display_problem()
     # example.plan.display_problem()
-    # print example.plan.get_trajectory().trajectory_by_name
+    print example.plan.get_trajectory().trajectory_by_name
     print("computation time: ", end - start)
 
 # # print request

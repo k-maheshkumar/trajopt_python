@@ -31,7 +31,7 @@ class TrajectoryPlanner:
         self.delta_max = -1
         self.joints = -1
         self.num_of_joints = -1
-        self.solver =  -1
+        self.solver = -1
         self.duration = -1
         self.no_of_samples = -1
         self.max_no_of_Iteration = -1

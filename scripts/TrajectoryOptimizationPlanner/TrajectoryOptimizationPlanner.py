@@ -276,7 +276,7 @@ class TrajectoryOptimizationPlanner():
             planning_request["collision_safe_distance"] = d_safe
             planning_request["collision_check_distance"] = d_check
             result = OrderedDict()
-            result["type"] = "kuka_only_random_samples"
+            result["type"] = "kuka_only_penalty_1_vs_2"
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
             result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
             result["actual_reductions"] = self.robot.planner.sqp_solver.actual_reductions

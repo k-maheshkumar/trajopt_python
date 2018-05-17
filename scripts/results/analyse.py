@@ -2,15 +2,12 @@ from scripts.results.plotter import Plotter as plotter
 from scripts.DB.Mongo_driver import MongoDriver
 from collections import OrderedDict
 from scripts.utils.dict import DefaultOrderedDict
-import csv
-import sys
 from matplotlib import pyplot as plt
 from collections import OrderedDict
 
 
 class Analyzer:
     def __init__(self):
-        print "hello"
         # self.db = MongoDriver("Trajectory_planner_results")
         self.db = MongoDriver("Trajectory_planner_evaluation")
         result = self.db.find({})
@@ -31,65 +28,161 @@ class Analyzer:
         #     # y.append(res["cost_improvement"])
         #
         # plotter.plot_xy(x, y, "samples", "planning_time")
+
         self.plot_avg_planning_time_vs_samples()
+        # self.plot_avg_planning_time_vs_trust_region()
+        # self.plot_avg_planning_time_vs_penalty_1_and_2()
 
     def plot_avg_planning_time_vs_samples(self):
         result = list(self.db.find({"solver_config.trust_region_size": 30}))
         # print len(result)
-        data = DefaultOrderedDict(list)
-        data1 = DefaultOrderedDict(list)
-        data2 = DefaultOrderedDict(list)
-        data3 = DefaultOrderedDict(list)
+        sam_t = DefaultOrderedDict(list)
+        sol_t = DefaultOrderedDict(list)
+        col_t = DefaultOrderedDict(list)
+        prb_t = DefaultOrderedDict(list)
+        cost = DefaultOrderedDict(list)
         for res in result:
             sam = res["planning_request"]["samples"]
-            data[sam].append(res["planning_time"])
-            data1[sam].append(res["solving_time"])
-            data2[sam].append(res["collision_check_time"])
-            data3[sam].append(res["prob_model_time"])
+            sam_t[sam].append(res["planning_time"])
+            sol_t[sam].append(res["solving_time"])
+            col_t[sam].append(res["collision_check_time"])
+            prb_t[sam].append(res["prob_model_time"])
+            a_cost = res["actual_reductions"]
+            imp = a_cost[0] - a_cost[-1]
+            imp /= a_cost[0]
+            imp *= 100
+            cost[sam].append(imp)
+            # print sam, imp
+        # print cost
         samples = []
-        planning_time = []
-        solving_time = []
-        collision_check_time = []
-        prob_model_time = []
-        data = OrderedDict(sorted(data.items()))
-        for k in data:
-            print k, len(data[k])
+        avg_planning_time = []
+        avg_solving_time = []
+        avg_collision_check_time = []
+        avg_prob_model_time = []
+        avg_cost = []
+        sam_t = OrderedDict(sorted(sam_t.items()))
+        for k in sam_t:
+            # print k, len(sam_t[k])
             samples.append(k)
-            planning_time.append(sum(data[k]) / len(data[k]))
-            solving_time.append(sum(data1[k]) / len(data1[k]))
-            collision_check_time.append(sum(data2[k]) / len(data2[k]))
-            prob_model_time.append(sum(data3[k]) / len(data3[k]))
-
-            # if k == 18:
-            #     print len(v)
-        # plotter.plot_xy(x, y, "samples", "planning_time")
-        # plotter.x_y_best_fit_curve(x, y, "samples", "planning_time", deg=5)
-        # plotter.x_y_best_fit_curve(samples, prob_model_time, "samples", "prob_model_time", deg=5)
-        ys = [planning_time, solving_time, collision_check_time, prob_model_time]
+            avg_planning_time.append(sum(sam_t[k]) / len(sam_t[k]))
+            avg_solving_time.append(sum(sol_t[k]) / len(sol_t[k]))
+            avg_collision_check_time.append(sum(col_t[k]) / len(col_t[k]))
+            avg_prob_model_time.append(sum(prb_t[k]) / len(prb_t[k]))
+            avg_cost.append(sum(cost[k]) / len(cost[k]))
+        ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time]
         xs = [samples] * len(ys)
-        print sorted(samples)
+        # print samples
+        # print self.get_rounded_off_list(avg_planning_time)
+        # print self.get_rounded_off_list(avg_solving_time)
+        # print self.get_rounded_off_list(avg_collision_check_time)
+        # print self.get_rounded_off_list(avg_prob_model_time, 5)
+        print self.get_rounded_off_list(avg_cost, 3)
         labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
         plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Time (S)",
                                           deg=8)
-            # print data[d]
-        # print data
-        # x = []
-        # y = []
-        # print result
-        # for res in result:
-        #     print res
-        #     # if res["is_collision_free"]:
-        #     #     print "cost improvement", res["prob_costs"]
-        #         # print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
-        #         # print "cost improvement", res["cost improvement"]
-        #
-        #     # print d
-        #     x.append(res["planning_request"]["samples"])
-        #     y.append(res["planning_time"])
-        #     # y.append(res["cost_improvement"])
-        #
-        # plotter.plot_xy(x, y, "samples", "planning_time")
 
+    def plot_avg_planning_time_vs_trust_region(self):
+        result = list(self.db.find({"type": "kuka_only_random_trust_region"}))
+        # print len(result)
+        trust_region = DefaultOrderedDict(list)
+        sol_t = DefaultOrderedDict(list)
+        col_t = DefaultOrderedDict(list)
+        prb_t = DefaultOrderedDict(list)
+        for res in result:
+            trust = res["solver_config"]["trust_region_size"]
+            trust_region[trust].append(res["planning_time"])
+            sol_t[trust].append(res["solving_time"])
+            col_t[trust].append(res["collision_check_time"])
+            prb_t[trust].append(res["prob_model_time"])
+        print trust_region.keys()
+        tr = []
+        avg_planning_time = []
+        avg_solving_time = []
+        avg_collision_check_time = []
+        avg_prob_model_time = []
+        trust_region = OrderedDict(sorted(trust_region.items()))
+        for k in trust_region:
+            print k, len(trust_region[k])
+            tr.append(k)
+            avg_planning_time.append(sum(trust_region[k]) / len(trust_region[k]))
+            avg_solving_time.append(sum(sol_t[k]) / len(sol_t[k]))
+            avg_collision_check_time.append(sum(col_t[k]) / len(col_t[k]))
+            avg_prob_model_time.append(sum(prb_t[k]) / len(prb_t[k]))
+        ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time]
+        xs = [tr] * len(ys)
+        print sorted(tr)
+        labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
+        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Time", "Time (S)",
+                                          deg=2)
+
+    def plot_avg_planning_time_vs_penalty_1_and_2(self):
+        result = list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 2}))
+        result += list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 1}))
+        penalty_norm = DefaultOrderedDict(list)
+        sol_t = DefaultOrderedDict(list)
+        col_t = DefaultOrderedDict(list)
+        prb_t = DefaultOrderedDict(list)
+        penalty_norm1 = DefaultOrderedDict(list)
+        sol_t1 = DefaultOrderedDict(list)
+        col_t1 = DefaultOrderedDict(list)
+        prb_t1 = DefaultOrderedDict(list)
+        for res in result:
+            p = res["solver_config"]["penalty_norm"]
+            print "norm . .. ", p
+            if p == 1:
+                trust = res["solver_config"]["trust_region_size"]
+                penalty_norm[trust].append(res["planning_time"])
+                sol_t[trust].append(res["solving_time"])
+                col_t[trust].append(res["collision_check_time"])
+                prb_t[trust].append(res["prob_model_time"])
+            elif p == 2:
+                trust = res["solver_config"]["trust_region_size"]
+                penalty_norm1[trust].append(res["planning_time"])
+                sol_t1[trust].append(res["solving_time"])
+                col_t1[trust].append(res["collision_check_time"])
+                prb_t1[trust].append(res["prob_model_time"])
+
+        print penalty_norm.keys()
+        tr = []
+        avg_planning_time = []
+        avg_solving_time = []
+        avg_collision_check_time = []
+        avg_prob_model_time = []
+        penalty_norm = OrderedDict(sorted(penalty_norm.items()))
+        for k in penalty_norm:
+            # print k, len(penalty_norm[k])
+            tr.append(k)
+            avg_planning_time.append(sum(penalty_norm[k]) / len(penalty_norm[k]))
+            avg_solving_time.append(sum(sol_t[k]) / len(sol_t[k]))
+            avg_collision_check_time.append(sum(col_t[k]) / len(col_t[k]))
+            avg_prob_model_time.append(sum(prb_t[k]) / len(prb_t[k]))
+        tr1 = []
+        avg_planning_time1 = []
+        avg_solving_time1 = []
+        avg_collision_check_time1 = []
+        avg_prob_model_time1 = []
+        penalty_norm1 = OrderedDict(sorted(penalty_norm.items()))
+        for k in penalty_norm1:
+            print k, len(penalty_norm1[k])
+            tr1.append(k)
+            avg_planning_time1.append(sum(penalty_norm1[k]) / len(penalty_norm1[k]))
+            avg_solving_time1.append(sum(sol_t1[k]) / len(sol_t1[k]))
+            avg_collision_check_time1.append(sum(col_t1[k]) / len(col_t1[k]))
+            avg_prob_model_time1.append(sum(prb_t1[k]) / len(prb_t1[k]))
+
+        ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time,
+              avg_planning_time1, avg_solving_time1, avg_collision_check_time1, avg_prob_model_time1]
+        xs = [tr, tr1] * (len(ys) / 2)
+        print sorted(tr)
+        labels = ["penalty 1: planning_time", "penalty 1: solving_time",
+                  "penalty 1: collision_check_time", "penalty 1: prob_model_time",
+                  "penalty 2: planning_time1", "penalty 2: solving_time1",
+                  "penalty 2: collision_check_time1", "penalty 2: prob_model_time1"]
+        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Time", "Time (S)",
+                                          deg=2)
+
+    def get_rounded_off_list(self, data, decimal=3):
+        return [round(float(d), decimal) for d in data]
 
     def temp(self):
         data = []

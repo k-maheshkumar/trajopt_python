@@ -138,8 +138,8 @@ class PlannerExample:
         goal_state1 = goal_state.values()[3:]
 
         _, status, trajectory = self.planner.get_trajectory(samples=samples, duration=duration,
-                                                            group=group, goal_state=goal_state,
-                                                            # group=group1, goal_state=goal_state1,
+                                                            # group=group, goal_state=goal_state,
+                                                            group=group1, goal_state=goal_state1,
                                                             collision_safe_distance=collision_safe_distance,
                                                             collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)

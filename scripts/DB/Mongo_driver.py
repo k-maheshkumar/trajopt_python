@@ -26,6 +26,9 @@ class MongoDriver():
     def drop(self):
         self.db.drop()
 
+    def remove_item(self, request):
+        self.db.remove(request)
+
 
 def main():
 
@@ -49,13 +52,16 @@ def main():
     # db.drop()
     # result = (db.find({"is_collision_free": True}))
     # result = (db.find({"num_iterations": 90}))
-    result = (db.find({"type": "kuka_only_random_samples"}))
+    result = (db.find({"type": "kuka_only_random_trust_region"}))
     # result = (db.find({}))
     # print result
     d = []
     for i in result:
         d.append(i["num_qp_iterations"])
+        print i["solver_config"]["trust_region_size"]
     print "len: ", len(d)
+
+    db.remove_item({"solver_config.trust_region_size": 0.2})
 
 
 

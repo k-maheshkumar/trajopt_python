@@ -9,7 +9,8 @@ from matplotlib import pyplot as plt
 class Analyzer:
     def __init__(self):
         print "hello"
-        self.db = MongoDriver("Trajectory_planner_results")
+        # self.db = MongoDriver("Trajectory_planner_results")
+        self.db = MongoDriver("Trajectory_planner_eval")
         result = self.db.find({})
         # print result[0]
         x = []
@@ -17,9 +18,9 @@ class Analyzer:
         print result
         for res in result:
             print res
-            if res["is_collision_free"]:
-                print "cost improvement", res["cost_improvement"]
-                print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
+            # if res["is_collision_free"]:
+            #     print "cost improvement", res["prob_costs"]
+                # print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
                 # print "cost improvement", res["cost improvement"]
 
             # print d

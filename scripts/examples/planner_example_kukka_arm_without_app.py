@@ -17,11 +17,12 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
-            "use_gui": True,
+            # "use_gui": True,
             # "verbose": "DEBUG",
             "log_file": False,
             "save_problem": True,
-            "db_name": "Trajectory_planner_results",
+            # "db_name": "Trajectory_planner_results",
+            "db_name": "Trajectory_planner_eval",
             "robot_config": "robot_config_kukka_arm.yaml"
 
         }
@@ -117,11 +118,11 @@ def main():
     example = PlannerExample()
     # example.load_srdf()
     example.run()
-    while True:
-        pass
+    # while True:
+    #     pass
 
 
 if __name__ == '__main__':
-    for i in range(1):
+    for i in range(20):
         print "planning iteration . . .. . . . . . . .. ", i
         main()

@@ -30,7 +30,7 @@ class MongoDriver():
 def main():
 
     # db = MongoDriver("Trajectory_planner_results")
-    db = MongoDriver("Trajectory_planner_eval")
+    db = MongoDriver("Trajectory_planner_evaluation")
     # db = MongoDriver()
     request = {
         "samples": 5,
@@ -49,10 +49,13 @@ def main():
     # db.drop()
     # result = (db.find({"is_collision_free": True}))
     # result = (db.find({"num_iterations": 90}))
-    result = (db.find({}))
+    result = (db.find({"type": "kuka_only_random_samples"}))
+    # result = (db.find({}))
     # print result
+    d = []
     for i in result:
-        print i["num_qp_iterations"]
+        d.append(i["num_qp_iterations"])
+    print "len: ", len(d)
 
 
 

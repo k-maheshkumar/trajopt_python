@@ -3,9 +3,24 @@ from collections import OrderedDict
 from scripts.DB.Mongo_driver import MongoDriver
 import numpy as np
 
+
 class Plotter:
     def __init__(self):
-        self.db = MongoDriver("trajectory_planner")
+        pass
+
+    @classmethod
+    def x_y_best_fit_curve(cls, x, y, xlabel, ylabel, title=None, deg=3):
+
+        coeffs = np.polyfit(x, y, deg)
+        x2 = np.arange(min(x) - 1, max(x) + 1, .01)  # use more points for a smoother plot
+        y2 = np.polyval(coeffs, x2)  # Evaluates the polynomial for each x2 value
+        fig = plt.figure()
+        fig.suptitle(xlabel + ' vs ' + ylabel, fontsize=20)
+        plt.xlabel(xlabel, fontsize=18)
+        plt.ylabel(ylabel, fontsize=16)
+        plt.plot(x2, y2, label="deg=" + str(deg))
+        plt.plot(x, y, 'bx')
+        plt.show()
 
     @classmethod
     def plot_xy(self, x, y, xlabel, ylabel, title=None):
@@ -22,9 +37,25 @@ class Plotter:
         fig.suptitle(xlabel + ' vs ' + ylabel, fontsize=20)
         plt.xlabel(xlabel, fontsize=18)
         plt.ylabel(ylabel, fontsize=16)
-        plt.plot(x, y, 'bx')
+        plt.plot(x, y)
         # plt.plot(x, y)
         plt.show()
+
+    @classmethod
+    def multi_plot_best_fit_curve(self, xs, ys, labels, title, c_x_title, c_y_title, deg=2):
+
+        for x, y, l in zip(xs, ys, labels):
+            coeffs = np.polyfit(x, y, deg)
+            x2 = np.arange(min(x) - 1, max(x) + 1, .01)  # use more points for a smoother plot
+            y2 = np.polyval(coeffs, x2)  # Evaluates the polynomial for each x2 value
+            plt.plot(x2, y2, label=l)
+            plt.plot(x, y, label=l)
+            plt.legend(loc='upper left')
+        plt.title(title)
+        plt.xlabel(c_x_title)
+        plt.ylabel(c_y_title)
+        plt.show()
+
 
     def multi_plot(self, title, initial, final, c_x_title, c_y_title):
         samples = len(final[0])

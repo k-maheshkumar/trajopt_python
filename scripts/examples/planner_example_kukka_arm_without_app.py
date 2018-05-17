@@ -13,14 +13,14 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
-            "use_gui": True,
+            # "use_gui": True,
             # "verbose": "DEBUG",
             "log_file": False,
             "save_problem": True,
             # "db_name": "Trajectory_planner_results",
-            "db_name": "Trajectory_planner_eval",
+            "db_name": "Trajectory_planner_evaluation",
             "robot_config": "robot_config_kukka_arm.yaml",
-            "plot_trajectory": True
+            # "plot_trajectory": True
         }
 
         self.planner = TrajectoryOptimizationPlanner(**config)
@@ -83,6 +83,4 @@ def main():
 
 
 if __name__ == '__main__':
-    for i in range(1):
-        print "planning iteration . . .. . . . . . . .. ", i
-        main()
+    main()

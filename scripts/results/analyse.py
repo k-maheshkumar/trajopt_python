@@ -5,32 +5,93 @@ from scripts.utils.dict import DefaultOrderedDict
 import csv
 import sys
 from matplotlib import pyplot as plt
+from collections import OrderedDict
+
 
 class Analyzer:
     def __init__(self):
         print "hello"
         # self.db = MongoDriver("Trajectory_planner_results")
-        self.db = MongoDriver("Trajectory_planner_eval")
+        self.db = MongoDriver("Trajectory_planner_evaluation")
         result = self.db.find({})
         # print result[0]
-        x = []
-        y = []
-        print result
+        # x = []
+        # y = []
+        # print result
+        # for res in result:
+        #     print res
+        #     # if res["is_collision_free"]:
+        #     #     print "cost improvement", res["prob_costs"]
+        #         # print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
+        #         # print "cost improvement", res["cost improvement"]
+        #
+        #     # print d
+        #     x.append(res["planning_request"]["samples"])
+        #     y.append(res["planning_time"])
+        #     # y.append(res["cost_improvement"])
+        #
+        # plotter.plot_xy(x, y, "samples", "planning_time")
+        self.plot_avg_planning_time_vs_samples()
+
+    def plot_avg_planning_time_vs_samples(self):
+        result = list(self.db.find({"solver_config.trust_region_size": 30}))
+        # print len(result)
+        data = DefaultOrderedDict(list)
+        data1 = DefaultOrderedDict(list)
+        data2 = DefaultOrderedDict(list)
+        data3 = DefaultOrderedDict(list)
         for res in result:
-            print res
-            # if res["is_collision_free"]:
-            #     print "cost improvement", res["prob_costs"]
-                # print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
-                # print "cost improvement", res["cost improvement"]
+            sam = res["planning_request"]["samples"]
+            data[sam].append(res["planning_time"])
+            data1[sam].append(res["solving_time"])
+            data2[sam].append(res["collision_check_time"])
+            data3[sam].append(res["prob_model_time"])
+        samples = []
+        planning_time = []
+        solving_time = []
+        collision_check_time = []
+        prob_model_time = []
+        data = OrderedDict(sorted(data.items()))
+        for k in data:
+            print k, len(data[k])
+            samples.append(k)
+            planning_time.append(sum(data[k]) / len(data[k]))
+            solving_time.append(sum(data1[k]) / len(data1[k]))
+            collision_check_time.append(sum(data2[k]) / len(data2[k]))
+            prob_model_time.append(sum(data3[k]) / len(data3[k]))
 
-            # print d
-            x.append(res["planning_request"]["samples"])
-            y.append(res["planning_time"])
-            # y.append(res["cost_improvement"])
+            # if k == 18:
+            #     print len(v)
+        # plotter.plot_xy(x, y, "samples", "planning_time")
+        # plotter.x_y_best_fit_curve(x, y, "samples", "planning_time", deg=5)
+        # plotter.x_y_best_fit_curve(samples, prob_model_time, "samples", "prob_model_time", deg=5)
+        ys = [planning_time, solving_time, collision_check_time, prob_model_time]
+        xs = [samples] * len(ys)
+        print sorted(samples)
+        labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
+        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Time (S)",
+                                          deg=8)
+            # print data[d]
+        # print data
+        # x = []
+        # y = []
+        # print result
+        # for res in result:
+        #     print res
+        #     # if res["is_collision_free"]:
+        #     #     print "cost improvement", res["prob_costs"]
+        #         # print "cost improvement---", res["final_cost"] / (res["initial_cost"] + 1e-3)
+        #         # print "cost improvement", res["cost improvement"]
+        #
+        #     # print d
+        #     x.append(res["planning_request"]["samples"])
+        #     y.append(res["planning_time"])
+        #     # y.append(res["cost_improvement"])
+        #
+        # plotter.plot_xy(x, y, "samples", "planning_time")
 
-        plotter.plot_xy(x, y, "samples", "planning_time")
 
-
+    def temp(self):
         data = []
 
         # planning_request["samples"] = samples

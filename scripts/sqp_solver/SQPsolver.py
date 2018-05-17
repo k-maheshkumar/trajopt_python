@@ -52,9 +52,10 @@ class SQPsolver:
         self.num_qp_iterations = 0
         self.num_sqp_iterations = 0
         self.solving_time = 0
-        self.predicted_costs = []
+        self.predicted_reductions = []
+        self.actual_reductions = []
+        self.model_costs = []
         self.actual_costs = []
-        self.problem_costs = []
 
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
@@ -377,9 +378,10 @@ class SQPsolver:
                         if predicted_reduction == 0:
                             predicted_reduction = 0.0000001
                         self.rho_k = actual_reduction / predicted_reduction
-                        self.predicted_costs.append(predicted_reduction)
-                        self.actual_costs.append(actual_reduction)
-                        self.problem_costs.append(prob_value)
+                        self.predicted_reductions.append(predicted_reduction)
+                        self.actual_reductions.append(actual_reduction)
+                        self.model_costs.append(prob_value)
+                        self.actual_costs.append(actual_objective_at_x_k.value)
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(self.rho_k))

@@ -21,9 +21,10 @@ class PlannerExample:
             "use_gui": True,
             "verbose": "INFO",
             "log_file": True,
-            "save_problem": True,
+            # "save_problem": True,
             "robot_config": "robot_config_don_bot.yaml",
-            "plot_trajectory": True
+            "plot_trajectory": True,
+            "db_name": "Trajectory_planner_evaluation"
 
         }
 
@@ -66,10 +67,10 @@ class PlannerExample:
         gel_id = OrderedDict()
         y, z = -0.3, 0.62
         offset = -0.29
-        for x in range(4):
+        for x in range(2):
             gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
                                                               position=[offset + 0.1 * x, y, z])
-        for x in range(4):
+        for x in range(2):
             gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=salt_urdf,
                                                               position=[offset + 0.1 * x, 0.3, z])
         for x in range(1):
@@ -137,8 +138,8 @@ class PlannerExample:
         goal_state1 = goal_state.values()[3:]
 
         _, status, trajectory = self.planner.get_trajectory(samples=samples, duration=duration,
-                                                            # group=group, goal_state=goal_state,
-                                                            group=group1, goal_state=goal_state1,
+                                                            group=group, goal_state=goal_state,
+                                                            # group=group1, goal_state=goal_state1,
                                                             collision_safe_distance=collision_safe_distance,
                                                             collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)

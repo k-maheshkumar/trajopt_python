@@ -158,7 +158,8 @@ class TrajectoryOptimizationPlanner():
                                                                     group,
                                                                     0.02)
         self.world.toggle_rendering_while_planning(True)
-
+        self.elapsed_time = self.robot.planner.sqp_solver.solving_time + \
+                            self.world.collision_check_time + self.robot.planner.prob_model_time
         status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
         self.logger.info(status)
 
@@ -225,41 +226,47 @@ class TrajectoryOptimizationPlanner():
 
     def save_to_db(self, samples, duration, current_robot_state, goal_state, group, d_safe, d_check, is_collision_free):
 
-        self.elapsed_time = self.robot.planner.sqp_solver.solving_time + self.world.collision_check_time + self.robot.planner.prob_model_time
-        act_costs =  self.robot.planner.sqp_solver.actual_costs
-        pred_costs =  self.robot.planner.sqp_solver.actual_costs
-        prb_costs =  self.robot.planner.sqp_solver.actual_costs
-        act_improve, pred_improve, prb_improve = 0, 0, 0
-        if len(act_costs):
-            act_improve = act_costs[len(act_costs)-2] - act_costs[len(act_costs)-1]
-            act_improve /= (act_costs[len(act_costs)-2] + 0.000000001)
-            act_improve *= 100
-        if len(pred_costs):
-            pred_improve = pred_costs[len(pred_costs)-2] - pred_costs[len(pred_costs)-1]
-            pred_improve /= (pred_costs[len(pred_costs)-2] + 0.000000001)
-            pred_improve *= 100
-        if len(prb_costs):
-            prb_improve = prb_costs[len(prb_costs)-2] - prb_costs[len(prb_costs)-1]
-            prb_improve /= (prb_costs[len(prb_costs)-2] + 0.000000001)
-            prb_improve *= 100
+        act_redutcion =  self.robot.planner.sqp_solver.actual_reductions
+        pred_reduction =  self.robot.planner.sqp_solver.predicted_reductions
+        actual_costs =  self.robot.planner.sqp_solver.actual_costs
+        model_costs =  self.robot.planner.sqp_solver.model_costs
+        actual_reduction_improve, predicted_reduction_improve, actual_cost_improve, model_cost_improve = 0, 0, 0, 0
+        if len(act_redutcion):
+            actual_reduction_improve = act_redutcion[len(act_redutcion)-2] - act_redutcion[len(act_redutcion)-1]
+            actual_reduction_improve /= (act_redutcion[len(act_redutcion)-2] + 0.000000001)
+            actual_reduction_improve *= 100
+        if len(pred_reduction):
+            predicted_reduction_improve = pred_reduction[len(pred_reduction)-2] - pred_reduction[len(pred_reduction)-1]
+            predicted_reduction_improve /= (pred_reduction[len(pred_reduction)-2] + 0.000000001)
+            predicted_reduction_improve *= 100
+        if len(actual_costs):
+            actual_cost_improve = actual_costs[len(actual_costs)-2] - actual_costs[len(actual_costs)-1]
+            actual_cost_improve /= (actual_costs[len(actual_costs)-2] + 0.000000001)
+            actual_cost_improve *= 100
+        if len(actual_costs):
+            model_cost_improve = model_costs[len(model_costs)-2] - model_costs[len(model_costs)-1]
+            model_cost_improve /= (model_costs[len(model_costs)-2] + 0.000000001)
+            model_cost_improve *= 100
         print "samples", samples
         print "no of links", len(self.world.robot_info["joint_infos"])
         print "number of qp iterations: ", self.robot.planner.sqp_solver.num_qp_iterations
         print "number of sqp iterations: ", self.robot.planner.sqp_solver.num_sqp_iterations
 
+        print "actual_reduction: ", self.robot.planner.sqp_solver.actual_reductions
+        print "predicted_reduction: ", self.robot.planner.sqp_solver.predicted_reductions
         print "actual_costs: ", self.robot.planner.sqp_solver.actual_costs
-        print "predicted_costs: ", self.robot.planner.sqp_solver.predicted_costs
-        print "problem_costs: ", self.robot.planner.sqp_solver.problem_costs
+        print "model_costs: ", self.robot.planner.sqp_solver.model_costs
 
-        print "cost improvement: ", act_improve
-        print "cost improvement 1: ", prb_improve
-        print "cost improvement 2: ", pred_improve
+        print "actual reduction improvement: ", actual_reduction_improve
+        print "predicted reduction improvement: ", predicted_reduction_improve
+        print "actual cost improvement: ", actual_cost_improve
+        print "model cost improvement: ", model_cost_improve
         print "collision check time: ", self.world.collision_check_time
         print "solving_time: ", self.robot.planner.sqp_solver.solving_time
         print "prob_model_time: ", self.robot.planner.prob_model_time
         print "total elapsed_time time: ", self.elapsed_time
 
-        if self.save_problem and self.db_driver is not None and act_improve < 101:
+        if self.save_problem and self.db_driver is not None and actual_reduction_improve < 101:
             planning_request = OrderedDict()
             planning_request["samples"] = samples
             planning_request["duration"] = duration
@@ -269,11 +276,14 @@ class TrajectoryOptimizationPlanner():
             planning_request["collision_safe_distance"] = d_safe
             planning_request["collision_check_distance"] = d_check
             result = OrderedDict()
+            result["type"] = "kuka_only_random_samples"
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
             result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
+            result["actual_reductions"] = self.robot.planner.sqp_solver.actual_reductions
+            result["predicted_reductions"] = self.robot.planner.sqp_solver.predicted_reductions
             result["actual_costs"] = self.robot.planner.sqp_solver.actual_costs
-            result["problem_costs"] = self.robot.planner.sqp_solver.problem_costs
-            result["cost_improvement"] = act_improve
+            result["model_costs"] = self.robot.planner.sqp_solver.model_costs
+            result["cost_improvement"] = actual_reduction_improve
             result["collision_check_time"] = self.world.collision_check_time
             result["solving_time"] = self.robot.planner.sqp_solver.solving_time
             result["prob_model_time"] = self.robot.planner.prob_model_time

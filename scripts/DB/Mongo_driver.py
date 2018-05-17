@@ -30,7 +30,8 @@ class MongoDriver():
 def main():
 
     # db = MongoDriver("Trajectory_planner_results")
-    db = MongoDriver()
+    db = MongoDriver("Trajectory_planner_eval")
+    # db = MongoDriver()
     request = {
         "samples": 5,
         "duration": 16,
@@ -51,7 +52,7 @@ def main():
     result = (db.find({}))
     # print result
     for i in result:
-        print i["num_iterations"]
+        print i["num_qp_iterations"]
 
 
 

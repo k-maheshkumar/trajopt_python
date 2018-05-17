@@ -226,54 +226,39 @@ class TrajectoryOptimizationPlanner():
     def save_to_db(self, samples, duration, current_robot_state, goal_state, group, d_safe, d_check, is_collision_free):
 
         self.elapsed_time = self.robot.planner.sqp_solver.solving_time + self.world.collision_check_time + self.robot.planner.prob_model_time
-        improve = self.robot.planner.sqp_solver.initial_cost - self.robot.planner.sqp_solver.final_cost
-        improve /= (self.robot.planner.sqp_solver.initial_cost + 0.000000001)
-        improve *= 100
-        improve1 = self.robot.planner.sqp_solver.initial_cost1 - self.robot.planner.sqp_solver.final_cost1
-        improve1 /= (self.robot.planner.sqp_solver.initial_cost1 + 0.000000001)
-        improve1 *= 100
-        improve2 = self.robot.planner.sqp_solver.initial_cost2 - self.robot.planner.sqp_solver.final_cost2
-        improve2 /= (self.robot.planner.sqp_solver.initial_cost2 + 0.000000001)
-        improve2 *= 100
-        improve3 = self.robot.planner.sqp_solver.initial_cost3 - self.robot.planner.sqp_solver.final_cost3
-        improve3 /= (self.robot.planner.sqp_solver.initial_cost3 + 0.000000001)
-        improve3 *= 100
+        act_costs =  self.robot.planner.sqp_solver.actual_costs
+        pred_costs =  self.robot.planner.sqp_solver.actual_costs
+        prb_costs =  self.robot.planner.sqp_solver.actual_costs
+        act_improve = act_costs[len(act_costs)-2] - act_costs[len(act_costs)-1]
+        act_improve /= (act_costs[len(act_costs)-2] + 0.000000001)
+        act_improve *= 100
+        pred_improve = pred_costs[len(pred_costs)-2] - pred_costs[len(pred_costs)-1]
+        pred_improve /= (pred_costs[len(pred_costs)-2] + 0.000000001)
+        pred_improve *= 100
+        prb_improve = prb_costs[len(prb_costs)-2] - prb_costs[len(prb_costs)-1]
+        prb_improve /= (prb_costs[len(prb_costs)-2] + 0.000000001)
+        prb_improve *= 100
         print "samples", samples
         print "no of links", len(self.world.robot_info["joint_infos"])
         print "number of qp iterations: ", self.robot.planner.sqp_solver.num_qp_iterations
         print "number of sqp iterations: ", self.robot.planner.sqp_solver.num_sqp_iterations
-        print "initial cost: ", self.robot.planner.sqp_solver.initial_cost
-        print "final cost: ", self.robot.planner.sqp_solver.final_cost
-        print "initial cost 1: ", self.robot.planner.sqp_solver.initial_cost1
-        print "final cost 1: ", self.robot.planner.sqp_solver.final_cost1
-        print "initial cost 2: ", self.robot.planner.sqp_solver.initial_cost2
-        print "final cost 2: ", self.robot.planner.sqp_solver.final_cost2
-        print "initial cost 3: ", self.robot.planner.sqp_solver.initial_cost2
-        print "final cost 3: ", self.robot.planner.sqp_solver.final_cost2
 
-        print "initial costs: ", self.robot.planner.sqp_solver.initial_costs
-        print "final costs: ", self.robot.planner.sqp_solver.final_costs
-        print "initial costs 1: ", self.robot.planner.sqp_solver.initial_costs1
-        print "final costs 1: ", self.robot.planner.sqp_solver.final_costs1
-        print "initial costs 2: ", self.robot.planner.sqp_solver.initial_costs2
-        print "final costs 2: ", self.robot.planner.sqp_solver.final_costs2
-        print "initial costs 3: ", self.robot.planner.sqp_solver.initial_costs2
-        print "final costs 3: ", self.robot.planner.sqp_solver.final_costs2
+        print "actual_costs: ", self.robot.planner.sqp_solver.actual_costs
+        print "predicted_costs: ", self.robot.planner.sqp_solver.predicted_costs
+        print "problem_costs: ", self.robot.planner.sqp_solver.problem_costs
 
-        print "cost improvement: ", improve
-        print "cost improvement 1: ", improve1
-        print "cost improvement 2: ", improve2
-        print "cost improvement 3: ", improve3
+        print "cost improvement: ", act_improve
+        print "cost improvement 1: ", prb_improve
+        print "cost improvement 2: ", pred_improve
         print "collision check time: ", self.world.collision_check_time
         print "solving_time: ", self.robot.planner.sqp_solver.solving_time
         print "prob_model_time: ", self.robot.planner.prob_model_time
         print "total elapsed_time time: ", self.elapsed_time
 
-        if self.save_problem and self.db_driver is not None and improve < 101:
+        if self.save_problem and self.db_driver is not None and act_improve < 101:
             planning_request = OrderedDict()
             planning_request["samples"] = samples
             planning_request["duration"] = duration
-            planning_request["group"] = group
             planning_request["start_state"] = current_robot_state
             planning_request["goal_state"] = goal_state
             planning_request["no of links"] = len(self.world.robot_info["joint_infos"])
@@ -282,9 +267,9 @@ class TrajectoryOptimizationPlanner():
             result = OrderedDict()
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
             result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
-            result["initial_cost"] = self.robot.planner.sqp_solver.initial_cost
-            result["final_cost"] = self.robot.planner.sqp_solver.final_cost
-            result["cost_improvement"] = improve
+            result["actual_costs"] = self.robot.planner.sqp_solver.actual_costs
+            result["problem_costs"] = self.robot.planner.sqp_solver.problem_costs
+            result["cost_improvement"] = act_improve
             result["collision_check_time"] = self.world.collision_check_time
             result["solving_time"] = self.robot.planner.sqp_solver.solving_time
             result["prob_model_time"] = self.robot.planner.prob_model_time
@@ -292,10 +277,12 @@ class TrajectoryOptimizationPlanner():
             result["planning_time"] = self.elapsed_time
             result["is_collision_free"] = is_collision_free
             result["planning_request"] = planning_request
-            result["trajectory"] = self.robot.planner.trajectory.final.tolist()
+            result["initial_trajectory"] = self.robot.planner.trajectory.initial.tolist()
+            result["final_trajectory"] = [x.tolist() for x in self.robot.planner.trajectory.trajectory_by_name.values()]
+            planning_request["group"] = self.robot.planner.trajectory.trajectory_by_name.keys()
             result["solver_config"] = self.robot.planner.sqp_solver.solver_config
 
-            # self.db_driver.insert(result)
+            self.db_driver.insert(result)
             # res = self.db_driver.find({"is_collision_free": True})
             # res = self.db_driver.find({"planning_request.samples": 10})
 

@@ -5,6 +5,7 @@ from scripts.utils.utils import Utils as utils
 import scripts.sqp_solver.ProblemModelling as model
 from scripts.Robot import Trajectory
 from scripts.sqp_solver import SQPsolver
+# from scripts.sqp_solver import SQPsolver_old as SQPsolver
 from collections import OrderedDict
 
 

@@ -229,15 +229,19 @@ class TrajectoryOptimizationPlanner():
         act_costs =  self.robot.planner.sqp_solver.actual_costs
         pred_costs =  self.robot.planner.sqp_solver.actual_costs
         prb_costs =  self.robot.planner.sqp_solver.actual_costs
-        act_improve = act_costs[len(act_costs)-2] - act_costs[len(act_costs)-1]
-        act_improve /= (act_costs[len(act_costs)-2] + 0.000000001)
-        act_improve *= 100
-        pred_improve = pred_costs[len(pred_costs)-2] - pred_costs[len(pred_costs)-1]
-        pred_improve /= (pred_costs[len(pred_costs)-2] + 0.000000001)
-        pred_improve *= 100
-        prb_improve = prb_costs[len(prb_costs)-2] - prb_costs[len(prb_costs)-1]
-        prb_improve /= (prb_costs[len(prb_costs)-2] + 0.000000001)
-        prb_improve *= 100
+        act_improve, pred_improve, prb_improve = 0, 0, 0
+        if len(act_costs):
+            act_improve = act_costs[len(act_costs)-2] - act_costs[len(act_costs)-1]
+            act_improve /= (act_costs[len(act_costs)-2] + 0.000000001)
+            act_improve *= 100
+        if len(pred_costs):
+            pred_improve = pred_costs[len(pred_costs)-2] - pred_costs[len(pred_costs)-1]
+            pred_improve /= (pred_costs[len(pred_costs)-2] + 0.000000001)
+            pred_improve *= 100
+        if len(prb_costs):
+            prb_improve = prb_costs[len(prb_costs)-2] - prb_costs[len(prb_costs)-1]
+            prb_improve /= (prb_costs[len(prb_costs)-2] + 0.000000001)
+            prb_improve *= 100
         print "samples", samples
         print "no of links", len(self.world.robot_info["joint_infos"])
         print "number of qp iterations: ", self.robot.planner.sqp_solver.num_qp_iterations

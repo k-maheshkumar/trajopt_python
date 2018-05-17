@@ -1,38 +1,21 @@
 import matplotlib.pyplot as plt
-from collections import OrderedDict
-from scripts.DB.Mongo_driver import MongoDriver
-import numpy as np
 
 class Plotter:
     def __init__(self):
-        self.db = MongoDriver("trajectory_planner")
+        pass
 
-    def plot_1d(self):
-        x = ['-2.268969874807226', '-4.41769065950939', '-5.8944509467546595', '-7.19660950810794',
-             '-8.545972721098224', '-9.869721435217798', '-11.422709269809275', '-13.651475829363335',
-             '-2.484507608336571', '100.73441323054794', '-1.9646621285864967', '7.5012556775945995',
-             '-0.3800011629537039', '-0.7640964535785315', '1.629286483690521', '-0.08055489127946203',
-             '9.24681989176679', '-0.21328409895068035', '-1.9514708450114995', '-3.088779484394763',
-             '-2.8099423596067936', '-3.401766490933369', '-0.8677703297689732', '12.670210519620014',
-             '-8.977081594799529', '2.1876876828682725']
-
+    @classmethod
+    def plot_1d(self, x, block=True):
         plt.plot(x, 'ro')
-        plt.show()
+        plt.show(block=block)
 
-    def plot_xy(self, data=None):
-        data = self.db.find({"is_collision_free": True})
-        print data
-        x = []
-        y = []
-        for d in data:
-            # print d
-            x.append(d["planning_time"])
-            y.append(d["planning_request"]["samples"])
-        print x, y
+    @classmethod
+    def plot_xy(self, x, y, block=True):
         plt.plot(x, y, 'ro')
-        plt.show()
+        plt.show(block=block)
 
-    def multi_plot(self, title, initial, final, c_x_title, c_y_title):
+    @classmethod
+    def multi_plot(self, title, initial, final, c_x_title, c_y_title, block=True):
         samples = len(final[0])
         x = [i for i in range(samples)]
         num_joints = len(final)
@@ -41,9 +24,6 @@ class Plotter:
         fig.text(0.5, 0.01, c_x_title, ha='center')
         fig.text(0.01, 0.5, c_y_title, va='center', rotation='vertical')
         fig.tight_layout(pad=0.4)
-        # Use the pyplot interface to change just one subplot...
-        # plt.sca(axes[1])
-        # plt.yticks(range(5), [1, 2, 3, 4, 5], color='red')
         sub = []
         sub1 = []
         # for i in range(num_joints):
@@ -64,39 +44,5 @@ class Plotter:
         #                       ncol=2, shadow=True, title="Legend", fancybox=True)
         fig.suptitle("Trajetory Optimization: Initial vs Final trajectory", fontsize=14)
 
-        #plt.show()
-        plt.show(block=False)
-
-        # for index, trajectory in enumerate(start_state):
-            # if (index == 0 or index == len(self.trajectories) - 1):
-        # count = 0
-        # num_joints = len(start_state)
-        # for joint_name, traj in start_state.items():
-        #     # plt.plot(traj, label=joint_name, marker='x')
-        #     count += 1
-
-            # plt.subplot(7, 1, count)
-            # if index == 0:
-            #     label = "initial"
-            # elif index == 6:
-            #     label = "final"
-            # plt.plot(traj, label=label, marker='x')
-
-            # ax = plt.subplot(num_joints, 1, count)
-            # ax.plot(traj, label=joint_name, marker='x')
-
-            # plt.title('A tale of 2 subplots')
-            # plt.ylabel('Damped oscillation')
-
-        # plt.scatter(x, y, c='b', marker='x', label='1')
-        # plt.scatter(x, y, c='r', marker='s', label='-1')
-        # plt.legend(loc='upper left')
-        # plt.show()
-        # plt.show(block=False)
-
-
-if __name__ == '__main__':
-    plotter = Plotter()
-    # plotter.plot_xy()
-    # plotter.multi_plot()
-    plotter.plot_1d()
+        plt.ion()
+        plt.show(block=block)

@@ -13,10 +13,11 @@ from collections import OrderedDict
             (1/2) * x.T * P * x + q.T * x
 
         subject to
-            lbC <= G * x <= ubC
+            lbG <= G * x <= ubG
+            lbD <= D * x <= ubD
             A * x == b
             lb <= x <= ub
-
+            D - dynamic constraint
 '''
 
 
@@ -38,6 +39,8 @@ class SQPsolver:
         self.initial_guess = []
         self.status = "-1"
         self.norm_ = 1
+        self.rho_k = 0
+        self.is_converged = False
 
         self.solver_config = OrderedDict()
 
@@ -256,7 +259,6 @@ class SQPsolver:
         constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
 
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
-        # print problem.get_problem_data(self.solver)[0]
         if self.solver == "CVXOPT":
             start = time.time()
             result = problem.solve(solver=self.solver, warm_start=True, kktsolver=cvxpy.ROBUST_KKTSOLVER, verbose=False)
@@ -273,12 +275,13 @@ class SQPsolver:
         return abs(x - y) <= 0.5 * tolerance * (x + y)
 
     def get_constraints_norm(self, x_k):
-        con1, con2, con3 = self.evaluate_constraints(x_k)
+        con1, con2, con3, cons4 = self.evaluate_constraints(x_k)
         max_con1 = (np.linalg.norm(con1, np.inf))
         max_con2 = (np.linalg.norm(con2, np.inf))
         max_con3 = (np.linalg.norm(con3, np.inf))
+        max_con4 = (np.linalg.norm(con3, np.inf))
 
-        return max_con1, max_con2, max_con3
+        return max_con1, max_con2, max_con3, max_con4
 
     def test_prob(self, p, problem, constraints, penalty, delta, solver, trust_region_norm, penalty_norm):
         from scripts.cvxpy_optimizer.solver_cvxpy2 import ConvexOptimizer
@@ -303,54 +306,39 @@ class SQPsolver:
         max_penalty = float(self.solver_config["max_penalty"])
         min_trust_box_size = float(self.solver_config["min_trust_region_size"])
         max_trust_box_size = float(self.solver_config["max_trust_region_size"])
-
         trust_shrink_ratio = float(self.solver_config["trust_shrink_ratio"])
         trust_expand_ratio = float(self.solver_config["trust_expand_ratio"])
-
         trust_good_region_ratio = float(self.solver_config["trust_good_region_ratio"])
         trust_bad_region_ratio = float(self.solver_config["trust_bad_region_ratio"])
         max_iteration = float(self.solver_config["max_iteration"])
-
         min_actual_redution = float(self.solver_config["min_actual_redution"])
         min_x_redution = float(self.solver_config["min_x_redution"])
-
         const_violation_tolerance = float(self.solver_config["const_violation_tolerance"])
 
         x_k = copy.copy(x_0)
-
         iteration_count = 0
         check_for_constraints = False
-
         is_adjust_penalty = False
-
-        same_trust_region_count = 0
-        old_trust_region = copy.copy(trust_box_size)
-
+        dynamic_constraints_satisfied = False
         actual_reduction = 1000
 
-        rho_k = 0
-        old_rho_k = 0
+        self.rho_k = 0
+        self.is_converged = False
         inter_status = "-1"
+
         p_k = [0] * len(x_0)
         last_p_k = [0] * len(x_0)
-
-        dynamic_constraints_satisfied = False
-
         p.value = copy.deepcopy(p_0.value)
 
         while penalty.value <= max_penalty:
-            # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
             self.num_qp_iterations += 1
             self.num_sqp_iterations += 1
             while iteration_count < max_iteration:
-
                 iteration_count += 1
                 self.num_qp_iterations += 1
-                # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
-                    # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                     self.D, self.lbD, self.ubD = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
                     self.num_qp_iterations += 1
@@ -388,24 +376,24 @@ class SQPsolver:
 
                         if predicted_reduction == 0:
                             predicted_reduction = 0.0000001
-                        rho_k = actual_reduction / predicted_reduction
+                        self.rho_k = actual_reduction / predicted_reduction
                         self.predicted_costs.append(predicted_reduction)
                         self.actual_costs.append(actual_reduction)
                         self.problem_costs.append(prob_value)
 
                         self.logger.debug("\n x_k " + str(x_k))
-                        self.logger.debug("rho_k " + str(rho_k))
+                        self.logger.debug("rho_k " + str(self.rho_k))
 
                         if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                             penalty.value *= trust_expand_ratio
                             break
 
-                        if rho_k >= trust_good_region_ratio:
+                        if self.rho_k >= trust_good_region_ratio:
                             trust_box_size = np.fmin(trust_box_size * trust_expand_ratio, max_trust_box_size)
                             self.logger.debug("expanding trust region" + str(trust_box_size))
                             x_k += p_k
                             break
-                        elif rho_k <= trust_bad_region_ratio:
+                        elif self.rho_k <= trust_bad_region_ratio:
                             trust_box_size *= trust_shrink_ratio
                             self.logger.debug("shrinking trust region " + str(trust_box_size))
                             x_k -= p_k
@@ -425,16 +413,16 @@ class SQPsolver:
                     break
 
                 if self.is_objective_function_converged(actual_reduction, min_actual_redution):
-                    is_objective_converged = True
+                    self.is_converged = True
                     inter_status = "actual reduction is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"
                     break
                 # else:
-                #     is_converged = False
+                #     self.is_converged = False
 
                 if self.is_x_converged(x_k, p_k, min_x_redution):
-                    is_x_converged = True
+                    self.is_converged = True
                     inter_status = "reduction in x is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"
@@ -442,7 +430,7 @@ class SQPsolver:
             if self.is_constraints_satisfied(x_k, p, const_violation_tolerance):
                 if callback_function is not None:
                     if dynamic_constraints_satisfied:
-                        is_converged = True
+                        self.is_converged = True
                         if inter_status != "-1":
                             inter_status += " and"
                         else:
@@ -452,9 +440,9 @@ class SQPsolver:
                         self.status = "Solved"
                         break
                     else:
-                        is_converged = False
+                        self.is_converged = False
                 else:
-                    is_converged = True
+                    self.is_converged = True
                     if inter_status != "-1":
                         inter_status += " and"
                     else:
@@ -464,13 +452,11 @@ class SQPsolver:
                     self.status = "Solved"
                     break
             else:
-                is_converged = False
-                is_objective_converged = False
-                is_x_converged = False
+                self.is_converged = False
                 check_for_constraints = False
                 dynamic_constraints_satisfied = False
 
-            if is_converged or dynamic_constraints_satisfied:
+            if self.is_converged or dynamic_constraints_satisfied:
                 break
             penalty.value *= 10
             iteration_count = 0

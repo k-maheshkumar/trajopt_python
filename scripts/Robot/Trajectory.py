@@ -1,7 +1,7 @@
 import numpy as np
 from scripts.utils.dict import DefaultOrderedDict
 from collections import OrderedDict
-from scripts.plotter.results import Plotter
+from scripts.plotter.results import Plotter as plt
 
 class Trajectory:
     def __init__(self):
@@ -13,7 +13,6 @@ class Trajectory:
         self.__trajectories = []
         self.__final = None
         self.__trajectory_group = None
-        self.__plotter = Plotter()
 
     def get_single_joint_trajectory(self, joint_index):
         if joint_index == self.__trajectory.shape[0]:
@@ -70,5 +69,6 @@ class Trajectory:
 
     def plot_trajectories(self):
 
-        self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.initial, self.trajectory_by_name.values(),
-                                  "Time steps (t)", "Joint angle (q)")
+        plt.multi_plot(self.trajectory_by_name.keys(), self.initial, self.trajectory_by_name.values(),
+                                  # "Time steps (t)", "Joint angle (q)", block=True)
+                                  "Samples", "Joint angle (q)", block=True)

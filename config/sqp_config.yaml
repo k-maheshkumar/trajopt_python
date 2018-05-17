@@ -1,16 +1,11 @@
 sqp:
   const_violation_tolerance: 1e-2
   decimals_to_round: 5.0
-  improve_ratio_threshold: 0.25
   initial_penalty: 2
   max_iteration: 50
   max_penalty: 1e4
   max_trust_region_size: 70
   min_actual_redution: 1e-4
-  min_actual_worse_redution: -100
-  min_equality_norm: 1e-2
-  min_improve_ratio: 0.001
-  min_model_improve: 1e-4
   min_trust_region_size: 1e-4
   min_x_redution: 1e-4
   penalty_norm: 1
@@ -23,6 +18,6 @@ sqp:
   trust_bad_region_ratio: 0.25
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
-  trust_region_norm: inf
+  trust_region_norm: 2
   trust_region_size: 30.0
   trust_shrink_ratio: 0.25

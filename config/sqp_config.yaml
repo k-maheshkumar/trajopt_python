@@ -8,7 +8,7 @@ sqp:
   min_actual_redution: 1e-4
   min_trust_region_size: 1e-4
   min_x_redution: 1e-4
-  penalty_norm: 1
+  penalty_norm: 2
   replace_none_with: 10e5
   solver:
   - ECOS
@@ -19,5 +19,5 @@ sqp:
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
   trust_region_norm: 2
-  trust_region_size: 30.0
+  trust_region_size: 2
   trust_shrink_ratio: 0.25

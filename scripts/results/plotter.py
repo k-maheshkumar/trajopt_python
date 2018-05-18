@@ -10,7 +10,7 @@ class Plotter:
 
     @classmethod
     def x_y_best_fit_curve(cls, x, y, xlabel, ylabel, title=None, deg=3):
-
+        plt.figure()
         coeffs = np.polyfit(x, y, deg)
         x2 = np.arange(min(x) - 1, max(x) + 1, .01)  # use more points for a smoother plot
         y2 = np.polyval(coeffs, x2)  # Evaluates the polynomial for each x2 value
@@ -39,11 +39,11 @@ class Plotter:
         plt.ylabel(ylabel, fontsize=16)
         plt.plot(x, y)
         # plt.plot(x, y)
-        plt.show()
+
 
     @classmethod
     def multi_plot_best_fit_curve(self, xs, ys, labels, title, c_x_title, c_y_title, deg=2):
-
+        plt.figure()
         for x, y, l in zip(xs, ys, labels):
             coeffs = np.polyfit(x, y, deg)
             x2 = np.arange(min(x) - 1, max(x) + 1, .01)  # use more points for a smoother plot
@@ -54,6 +54,10 @@ class Plotter:
         plt.title(title)
         plt.xlabel(c_x_title)
         plt.ylabel(c_y_title)
+
+
+    @classmethod
+    def show(self):
         plt.show()
 
 

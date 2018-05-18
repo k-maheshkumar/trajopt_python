@@ -285,8 +285,12 @@ class TrajectoryOptimizationPlanner():
             planning_request["no of links"] = len(self.world.robot_info["joint_infos"])
             planning_request["collision_safe_distance"] = d_safe
             planning_request["collision_check_distance"] = d_check
+            planning_request["no_scene_items"] = len(self.world.scene_items)
+
             result = OrderedDict()
-            result["type"] = "kuka_only_penalty_1_vs_2"
+
+            result["type"] = "donbot_arm_only_random_trust_region"
+
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
             result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
             result["actual_reductions"] = self.robot.planner.sqp_solver.actual_reductions
@@ -307,13 +311,7 @@ class TrajectoryOptimizationPlanner():
             result["solver_config"] = self.robot.planner.sqp_solver.solver_config
 
             self.db_driver.insert(result)
-            # res = self.db_driver.find({"is_collision_free": True})
-            # res = self.db_driver.find({"planning_request.samples": 10})
 
-            # print "ghfdkghdghdl: ", res
-
-            # for i in res:
-            #     print i
 
 if __name__ == '__main__':
 

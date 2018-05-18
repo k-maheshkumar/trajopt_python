@@ -30,8 +30,10 @@ class Analyzer:
         # plotter.plot_xy(x, y, "samples", "planning_time")
 
         self.plot_avg_planning_time_vs_samples()
-        # self.plot_avg_planning_time_vs_trust_region()
-        # self.plot_avg_planning_time_vs_penalty_1_and_2()
+        self.plot_avg_planning_time_vs_trust_region()
+        self.plot_avg_planning_time_vs_penalty_1_and_2()
+        self.iterations_vs_trust_region()
+        plotter.show()
 
     def plot_avg_planning_time_vs_samples(self):
         result = list(self.db.find({"solver_config.trust_region_size": 30}))
@@ -76,42 +78,62 @@ class Analyzer:
         # print self.get_rounded_off_list(avg_solving_time)
         # print self.get_rounded_off_list(avg_collision_check_time)
         # print self.get_rounded_off_list(avg_prob_model_time, 5)
-        print self.get_rounded_off_list(avg_cost, 3)
+        # print self.get_rounded_off_list(avg_cost, 3)
         labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
         plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Time (S)",
                                           deg=8)
 
     def plot_avg_planning_time_vs_trust_region(self):
         result = list(self.db.find({"type": "kuka_only_random_trust_region"}))
+        # result = list(self.db.find({"type": "donbot_arm_only_random_trust_region"}))
         # print len(result)
         trust_region = DefaultOrderedDict(list)
+        plan_t = DefaultOrderedDict(list)
         sol_t = DefaultOrderedDict(list)
         col_t = DefaultOrderedDict(list)
         prb_t = DefaultOrderedDict(list)
         for res in result:
             trust = res["solver_config"]["trust_region_size"]
-            trust_region[trust].append(res["planning_time"])
+            trust_region[trust].append(trust)
+            plan_t[trust].append(res["planning_time"])
             sol_t[trust].append(res["solving_time"])
             col_t[trust].append(res["collision_check_time"])
             prb_t[trust].append(res["prob_model_time"])
-        print trust_region.keys()
-        tr = []
         avg_planning_time = []
         avg_solving_time = []
         avg_collision_check_time = []
         avg_prob_model_time = []
         trust_region = OrderedDict(sorted(trust_region.items()))
         for k in trust_region:
-            print k, len(trust_region[k])
-            tr.append(k)
-            avg_planning_time.append(sum(trust_region[k]) / len(trust_region[k]))
+            avg_planning_time.append(sum(plan_t[k]) / len(plan_t[k]))
             avg_solving_time.append(sum(sol_t[k]) / len(sol_t[k]))
             avg_collision_check_time.append(sum(col_t[k]) / len(col_t[k]))
             avg_prob_model_time.append(sum(prb_t[k]) / len(prb_t[k]))
         ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time]
-        xs = [tr] * len(ys)
-        print sorted(tr)
+        xs = [trust_region.keys()] * len(ys)
         labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
+        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Time", "Time (S)",
+                                          deg=2)
+
+    def iterations_vs_trust_region(self):
+        result = list(self.db.find({"type": "kuka_only_random_trust_region"}))
+        trust_region = DefaultOrderedDict(list)
+        qp_iters = DefaultOrderedDict(list)
+        sqp_iters = DefaultOrderedDict(list)
+        for res in result:
+            trust = res["solver_config"]["trust_region_size"]
+            trust_region[trust].append(trust)
+            qp_iters[trust].append(res["num_qp_iterations"])
+            sqp_iters[trust].append(res["num_sqp_iterations"])
+        avg_qp_iters = []
+        avg_sqp_iters = []
+        trust_region = OrderedDict(sorted(trust_region.items()))
+        for k in trust_region:
+            avg_qp_iters.append(sum(qp_iters[k]) / len(qp_iters[k]))
+            avg_sqp_iters.append(sum(sqp_iters[k]) / len(sqp_iters[k]))
+        ys = [avg_qp_iters, avg_sqp_iters]
+        xs = [trust_region.keys()] * len(ys)
+        labels = ["Number of qp iterations", "Num sqp iterations"]
         plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Time", "Time (S)",
                                           deg=2)
 
@@ -128,7 +150,6 @@ class Analyzer:
         prb_t1 = DefaultOrderedDict(list)
         for res in result:
             p = res["solver_config"]["penalty_norm"]
-            print "norm . .. ", p
             if p == 1:
                 trust = res["solver_config"]["trust_region_size"]
                 penalty_norm[trust].append(res["planning_time"])
@@ -142,7 +163,6 @@ class Analyzer:
                 col_t1[trust].append(res["collision_check_time"])
                 prb_t1[trust].append(res["prob_model_time"])
 
-        print penalty_norm.keys()
         tr = []
         avg_planning_time = []
         avg_solving_time = []
@@ -173,7 +193,7 @@ class Analyzer:
         ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time,
               avg_planning_time1, avg_solving_time1, avg_collision_check_time1, avg_prob_model_time1]
         xs = [tr, tr1] * (len(ys) / 2)
-        print sorted(tr)
+
         labels = ["penalty 1: planning_time", "penalty 1: solving_time",
                   "penalty 1: collision_check_time", "penalty 1: prob_model_time",
                   "penalty 2: planning_time1", "penalty 2: solving_time1",
@@ -253,57 +273,6 @@ class Analyzer:
         #
         # self.get_result()
 
-    def get_avg(self):
-        for k, v in data.iteritems():
-            # print k, v
-            for d in v:
-                if k == 23:
-                    self.num_iterations[k] += v
-
-    def get_result(self):
-
-        for i in range(30):
-            result = self.db.find({"planning_request.samples": i})
-            count = 0
-            for res in result:
-                if res["is_collision_free"]:
-                    # print res
-                    print res["num_iterations"]
-                    count += 1
-                    self.num_iterations[i] += res["num_iterations"]
-                    self.cost_improvement[i] += res["cost_improvement"]
-                    self.collision_check_time[i] += res["collision_check_time"]
-                    self.prob_model_time[i] += res["prob_model_time"]
-                    self.planning_time[i] += res["planning_time"]
-                    # print i, res["num_iterations"], count
-                if count:
-                    self.num_iterations[i] /= count
-                    self.cost_improvement[i] /= count
-                    self.collision_check_time[i] /= count
-                    self.prob_model_time[i] /= count
-                    self.planning_time[i] /= count
-        print self.num_iterations
-        print self.cost_improvement
-        print self.collision_check_time
-        print self.prob_model_time
-        print self.planning_time
-
-        for (k,v), (k1,v1), (k2,v2), (k3,v3) in zip(self.num_iterations.items(), self.planning_time.items(),
-                                           self.collision_check_time.items(), self.prob_model_time.items()):
-            print v, v2
-            x = v / 2
-            y = v1
-            z = v2 * 1
-            k = v3 * 100
-            ax = plt.subplot(111)
-            w = 0.3
-            ax.bar(x - w, y, width=w, color='b', align='center')
-            ax.bar(x, z, width=w, color='g', align='center')
-            ax.bar(x + w, k, width=w, color='r', align='center')
-            # ax.xaxis_date()
-            ax.autoscale(tight=True)
-
-        plt.show()
 
 
 if __name__ == '__main__':

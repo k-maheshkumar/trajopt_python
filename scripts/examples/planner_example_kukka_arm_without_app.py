@@ -13,7 +13,7 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
-            # "use_gui": True,
+             "use_gui": True,
             # "verbose": "DEBUG",
             "log_file": False,
             "save_problem": True,

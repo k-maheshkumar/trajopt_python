@@ -21,7 +21,7 @@ class PlannerExample:
             "use_gui": True,
             "verbose": "INFO",
             "log_file": True,
-            # "save_problem": True,
+            "save_problem": True,
             "robot_config": "robot_config_don_bot.yaml",
             "plot_trajectory": True,
             "db_name": "Trajectory_planner_evaluation"
@@ -98,16 +98,17 @@ class PlannerExample:
 
         self.planner.reset_robot_to(start_state, group)
 
-        goal_state = "above_shelf1"
-        group = "ur5_arm"
+        # goal_state1 = "above_shelf1"
+        # group1 = "ur5_arm"
 
         duration = 10
         samples = 20
         collision_check_distance = 0.15
         collision_safe_distance = 0.1
 
-        _, status, trajectory =  self.planner.get_trajectory(samples=samples, duration=duration,
+        _, status, trajectory = self.planner.get_trajectory(samples=samples, duration=duration,
                                                             group=group, goal_state=goal_state,
+                                                            # group=group1, goal_state=goal_state1,
                                                             collision_safe_distance=collision_safe_distance,
                                                             collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)

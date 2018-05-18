@@ -188,11 +188,21 @@ class TrajectoryOptimizationPlanner():
 
         return "Trajectory execution completed"
 
-    def reset_robot_to(self, **kwargs):
-        if "group" in kwargs:
-            group = kwargs["group"]
-            if type(group) is str:
-                group = self.robot_config["joints_groups"][kwargs["group"]]
+    def reset_robot_to(self, state, group):
+        if type(group) is str:
+            group = self.robot_config["joints_groups"][group]
+        if type(state) is str:
+            state = self.robot_config["joint_configurations"][state]
+
+        if type(state) is dict or type(state) is OrderedDict:
+            state = state.values()
+        self.world.reset_joint_states(self.robot.id, state, group)
+
+    def reset_robot_to_random_state(self, group):
+        if type(group) is str:
+            group = self.robot_config["joints_groups"][group]
+        if type(group) is dict or type(group) is OrderedDict:
+            group = group.values()
         status = self.world.reset_joints_to_random_states(self.robot, group)
         self.world.step_simulation_for(0.2)
 

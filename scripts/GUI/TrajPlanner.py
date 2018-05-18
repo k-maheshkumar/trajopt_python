@@ -259,7 +259,7 @@ class PlannerGui(QtGui.QMainWindow):
             status = "Please wait, random pose for the joints are being set.."
             self.statusBar.showMessage(self.last_status + status)
             if group is not None:
-                status = self.planner.reset_robot_to(group=group)
+                status = self.planner.reset_robot_to_random_state(group)
                 self.statusBar.showMessage(self.last_status + status)
             else:
                 self.statusBar.clearMessage()

@@ -17,7 +17,7 @@ robot:
         lbr_iiwa_joint_6: 1.574
         lbr_iiwa_joint_7: 1.571
 
-      pick:
+      place:
         lbr_iiwa_joint_1: -0.08180533826032865
         lbr_iiwa_joint_2: 1.5474152457596664
         lbr_iiwa_joint_3: -1.5873548294514912
@@ -25,7 +25,7 @@ robot:
         lbr_iiwa_joint_5: 1.5979105177314896
         lbr_iiwa_joint_6: 1.5857854098720727
         lbr_iiwa_joint_7: 1.5726221954434347
-      place:
+      pick:
         lbr_iiwa_joint_1: -2.4823357809267463
         lbr_iiwa_joint_2: 1.4999975516996142
         lbr_iiwa_joint_3: -1.5762726255540713
@@ -33,6 +33,40 @@ robot:
         lbr_iiwa_joint_5: 1.5855963769735366
         lbr_iiwa_joint_6: 1.5770985888989753
         lbr_iiwa_joint_7: 1.5704531145724918
+      loc1:
+        lbr_iiwa_joint_1: -0.168198299407959
+        lbr_iiwa_joint_2: -1.1684520244598389
+        lbr_iiwa_joint_3: 1.030663013458252
+        lbr_iiwa_joint_4: 1.3227758407592773
+        lbr_iiwa_joint_5: 2.6547374725341797
+        lbr_iiwa_joint_6: 1.1023132801055908
+        lbr_iiwa_joint_7: 0.0
+      loc2:
+        lbr_iiwa_joint_1: 2.96705961227417
+        lbr_iiwa_joint_2: -1.1243594884872437
+        lbr_iiwa_joint_3: 0.28108978271484375
+        lbr_iiwa_joint_4: 0.8598041534423828
+        lbr_iiwa_joint_5: 2.96705961227417
+        lbr_iiwa_joint_6: 0.6613879203796387
+        lbr_iiwa_joint_7: 0.0
+      loc3:
+        lbr_iiwa_joint_1: 0.6246442794799805
+        lbr_iiwa_joint_2: 1.6975624561309814
+        lbr_iiwa_joint_3: -2.0300934314727783
+        lbr_iiwa_joint_4: -1.5873310565948486
+        lbr_iiwa_joint_5: -1.5303781032562256
+        lbr_iiwa_joint_6: -1.675516128540039
+        lbr_iiwa_joint_7: 1.5110876560211182
+      loc4:
+        lbr_iiwa_joint_1: -2.3424153327941895
+        lbr_iiwa_joint_2: 1.918025016784668
+        lbr_iiwa_joint_3: -2.685969829559326
+        lbr_iiwa_joint_4: -1.7196086645126343
+        lbr_iiwa_joint_5: -0.24985766410827637
+        lbr_iiwa_joint_6: -0.9479894638061523
+        lbr_iiwa_joint_7: 1.2217304706573486
+
+
 
 #      pick1: [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
 #                      1.5855963769735366, 1.5770985888989753, 1.5704531145724918]

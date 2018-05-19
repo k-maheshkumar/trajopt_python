@@ -137,9 +137,16 @@ class TrajectoryOptimizationPlanner():
             collision_check_distance = 0.1
         #
         status, is_collision_free, trajectory = "goal state in collision", False, -1
+        is_start_state_in_collision = self.world.is_given_state_in_collision(self.robot.id, start_state, group)
+        if is_start_state_in_collision:
+            print "is_start_state_in_collision", is_start_state_in_collision
+            status = "start state in collision"
+            return status, is_collision_free, trajectory
+
         is_goal_in_collision = self.world.is_given_state_in_collision(self.robot.id, goal_state, group)
-        print "is_goal_in_collision", is_goal_in_collision
         if is_goal_in_collision:
+            print "is_goal_in_collision", is_goal_in_collision
+            status = "goal state in collision"
             return status, is_collision_free, trajectory
 
         current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
@@ -250,20 +257,24 @@ class TrajectoryOptimizationPlanner():
         model_costs =  self.robot.planner.sqp_solver.model_costs
         actual_reduction_improve, predicted_reduction_improve, actual_cost_improve, model_cost_improve = 0, 0, 0, 0
         if len(act_redutcion):
-            actual_reduction_improve = act_redutcion[len(act_redutcion)-2] - act_redutcion[len(act_redutcion)-1]
-            actual_reduction_improve /= (act_redutcion[len(act_redutcion)-2] + 0.000000001)
+            # actual_reduction_improve = act_redutcion[len(act_redutcion)-2] - act_redutcion[len(act_redutcion)-1]
+            actual_reduction_improve = act_redutcion[0] - act_redutcion[-1]
+            actual_reduction_improve /= (act_redutcion[0] + 0.000000001)
             actual_reduction_improve *= 100
         if len(pred_reduction):
-            predicted_reduction_improve = pred_reduction[len(pred_reduction)-2] - pred_reduction[len(pred_reduction)-1]
-            predicted_reduction_improve /= (pred_reduction[len(pred_reduction)-2] + 0.000000001)
+            # predicted_reduction_improve = pred_reduction[len(pred_reduction)-2] - pred_reduction[len(pred_reduction)-1]
+            predicted_reduction_improve = pred_reduction[0] - pred_reduction[-1]
+            predicted_reduction_improve /= (pred_reduction[0] + 0.000000001)
             predicted_reduction_improve *= 100
         if len(actual_costs):
-            actual_cost_improve = actual_costs[len(actual_costs)-2] - actual_costs[len(actual_costs)-1]
-            actual_cost_improve /= (actual_costs[len(actual_costs)-2] + 0.000000001)
+            # actual_cost_improve = actual_costs[len(actual_costs)-2] - actual_costs[len(actual_costs)-1]
+            actual_cost_improve = actual_costs[0] - actual_costs[-1]
+            actual_cost_improve /= (actual_costs[0] + 0.000000001)
             actual_cost_improve *= 100
         if len(actual_costs):
-            model_cost_improve = model_costs[len(model_costs)-2] - model_costs[len(model_costs)-1]
-            model_cost_improve /= (model_costs[len(model_costs)-2] + 0.000000001)
+            # model_cost_improve = model_costs[len(model_costs)-2] - model_costs[len(model_costs)-1]
+            model_cost_improve = model_costs[0] - model_costs[-1]
+            model_cost_improve /= (model_costs[0] + 0.000000001)
             model_cost_improve *= 100
         print "samples", samples
         print "no of links", len(self.world.robot_info["joint_infos"])
@@ -297,7 +308,8 @@ class TrajectoryOptimizationPlanner():
 
             result = OrderedDict()
 
-            result["type"] = "donbot_arm_only_random_trust_region"
+            result["type"] = "kuka_random_state_and_obstacles"
+            result["sub_type"] = "prob_4_6"
 
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
             result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations

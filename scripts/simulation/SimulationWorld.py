@@ -756,7 +756,7 @@ class SimulationWorld(ISimulationWorldBase):
 
     def reset_joints_to_random_states(self, robot_id, joints):
 
-        motor_dir = np.random.uniform(-1, 1, size=len(joints))
+        motor_dir = np.random.uniform(-2.96, 2.96, size=len(joints))
         half_pi = 1.57079632679
         for j, joint in enumerate(joints):
             sim.resetJointState(robot_id, self.joint_name_to_id[joint], motor_dir[j] * half_pi * (-(-1)**j))
@@ -798,7 +798,7 @@ class SimulationWorld(ISimulationWorldBase):
         param_ids = []
         current_state = self.get_current_states_for_given_joints(robot_id, group)
         exit_id = sim.addUserDebugParameter("exit".decode("utf-8"), 0, 1, 0)
-        print_pose_id = sim.addUserDebugParameter("print_pose".decode("utf-8"), 0, 1, 0)
+        print_pose_id = sim.addUserDebugParameter("write_pose".decode("utf-8"), 0, 1, 0)
 
         for i, j in enumerate(group):
             info = self.joint_name_to_info[j]
@@ -823,15 +823,17 @@ class SimulationWorld(ISimulationWorldBase):
                 if param == print_pose_id:
                     if param_value > 0:
                         data = OrderedDict(zip(group, target_pos))
-                        data = {"start": data}
+                        data = {"loc" + str(i): data}
                         if not wrote:
-                            ConfigParser.save_to_file(file_name, data)
+                            ConfigParser.save_to_file(file_name, data, mode="ab")
                             wrote = True
+                    if param_value == 0:
+                        wrote = False
                 elif param == exit_id:
                     if param_value > 0:
                         # print "current pose at exit: ", target_pos
                         data = OrderedDict(zip(group, target_pos))
-                        data = {"end": data}
+                        data = {"loc" + str(i): data}
                         ConfigParser.save_to_file(file_name, data, mode="ab")
                         exit(0)
                 else:

@@ -208,6 +208,14 @@ class TrajectoryOptimizationPlanner():
 
         return status
 
+    def get_group_names(self, group):
+        if type(group) is str:
+            group = self.robot_config["joints_groups"][group]
+        if type(group) is dict or type(group) is OrderedDict:
+            group = group.values()
+
+        return group
+
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
 
         constraints, lower_limit, upper_limit = None, None, None

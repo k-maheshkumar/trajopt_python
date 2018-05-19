@@ -9,6 +9,7 @@ from scripts.utils.utils import Utils as utils
 from collections import OrderedDict
 from scripts.utils.dict import DefaultOrderedDict
 from scripts.simulation.bulletTypes import *
+from scripts.utils.yaml_paser import ConfigParser
 
 
 class SimulationWorld(ISimulationWorldBase):
@@ -789,3 +790,52 @@ class SimulationWorld(ISimulationWorldBase):
         start = time.time()
         while time.time() < start + seconds:
             sim.stepSimulation()
+
+    def manual_control(self, robot_id, group, use_current_state=False):
+        wrote = False
+        file_name = "./state_end_state.yaml"
+        joint_ids = []
+        param_ids = []
+        current_state = self.get_current_states_for_given_joints(robot_id, group)
+        exit_id = sim.addUserDebugParameter("exit".decode("utf-8"), 0, 1, 0)
+        print_pose_id = sim.addUserDebugParameter("print_pose".decode("utf-8"), 0, 1, 0)
+
+        for i, j in enumerate(group):
+            info = self.joint_name_to_info[j]
+            joint_name = info.joint_name
+            joint_type = info.joint_type
+            if (joint_type == sim.JOINT_PRISMATIC or joint_type == sim.JOINT_REVOLUTE):
+                joint_ids.append(j)
+                if use_current_state:
+                    state = current_state[i]
+                else:
+                    state = 0
+                param_ids.append(sim.addUserDebugParameter(joint_name.decode("utf-8"),
+                                                           info.joint_lower_limit, info.joint_upper_limit, state))
+        param_ids.append(exit_id)
+        param_ids.append(print_pose_id)
+
+        while (True):
+            target_pos = []
+            for i in range(len(param_ids)):
+                param = param_ids[i]
+                param_value = sim.readUserDebugParameter(param)
+                if param == print_pose_id:
+                    if param_value > 0:
+                        data = OrderedDict(zip(group, target_pos))
+                        data = {"start": data}
+                        if not wrote:
+                            ConfigParser.save_to_file(file_name, data)
+                            wrote = True
+                elif param == exit_id:
+                    if param_value > 0:
+                        # print "current pose at exit: ", target_pos
+                        data = OrderedDict(zip(group, target_pos))
+                        data = {"end": data}
+                        ConfigParser.save_to_file(file_name, data, mode="ab")
+                        exit(0)
+                else:
+                    target_pos.append(param_value)
+            # print target_pos
+            self.reset_joint_states_to(robot_id, target_pos, group)
+            time.sleep(0.01)

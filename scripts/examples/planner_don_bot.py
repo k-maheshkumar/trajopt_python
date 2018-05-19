@@ -21,7 +21,7 @@ class PlannerExample:
             "use_gui": True,
             "verbose": "INFO",
             "log_file": True,
-            "save_problem": True,
+            # "save_problem": True,
             "robot_config": "robot_config_don_bot.yaml",
             "plot_trajectory": True,
             "db_name": "Trajectory_planner_evaluation"
@@ -98,8 +98,8 @@ class PlannerExample:
 
         self.planner.reset_robot_to(start_state, group)
 
-        # goal_state1 = "above_shelf1"
-        # group1 = "ur5_arm"
+        goal_state1 = "above_shelf1"
+        group1 = "ur5_arm"
 
         duration = 10
         samples = 20
@@ -112,14 +112,25 @@ class PlannerExample:
                                                             collision_safe_distance=collision_safe_distance,
                                                             collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)
-
+        #
         if status:
             self.planner.execute_trajectory()
+
+    def manual_control(self):
+        start_state = "below_shelf"
+        group = "full_body"
+        # group = "ur5_arm"
+
+        self.planner.reset_robot_to(start_state, group)
+
+        group = self.planner.get_group_names(group)
+        self.planner.world.manual_control(self.robot_id, group, use_current_state=True)
 
 
 def main():
     example = PlannerExample()
     example.run()
+    # example.manual_control()
 
 
 if __name__ == '__main__':

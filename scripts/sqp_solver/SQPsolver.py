@@ -41,6 +41,7 @@ class SQPsolver:
         self.norm_ = 1
         self.rho_k = 0
         self.is_converged = False
+        self.is_initialized = False
 
         self.solver_config = OrderedDict()
 
@@ -343,8 +344,9 @@ class SQPsolver:
                     self.D, self.lbD, self.ubD = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
                     self.num_qp_iterations += 1
-                    if callback_function is not None:
-                        if self.D is not None:
+                    if callback_function is not None or not self.is_initialized:
+                        if self.D is not None or not self.is_initialized:
+                            self.is_initialized = True
                             p_k, model_objective_at_p_k, \
                             actual_objective_at_x_k, solver_status, prob_value = self.solve_problem(x_k, penalty, p,
                                                                                                     trust_box_size,

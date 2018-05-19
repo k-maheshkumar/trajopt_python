@@ -40,6 +40,17 @@ class Plotter:
         plt.plot(x, y)
         # plt.plot(x, y)
 
+    @classmethod
+    def bar_chart(self, xs, ys, labels, title, c_x_title, c_y_title, deg=2):
+        width = 0.5  # the width of the bars: can also be len(x) sequence
+        colors = ['r', 'b', 'g']
+        plt.figure()
+        for x, y, l, c in zip(xs, ys, labels, colors):
+            plt.bar(x, y, label=l, color=c)
+            plt.legend(loc='upper left')
+        plt.title(title)
+        plt.xlabel(c_x_title)
+        plt.ylabel(c_y_title)
 
     @classmethod
     def multi_plot_best_fit_curve(self, xs, ys, labels, title, c_x_title, c_y_title, deg=2):
@@ -125,6 +136,7 @@ class Plotter:
 
 
 if __name__ == '__main__':
-    plotter = Plotter()
+
     # plotter.plot_xy()
-    plotter.multi_plot()
+    # plotter.multi_plot()
+    Plotter.bar_chart()

@@ -30,9 +30,9 @@ class Analyzer:
         # plotter.plot_xy(x, y, "samples", "planning_time")
 
         self.plot_avg_planning_time_vs_samples()
-        self.plot_avg_planning_time_vs_trust_region()
-        self.plot_avg_planning_time_vs_penalty_1_and_2()
-        self.iterations_vs_trust_region()
+        # self.plot_avg_planning_time_vs_trust_region()
+        # self.plot_avg_planning_time_vs_penalty_1_and_2()
+        # self.iterations_vs_trust_region()
         plotter.show()
 
     def plot_avg_planning_time_vs_samples(self):
@@ -71,7 +71,8 @@ class Analyzer:
             avg_collision_check_time.append(sum(col_t[k]) / len(col_t[k]))
             avg_prob_model_time.append(sum(prb_t[k]) / len(prb_t[k]))
             avg_cost.append(sum(cost[k]) / len(cost[k]))
-        ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time]
+        # ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time]
+        ys = [avg_solving_time, avg_collision_check_time, avg_prob_model_time]
         xs = [samples] * len(ys)
         # print samples
         # print self.get_rounded_off_list(avg_planning_time)
@@ -79,8 +80,10 @@ class Analyzer:
         # print self.get_rounded_off_list(avg_collision_check_time)
         # print self.get_rounded_off_list(avg_prob_model_time, 5)
         # print self.get_rounded_off_list(avg_cost, 3)
-        labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
-        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Time (S)",
+        # labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
+        labels = ["solving_time", "collision_check_time", "prob_model_time"]
+        # plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Time (S)",
+        plotter.bar_chart(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Average Time (S)",
                                           deg=8)
 
     def plot_avg_planning_time_vs_trust_region(self):

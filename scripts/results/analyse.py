@@ -29,11 +29,14 @@ class Analyzer:
         #
         # plotter.plot_xy(x, y, "samples", "planning_time")
 
-        self.plot_avg_planning_time_vs_samples()
+        # self.plot_avg_planning_time_vs_samples()
         # self.plot_avg_planning_time_vs_trust_region()
         # self.plot_avg_planning_time_vs_penalty_1_and_2()
         # self.iterations_vs_trust_region()
-        plotter.show()
+        # plotter.show()
+        result = list(self.db.find({"type": "kuka_random_state_and_obstacles"}))
+
+        print len(result)
 
     def plot_avg_planning_time_vs_samples(self):
         result = list(self.db.find({"solver_config.trust_region_size": 30}))
@@ -204,6 +207,12 @@ class Analyzer:
         plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Time", "Time (S)",
                                           deg=2)
 
+    @classmethod
+    def temq(self):
+
+        result = list(self.db.find({"type": "kuka_random_state_and_obstacles"}))
+        print result
+
     def get_rounded_off_list(self, data, decimal=3):
         return [round(float(d), decimal) for d in data]
 
@@ -281,3 +290,4 @@ class Analyzer:
 if __name__ == '__main__':
 
     res = Analyzer()
+

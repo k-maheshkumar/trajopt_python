@@ -791,9 +791,8 @@ class SimulationWorld(ISimulationWorldBase):
         while time.time() < start + seconds:
             sim.stepSimulation()
 
-    def manual_control(self, robot_id, group, use_current_state=False):
+    def manual_control(self, robot_id, group, file_name="./state_end_state.yaml", use_current_state=False):
         wrote = False
-        file_name = "./state_end_state.yaml"
         joint_ids = []
         param_ids = []
         current_state = self.get_current_states_for_given_joints(robot_id, group)
@@ -810,6 +809,7 @@ class SimulationWorld(ISimulationWorldBase):
                     state = current_state[i]
                 else:
                     state = 0
+                print joint_name, state
                 param_ids.append(sim.addUserDebugParameter(joint_name.decode("utf-8"),
                                                            info.joint_lower_limit, info.joint_upper_limit, state))
         param_ids.append(exit_id)

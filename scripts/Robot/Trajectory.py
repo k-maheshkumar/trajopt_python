@@ -71,4 +71,4 @@ class Trajectory:
 
         plt.multi_plot(self.trajectory_by_name.keys(), self.initial, self.trajectory_by_name.values(),
                                   # "Time steps (t)", "Joint angle (q)", block=True)
-                                  "Samples", "Joint angle (q)", block=True)
+                                  "Samples", "Joint angle ($\\Theta$)", block=True)

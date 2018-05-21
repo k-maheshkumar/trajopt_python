@@ -308,7 +308,8 @@ class TrajectoryOptimizationPlanner():
 
             result = OrderedDict()
 
-            result["type"] = "donbot_random_state_and_obstacles"
+            # result["type"] = "donbot_random_state_and_obstacles"
+            result["type"] = "donbot_full_consistency1"
             result["sub_type"] = "prob_" + str(len(self.world.scene_items))
 
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations

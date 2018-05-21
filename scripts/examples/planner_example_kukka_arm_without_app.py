@@ -14,8 +14,8 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
-             # "use_gui": True,
-            # "verbose": "DEBUG",
+             "use_gui": True,
+            # "verbose": "DEQBUG",
             "log_file": False,
             "save_problem": True,
             # "db_name": "Trajectory_planner_results",
@@ -36,8 +36,8 @@ class PlannerExample:
         # print "box location: ", x, -y, z
         box = randint(0, 4)
         loc = randint(0, 4)
-        # box = 0
-        # loc = 2
+        box = 2
+        loc = 4
         print box, loc
 
         box_loc = [[0.364830659421, -0.164962595183, 0.9], [-0.155743925678, -0.373197182129, 0.9],
@@ -57,8 +57,8 @@ class PlannerExample:
                                                   # position=[x, -y, z],
                                                   position=box_loc[loc],
                                                   mass=100)
-        # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-        #                                           position=[-0.48, -0.43, 0.9], mass=100)
+        self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.25],
+                                                  position=[-0.48, -0.43, 0.9], mass=100)
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
         #                                           position=[-0.48, 0.43, 0.9], mass=100)
 
@@ -99,18 +99,18 @@ class PlannerExample:
 
             collision_check_distance = 0.15
             collision_safe_distance = 0.1
-            # self.planner.reset_robot_to(start_state, group)
+            self.planner.reset_robot_to(start_state, group)
 
 
-            status, is_collision_free, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
-                                                                                goal_state=goal_state, samples=samples, duration=duration,
-                                                                                collision_safe_distance=collision_safe_distance,
-                                                                                collision_check_distance=collision_check_distance
-                                                                                )
-            print("is trajectory free from collision: ", is_collision_free)
-            print (status)
-            # if is_collision_free:
-            #     self.planner.execute_trajectory()
+            # status, is_collision_free, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
+            #                                                                     goal_state=goal_state, samples=samples, duration=duration,
+            #                                                                     collision_safe_distance=collision_safe_distance,
+            #                                                                     collision_check_distance=collision_check_distance
+            #                                                                     )
+            # print("is trajectory free from collision: ", is_collision_free)
+            # print (status)
+            # # if is_collision_free:
+            # #     self.planner.execute_trajectory()
 
     def manual_control(self):
         start_state = "loc3"
@@ -126,15 +126,15 @@ class PlannerExample:
         self.planner.world.manual_control(self.robot_id, group, use_current_state=True)
 
     def dummy(self):
-        group = "full_arm"
-        group = self.planner.get_group_names(group)
-        self.planner.world.manual_control(self.robot_id, group, use_current_state=True)
+       while True:
+           pass
+
 
 def main():
     example = PlannerExample()
     example.run()
     # example.manual_control()
-    # example.dummy()
+    example.dummy()
 
 if __name__ == '__main__':
     main()

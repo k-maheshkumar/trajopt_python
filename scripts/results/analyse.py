@@ -33,21 +33,49 @@ class Analyzer:
         # self.plot_avg_planning_time_vs_trust_region()
         # self.plot_avg_planning_time_vs_penalty_1_and_2()
         # self.iterations_vs_trust_region()
-        # plotter.show()
-        result = list(self.db.find({"type": "kuka_random_state_and_obstacles"}))
+        # result = list(self.db.find({"type": "kuka_random_state_and_obstacles"}))
+        self.kuka_results()
+        # self.donbot_random_states()
+        plotter.show()
+
+    def kuka_results(self):
+        # results = list(self.db.find({"solver_config.trust_region_size": 30}))
+        # self.plot_avg_planning_time_vs_samples(results)
+        # results = list(self.db.find({"type": "kuka_only_random_trust_region"}))
+        # self.plot_avg_planning_time_vs_trust_region(results)
+        # results = list(self.db.find({"type": "kuka_only_random_trust_region"}))
+        # self.iterations_vs_trust_region(results)
+        # results = list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 2}))
+        # results += list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 1}))
+        # self.plot_avg_planning_time_vs_penalty_1_and_2(results)
+
+        results = list(self.db.find({"type": "kuka_random_state_and_obstacles"}))
+        self.plot_avg_planning_time_vs_samples(results)
+        # self.plot_avg_planning_time_vs_trust_region(results)
+        print len(results)
+
+
+
+
+    def donbot_random_states(self):
+        result = list(self.db.find({"type": "donbot_random_state_and_obstacles"}))
 
         print len(result)
 
-    def plot_avg_planning_time_vs_samples(self):
-        result = list(self.db.find({"solver_config.trust_region_size": 30}))
+        for i, res in enumerate(result):
+            print i, res["sub_type"]
+
+    def plot_avg_planning_time_vs_samples(self, results):
+        # result = list(self.db.find({"solver_config.trust_region_size": 30}))
         # print len(result)
         sam_t = DefaultOrderedDict(list)
         sol_t = DefaultOrderedDict(list)
         col_t = DefaultOrderedDict(list)
         prb_t = DefaultOrderedDict(list)
         cost = DefaultOrderedDict(list)
-        for res in result:
+        for res in results:
             sam = res["planning_request"]["samples"]
+            print sam
             sam_t[sam].append(res["planning_time"])
             sol_t[sam].append(res["solving_time"])
             col_t[sam].append(res["collision_check_time"])
@@ -87,10 +115,10 @@ class Analyzer:
         labels = ["solving_time", "collision_check_time", "prob_model_time"]
         # plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Time (S)",
         plotter.bar_chart(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Average Time (S)",
-                                          deg=8)
+                          deg=8)
 
-    def plot_avg_planning_time_vs_trust_region(self):
-        result = list(self.db.find({"type": "kuka_only_random_trust_region"}))
+    def plot_avg_planning_time_vs_trust_region(self, results):
+        # results = list(self.db.find({"type": "kuka_only_random_trust_region"}))
         # result = list(self.db.find({"type": "donbot_arm_only_random_trust_region"}))
         # print len(result)
         trust_region = DefaultOrderedDict(list)
@@ -98,7 +126,7 @@ class Analyzer:
         sol_t = DefaultOrderedDict(list)
         col_t = DefaultOrderedDict(list)
         prb_t = DefaultOrderedDict(list)
-        for res in result:
+        for res in results:
             trust = res["solver_config"]["trust_region_size"]
             trust_region[trust].append(trust)
             plan_t[trust].append(res["planning_time"])
@@ -121,12 +149,12 @@ class Analyzer:
         plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Time", "Time (S)",
                                           deg=2)
 
-    def iterations_vs_trust_region(self):
-        result = list(self.db.find({"type": "kuka_only_random_trust_region"}))
+    def iterations_vs_trust_region(self, results):
+        # results = list(self.db.find({"type": "kuka_only_random_trust_region"}))
         trust_region = DefaultOrderedDict(list)
         qp_iters = DefaultOrderedDict(list)
         sqp_iters = DefaultOrderedDict(list)
-        for res in result:
+        for res in results:
             trust = res["solver_config"]["trust_region_size"]
             trust_region[trust].append(trust)
             qp_iters[trust].append(res["num_qp_iterations"])
@@ -143,9 +171,9 @@ class Analyzer:
         plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Time", "Time (S)",
                                           deg=2)
 
-    def plot_avg_planning_time_vs_penalty_1_and_2(self):
-        result = list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 2}))
-        result += list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 1}))
+    def plot_avg_planning_time_vs_penalty_1_and_2(self, results):
+        # results = list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 2}))
+        # results += list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 1}))
         penalty_norm = DefaultOrderedDict(list)
         sol_t = DefaultOrderedDict(list)
         col_t = DefaultOrderedDict(list)
@@ -154,7 +182,7 @@ class Analyzer:
         sol_t1 = DefaultOrderedDict(list)
         col_t1 = DefaultOrderedDict(list)
         prb_t1 = DefaultOrderedDict(list)
-        for res in result:
+        for res in results:
             p = res["solver_config"]["penalty_norm"]
             if p == 1:
                 trust = res["solver_config"]["trust_region_size"]
@@ -253,14 +281,14 @@ class Analyzer:
         #         d[samples]["collision_check_time"] = res["collision_check_time"]
         #         d[samples]["prob_model_time"] = res["prob_model_time"]
 
-                    # data.append(d)
+        # data.append(d)
 
-                    # w = csv.DictWriter(f, d.keys())
-                    # # w = csv.DictWriter(sys.stderr, d.keys())
-                    # # w.writeheader()
-                    # # w.writerow(d.keys())
-                    # w.writerow(d)
-                    # # w.writerows(d.items())
+        # w = csv.DictWriter(f, d.keys())
+        # # w = csv.DictWriter(sys.stderr, d.keys())
+        # # w.writeheader()
+        # # w.writerow(d.keys())
+        # w.writerow(d)
+        # # w.writerows(d.items())
 
         # data = DefaultOrderedDict(list)
         # for res in result:

@@ -803,15 +803,21 @@ class SimulationWorld(ISimulationWorldBase):
             info = self.joint_name_to_info[j]
             joint_name = info.joint_name
             joint_type = info.joint_type
+            l_limit = info.joint_lower_limit
+            u_limit = info.joint_upper_limit
             if (joint_type == sim.JOINT_PRISMATIC or joint_type == sim.JOINT_REVOLUTE):
                 joint_ids.append(j)
                 if use_current_state:
                     state = current_state[i]
                 else:
                     state = 0
-                print joint_name, state
+                if "odom" in joint_name:
+                    # state = 0.0
+                    l_limit = -0.5
+                    u_limit = 0.5
+                print joint_name, state, l_limit, u_limit
                 param_ids.append(sim.addUserDebugParameter(joint_name.decode("utf-8"),
-                                                           info.joint_lower_limit, info.joint_upper_limit, state))
+                                                           l_limit, u_limit, state))
         param_ids.append(exit_id)
         param_ids.append(print_pose_id)
 

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 
+
 class Plotter:
     def __init__(self):
         pass
@@ -21,8 +22,8 @@ class Plotter:
         num_joints = len(final)
         # Two subplots, the axes array is 1-d
         fig, axes = plt.subplots(num_joints, sharex=True)
-        fig.text(0.5, 0.01, c_x_title, ha='center')
-        fig.text(0.01, 0.5, c_y_title, va='center', rotation='vertical')
+        fig.text(0.5, 0.01, c_x_title, ha='center', fontsize=14)
+        fig.text(0.01, 0.5, c_y_title, va='center', rotation='vertical', fontsize=14)
         fig.tight_layout(pad=0.4)
         sub = []
         sub1 = []
@@ -32,9 +33,9 @@ class Plotter:
             sub1.append(ax.plot(x, final[i], 'g', label='Final'))
             # ax.plot(x, data[i])
             # plt.plot(x, data[i], 'r')  # plotting t, a separately
-            ax.set_title(title[i])
+            ax.set_title(title[i], fontsize=14)
             # ax.autoscale(enable=True, axis='both', tight=False)
-            ax.locator_params(nbins=5, axis='y')
+            ax.locator_params(nbins=3, axis='y')
 
         # plt.legend(sub, ['Line Up', 'Line Down'], loc="upper left", bbox_to_anchor=[0, 1],
         #            ncol=2, shadow=True, title="Legend", fancybox=True)

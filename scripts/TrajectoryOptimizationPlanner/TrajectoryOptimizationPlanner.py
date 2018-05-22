@@ -13,6 +13,9 @@ import time
 class TrajectoryOptimizationPlanner():
     def __init__(self, **kwargs):
 
+        self.robot_config = None
+        self.elapsed_time = 0
+
         if "logger_name" in kwargs:
             main_logger_name = kwargs["logger_name"]
         else:
@@ -32,6 +35,8 @@ class TrajectoryOptimizationPlanner():
         if "robot_config" in kwargs:
             robot_config = kwargs["robot_config"]
             self.load_configs(robot_config)
+        else:
+            self.load_configs()
         if "save_problem" in kwargs:
             self.save_problem = kwargs["save_problem"]
             if "db_name" in kwargs:
@@ -52,8 +57,19 @@ class TrajectoryOptimizationPlanner():
         self.world = SimulationWorld(**kwargs)
         self.logger = logging.getLogger(main_logger_name)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
+
         self.world.toggle_rendering(0)
-        self.elapsed_time = 0
+
+        urdf_file = self.robot_config["urdf"]
+        print urdf_file
+        srdf_file = self.robot_config["srdf"]
+        pos = self.robot_config["position"] if "position" in self.robot_config else [0, 0, 0]
+        orn = self.robot_config["orientation"] if "orientation" in self.robot_config else [0, 0, 0]
+        self.load_robot(urdf_file, position=pos, orientation=orn)
+        self.robot.load_srdf(srdf_file)
+        self.world.ignored_collisions = self.robot.get_ignored_collsion()
+
+        self.world.toggle_rendering(1)
 
     def load_configs(self, config_file=None):
         file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
@@ -96,7 +112,6 @@ class TrajectoryOptimizationPlanner():
         self.world.add_collision_constraints(constraint_id)
 
     def get_trajectory(self, **kwargs):
-
         if "group" in kwargs:
             group = kwargs["group"]
             if type(group) is str:
@@ -111,6 +126,8 @@ class TrajectoryOptimizationPlanner():
 
             self.world.reset_joint_states(self.robot.id, start_state, group)
             # self.world.step_simulation_for(0.2)
+        else:
+            start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
 
         if "goal_state" in kwargs:
             goal_state = kwargs["goal_state"]
@@ -182,12 +199,14 @@ class TrajectoryOptimizationPlanner():
     def plan_trajectory(self, planning_group, goal_state, samples=20, duration=10,
                         collision_safe_distance=0.1,
                        collision_check_distance=0.05, solver_config=None):
+
         status, is_collision_free, _ = self.get_trajectory(group=planning_group,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance,
                                         solver_config=solver_config)
-
+        print "is_collision_free",
+        print is_collision_free
         return status, is_collision_free
 
     def execute_trajectory(self):

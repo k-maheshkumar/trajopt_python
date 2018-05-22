@@ -1,11 +1,10 @@
 robot:
     urdf: "/home/mahesh/libraries/bullet3/data/kuka_iiwa/model.urdf"
+    srdf: "/home/mahesh/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
+    position: [0, 0.25, 0.6]
+    orientation: [0.0, 0.0, 0.0]
     joints_groups:
-      right_arm: &right_arm
-        ["lbr_iiwa_joint_1", "lbr_iiwa_joint_2", "lbr_iiwa_joint_3"]
-      left_arm: &left_arm
-        ["lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
-      full_arm: [*right_arm, *left_arm]
+      full_arm: ["lbr_iiwa_joint_1", "lbr_iiwa_joint_2", "lbr_iiwa_joint_3", "lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
 
     joint_configurations:
       home:
@@ -17,7 +16,7 @@ robot:
         lbr_iiwa_joint_6: 1.574
         lbr_iiwa_joint_7: 1.571
 
-      place:
+      pick:
         lbr_iiwa_joint_1: -0.08180533826032865
         lbr_iiwa_joint_2: 1.5474152457596664
         lbr_iiwa_joint_3: -1.5873548294514912
@@ -25,7 +24,7 @@ robot:
         lbr_iiwa_joint_5: 1.5979105177314896
         lbr_iiwa_joint_6: 1.5857854098720727
         lbr_iiwa_joint_7: 1.5726221954434347
-      pick:
+      place:
         lbr_iiwa_joint_1: -2.4823357809267463
         lbr_iiwa_joint_2: 1.4999975516996142
         lbr_iiwa_joint_3: -1.5762726255540713

@@ -14,8 +14,6 @@ class PlannerExample:
 
         location_prefix = home + "/catkin_ws/src/iai_robots/"
 
-        urdf_file = location_prefix + "iai_donbot_description/robots/don_bot.urdf"
-        srdf_file = home + "/catkin_ws/src/iai_robots/iai_donbot_description/ur5_moveit_config/config/ur5.srdf"
 
         shelf_file = home + "/catkin_ws/src/iai_shelf_description/urdf/shelf.urdf"
 
@@ -34,12 +32,8 @@ class PlannerExample:
         self.planner.world.toggle_rendering(0)
         self.planner.world.set_gravity(0, 0, -10)
         plane_id = self.planner.add_constraint_from_urdf("plane", "plane.urdf", position=[0, 0, 0.0])
-        self.robot_id = self.planner.load_robot(urdf_file,
-                                                use_fixed_base=True,
-                                                position=[0.6, 0.2, 0],
-                                                orientation=p.getQuaternionFromEuler([0, 0, -1.57])
-                                                )
 
+        self.planner.world.toggle_rendering(0)
         shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[-0.49, 0, 0.0],
                                                          orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
         # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.03, 0.03, 0.1],
@@ -114,8 +108,6 @@ class PlannerExample:
         #     lotion_id[x] = self.planner.add_constraint_from_urdf("lotion" + str(x), urdf_file=lotion_urdf,
         #                                                          position=[offset + 0.1 * x, y, z])
 
-        self.planner.robot.load_srdf(srdf_file)
-        self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
         self.planner.world.toggle_rendering(1)
         # self.planner.world.step_simulation_for(0.2)
 

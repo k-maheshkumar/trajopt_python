@@ -47,7 +47,9 @@ class PlannerExample:
                    [0.2, -0.4, 0.9], [0.4, -0.2, 0.9], [0.5, -0.3, 0.9], [0.48, -0.43, 0.9]]
         box_size = [[0.05, 0.05, 0.35], [0.03, 0.03, 0.25], [0.03, 0.1, 0.25], [0.03, 0.2, 0.15],
                     [0.06, 0.04, 0.35]]
-        self.robot_id = self.planner.load_robot(urdf_file, position=[0, 0.25, 0.6])
+        # self.robot_id = self.planner.load_robot(urdf_file, position=[0, 0.25, 0.6])
+
+        self.planner.world.toggle_rendering(0)
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
         table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
@@ -62,8 +64,6 @@ class PlannerExample:
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
         #                                           position=[-0.48, 0.43, 0.9], mass=100)
 
-        self.planner.robot.load_srdf(srdf_file)
-        self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
 
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(0.01)
@@ -76,8 +76,8 @@ class PlannerExample:
         #
         # start_state = "place"
         # goal_state = "pick"
-        start = randint(1, 11)
-        end = randint(1, 11)
+        # start = randint(1, 11)
+        # end = randint(1, 11)
         start = 4
         end = 6
         print start, end
@@ -112,8 +112,6 @@ class PlannerExample:
             # if is_collision_free:
             #     self.planner.execute_trajectory()
 
-            from scripts.results.analyse import Analyzer
-            an = Analyzer()
 
     def manual_control(self):
         start_state = "loc3"

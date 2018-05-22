@@ -5,15 +5,18 @@ from scripts.utils.utils import Utils as utils
 import logging
 
 class PlannerGui(QtGui.QMainWindow):
-    def __init__(self, logger_name=__name__, verbose=False, file_log=False, planner=None, width=1200, height=400):
+    def __init__(self, logger_name=__name__, config_file=None, verbose=False, file_log=False, planner=None, width=1200, height=400):
         QtGui.QMainWindow.__init__(self)
         self.setGeometry(200, 100, width, height)
 
         # self.sim_world = SimulationWorld.SimulationWorld(self.robot_config["urdf"])
         self.planner = planner
 
-        file_path_prefix = '../../config/'
-        self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
+        if config_file is None:
+            file_path_prefix = '../../config/'
+            config_file = file_path_prefix + 'default_config.yaml'
+
+        self.default_config = yaml.ConfigParser(config_file)
         self.config = self.default_config.get_by_key("config")
 
         self.sqp_config_file = file_path_prefix + self.config["solver"]
@@ -137,13 +140,14 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_config_vbox_layout.addItem(self.robot_config_hbox)
 
         for key, value in self.robot_config.items():
-            if key != "urdf":
+            if key != "urdf" and key != "srdf" and key != "position" and key != "orientation":
                 self.robot_config_combo_box[key] = QtGui.QComboBox(self)
                 self.robot_config_combo_box[key].addItem("Select")
                 self.robot_config_form.addRow(key, self.robot_config_combo_box[key])
                 self.robot_config_combo_box[key].currentIndexChanged.connect(
                     functools.partial(self.on_robot_config_combo_box_value_changed, key))
-                if type(self.robot_config[key]) is not str:
+                # if type(self.robot_config[key]) is not str and type(self.robot_config[key]) is not list:
+                if type(self.robot_config[key]) is not str and type(self.robot_config[key]) is not list:
                     for key1, value1 in self.robot_config[key].items():
                         self.robot_config_combo_box[key].addItem(key1)
                         self.selected_robot_combo_value[key] = value1
@@ -160,16 +164,16 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_action_button_hbox.addStretch(1)
 
         for key in self.robot_action_buttons:
-                self.robot_action_button_hbox.addWidget(self.robot_action_buttons[key])
-                self.robot_action_buttons[key].clicked.connect(
-                    functools.partial(self.on_robot_action_button_clicked, key))
-                self.robot_action_buttons[key].setMaximumWidth(220)
+            self.robot_action_button_hbox.addWidget(self.robot_action_buttons[key])
+            self.robot_action_buttons[key].clicked.connect(
+                functools.partial(self.on_robot_action_button_clicked, key))
+            self.robot_action_buttons[key].setMaximumWidth(220)
 
         for key in self.simulation_action_buttons:
-                self.simulation_action_button_hbox.addWidget(self.simulation_action_buttons[key])
-                self.simulation_action_buttons[key].clicked.connect(
-                    functools.partial(self.on_simulation_action_button_clicked, key))
-                self.simulation_action_buttons[key].setMaximumWidth(220)
+            self.simulation_action_button_hbox.addWidget(self.simulation_action_buttons[key])
+            self.simulation_action_buttons[key].clicked.connect(
+                functools.partial(self.on_simulation_action_button_clicked, key))
+            self.simulation_action_buttons[key].setMaximumWidth(220)
 
         self.robot_config_vbox_layout.addItem(self.robot_action_button_hbox)
 
@@ -221,8 +225,8 @@ class PlannerGui(QtGui.QMainWindow):
             group = self.selected_robot_combo_value["joints_groups"]
         if "joint_configurations" in self.selected_robot_combo_value:
             goal_state = self.selected_robot_combo_value["joint_configurations"]
-        if "safe_collision_distance" in self.selected_robot_spin_value:
-            safe_collision_distance = self.selected_robot_spin_value["safe_collision_distance"]
+        if "collision_threshold_distance" in self.selected_robot_spin_value:
+            safe_collision_distance = self.selected_robot_spin_value["collision_threshold_distance"]
         if "collision_check_distance" in self.selected_robot_spin_value:
             collision_check_distance = self.selected_robot_spin_value["collision_check_distance"]
 

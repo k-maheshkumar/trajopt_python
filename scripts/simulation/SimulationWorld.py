@@ -175,6 +175,8 @@ class SimulationWorld(ISimulationWorldBase):
         # urdf_file = "/tmp/robot.urdf"
         if orientation is None:
             orientation = [0, 0, 0, 1]
+        if len(orientation) == 3:
+            orientation = sim.getQuaternionFromEuler(orientation)
         robot_id = sim.loadURDF(urdf_file, basePosition=position, baseOrientation=orientation,
                                 useFixedBase=use_fixed_base,
                                     # flags=sim.URDF_USE_SELF_COLLISION

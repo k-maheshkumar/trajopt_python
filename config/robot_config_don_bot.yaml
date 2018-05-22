@@ -1,5 +1,8 @@
 robot:
-    urdf: "/home/mahesh/catkin_ws/src/iai_robots/iai_donbot_description/robots/donbot2.urdf"
+    urdf: "/home/mahesh/catkin_ws/src/iai_robots/iai_donbot_description/robots/don_bot.urdf"
+    srdf: "/home/mahesh//catkin_ws/src/iai_robots/iai_donbot_description/ur5_moveit_config/config/ur5.srdf"
+    position: [0.6, 0.2, 0]
+    orientation: [0, 0, -1.57]
     joints_groups:
       ur5_arm: &ur5_arm
         ['ur5_shoulder_pan_joint', 'ur5_shoulder_lift_joint', 'ur5_elbow_joint', 'ur5_wrist_1_joint', 'ur5_wrist_2_joint', 'ur5_wrist_3_joint', 'gripper_joint', 'gripper_base_gripper_left_joint']

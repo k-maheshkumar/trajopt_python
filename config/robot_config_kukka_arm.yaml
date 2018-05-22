@@ -8,31 +8,31 @@ robot:
       full_arm: [*right_arm, *left_arm]
 
     joint_configurations:
-#      home:
-#        lbr_iiwa_joint_1: -2.055
-#        lbr_iiwa_joint_2: 0.944
-#        lbr_iiwa_joint_3: -1.591
-#        lbr_iiwa_joint_4: -1.922
-#        lbr_iiwa_joint_5: 1.572
-#        lbr_iiwa_joint_6: 1.574
-#        lbr_iiwa_joint_7: 1.571
-#
-#      place:
-#        lbr_iiwa_joint_1: -0.08180533826032865
-#        lbr_iiwa_joint_2: 1.5474152457596664
-#        lbr_iiwa_joint_3: -1.5873548294514912
-#        lbr_iiwa_joint_4: -0.5791571346767671
-#        lbr_iiwa_joint_5: 1.5979105177314896
-#        lbr_iiwa_joint_6: 1.5857854098720727
-#        lbr_iiwa_joint_7: 1.5726221954434347
-#      pick:
-#        lbr_iiwa_joint_1: -2.4823357809267463
-#        lbr_iiwa_joint_2: 1.4999975516996142
-#        lbr_iiwa_joint_3: -1.5762726255540713
-#        lbr_iiwa_joint_4: -0.8666279970481103
-#        lbr_iiwa_joint_5: 1.5855963769735366
-#        lbr_iiwa_joint_6: 1.5770985888989753
-#        lbr_iiwa_joint_7: 1.5704531145724918
+      home:
+        lbr_iiwa_joint_1: -2.055
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
+        lbr_iiwa_joint_7: 1.571
+
+      place:
+        lbr_iiwa_joint_1: -0.08180533826032865
+        lbr_iiwa_joint_2: 1.5474152457596664
+        lbr_iiwa_joint_3: -1.5873548294514912
+        lbr_iiwa_joint_4: -0.5791571346767671
+        lbr_iiwa_joint_5: 1.5979105177314896
+        lbr_iiwa_joint_6: 1.5857854098720727
+        lbr_iiwa_joint_7: 1.5726221954434347
+      pick:
+        lbr_iiwa_joint_1: -2.4823357809267463
+        lbr_iiwa_joint_2: 1.4999975516996142
+        lbr_iiwa_joint_3: -1.5762726255540713
+        lbr_iiwa_joint_4: -0.8666279970481103
+        lbr_iiwa_joint_5: 1.5855963769735366
+        lbr_iiwa_joint_6: 1.5770985888989753
+        lbr_iiwa_joint_7: 1.5704531145724918
 #      loc1:
 #        lbr_iiwa_joint_1: 0.812198299407959
 #        lbr_iiwa_joint_2: -1.8384520244598389

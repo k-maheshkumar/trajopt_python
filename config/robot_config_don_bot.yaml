@@ -54,9 +54,6 @@ robot:
         gripper_base_gripper_left_joint: 0
 
       aloc1:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.0
         ur5_shoulder_pan_joint: 3.4392170906066895
         ur5_shoulder_lift_joint: -1.3889145851135254
         ur5_elbow_joint: -2.083372116088867
@@ -66,9 +63,6 @@ robot:
         gripper_joint: 0.006500000134110451
         gripper_base_gripper_left_joint: -0.0027000010013580322
       aloc2:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.0
         ur5_shoulder_pan_joint: 4.5635762214660645
         ur5_shoulder_lift_joint: -1.7196087837219238
         ur5_elbow_joint: -1.6534698009490967
@@ -78,9 +72,6 @@ robot:
         gripper_joint: 0.006500000134110451
         gripper_base_gripper_left_joint: -0.0027000010013580322
       aloc3:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.0
         ur5_shoulder_pan_joint: 1.6534695625305176
         ur5_shoulder_lift_joint: -2.1164417266845703
         ur5_elbow_joint: -2.2487189769744873
@@ -90,9 +81,6 @@ robot:
         gripper_joint: 0.006500000134110451
         gripper_base_gripper_left_joint: -0.0027000010013580322
       aloc4:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.0
         ur5_shoulder_pan_joint: 1.9823357809267463
         ur5_shoulder_lift_joint: -2.4299975516996142
         ur5_elbow_joint: -1.9762726255540713
@@ -102,9 +90,15 @@ robot:
         gripper_joint: 0
         gripper_base_gripper_left_joint: 0
       aloc5:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.0
+       ur5_shoulder_pan_joint: 1.9823357809267463
+       ur5_shoulder_lift_joint: -2.4299975516996142
+       ur5_elbow_joint: -1.9762726255540713
+       ur5_wrist_1_joint: 0.8666279970481103
+       ur5_wrist_2_joint: 1.5855963769735366
+       ur5_wrist_3_joint: -1.5770985888989753
+       gripper_joint: 0
+       gripper_base_gripper_left_joint: 0
+      aloc6:
         ur5_shoulder_pan_joint: 2.5794129371643066
         ur5_shoulder_lift_joint: -2.4471354484558105
         ur5_elbow_joint: -1.3889145851135254
@@ -113,10 +107,7 @@ robot:
         ur5_wrist_3_joint: -0.6613879203796387
         gripper_joint: 0.006500000134110451
         gripper_base_gripper_left_joint: -0.0027000010013580322
-      aloc6:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.0
+      aloc7:
         ur5_shoulder_pan_joint: 1.9180254936218262
         ur5_shoulder_lift_joint: -1.4550533294677734
         ur5_elbow_joint: -1.7196086645126343
@@ -125,10 +116,16 @@ robot:
         ur5_wrist_3_joint: -1.6534700393676758
         gripper_joint: 0.006500000134110451
         gripper_base_gripper_left_joint: -0.0027000010013580322
-      aloc7:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.0
+      aloc8:
+       ur5_shoulder_pan_joint: 1.9823357809267463
+       ur5_shoulder_lift_joint: -2.4299975516996142
+       ur5_elbow_joint: -1.9762726255540713
+       ur5_wrist_1_joint: 0.8666279970481103
+       ur5_wrist_2_joint: 1.5855963769735366
+       ur5_wrist_3_joint: -1.5770985888989753
+       gripper_joint: 0
+       gripper_base_gripper_left_joint: 0
+      aloc9:
         ur5_shoulder_pan_joint: 2.3809962272644043
         ur5_shoulder_lift_joint: -1.984163761138916
         ur5_elbow_joint: -1.5542616844177246
@@ -137,10 +134,7 @@ robot:
         ur5_wrist_3_joint: -1.6534700393676758
         gripper_joint: 0.006500000134110451
         gripper_base_gripper_left_joint: -0.0027000010013580322
-      aloc8:
-#        odom_x_joint: 0.0
-#        odom_y_joint: 0.0
-#        odom_z_joint: 0.00
+      aloc10:
         ur5_shoulder_pan_joint: 1.9823357809267463
         ur5_shoulder_lift_joint: -1.8299975516996142
         ur5_elbow_joint: -1.9762726255540713
@@ -150,6 +144,126 @@ robot:
         gripper_joint: 0
         gripper_base_gripper_left_joint: 0
 
+      floc1:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.0
+        ur5_shoulder_pan_joint: 3.4392170906066895
+        ur5_shoulder_lift_joint: -1.3889145851135254
+        ur5_elbow_joint: -2.083372116088867
+        ur5_wrist_1_joint: -1.1904983520507812
+        ur5_wrist_2_joint: 1.585597038269043
+        ur5_wrist_3_joint: -1.5770983695983887
+        gripper_joint: 0.006500000134110451
+        gripper_base_gripper_left_joint: -0.0027000010013580322
+      floc2:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.0
+        ur5_shoulder_pan_joint: 4.5635762214660645
+        ur5_shoulder_lift_joint: -1.7196087837219238
+        ur5_elbow_joint: -1.6534698009490967
+        ur5_wrist_1_joint: -1.6534700393676758
+        ur5_wrist_2_joint: 1.585597038269043
+        ur5_wrist_3_joint: -1.5770983695983887
+        gripper_joint: 0.006500000134110451
+        gripper_base_gripper_left_joint: -0.0027000010013580322
+      floc3:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.0
+        ur5_shoulder_pan_joint: 1.6534695625305176
+        ur5_shoulder_lift_joint: -2.1164417266845703
+        ur5_elbow_joint: -2.2487189769744873
+        ur5_wrist_1_joint: 0.5952491760253906
+        ur5_wrist_2_joint: 1.984163761138916
+        ur5_wrist_3_joint: -1.6534700393676758
+        gripper_joint: 0.006500000134110451
+        gripper_base_gripper_left_joint: -0.0027000010013580322
+      floc4:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.0
+        ur5_shoulder_pan_joint: 1.9823357809267463
+        ur5_shoulder_lift_joint: -2.4299975516996142
+        ur5_elbow_joint: -1.9762726255540713
+        ur5_wrist_1_joint: 0.8666279970481103
+        ur5_wrist_2_joint: 1.5855963769735366
+        ur5_wrist_3_joint: -1.5770985888989753
+        gripper_joint: 0
+        gripper_base_gripper_left_joint: 0
+      floc5:
+       odom_x_joint: 0.1
+       odom_y_joint: 0.0
+       odom_z_joint: 0.01
+       ur5_shoulder_pan_joint: 1.9823357809267463
+       ur5_shoulder_lift_joint: -2.4299975516996142
+       ur5_elbow_joint: -1.9762726255540713
+       ur5_wrist_1_joint: 0.8666279970481103
+       ur5_wrist_2_joint: 1.5855963769735366
+       ur5_wrist_3_joint: -1.5770985888989753
+       gripper_joint: 0
+       gripper_base_gripper_left_joint: 0
+      floc6:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.0
+        ur5_shoulder_pan_joint: 2.5794129371643066
+        ur5_shoulder_lift_joint: -2.4471354484558105
+        ur5_elbow_joint: -1.3889145851135254
+        ur5_wrist_1_joint: -0.46297168731689453
+        ur5_wrist_2_joint: 0.7275271415710449
+        ur5_wrist_3_joint: -0.6613879203796387
+        gripper_joint: 0.006500000134110451
+        gripper_base_gripper_left_joint: -0.0027000010013580322
+      floc7:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.0
+        ur5_shoulder_pan_joint: 1.9180254936218262
+        ur5_shoulder_lift_joint: -1.4550533294677734
+        ur5_elbow_joint: -1.7196086645126343
+        ur5_wrist_1_joint: -0.7275266647338867
+        ur5_wrist_2_joint: 0.9920816421508789
+        ur5_wrist_3_joint: -1.6534700393676758
+        gripper_joint: 0.006500000134110451
+        gripper_base_gripper_left_joint: -0.0027000010013580322
+      floc8:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.0
+        ur5_shoulder_pan_joint: 2.3809962272644043
+        ur5_shoulder_lift_joint: -1.984163761138916
+        ur5_elbow_joint: -1.5542616844177246
+        ur5_wrist_1_joint: 0.3968329429626465
+        ur5_wrist_2_joint: 1.5873308181762695
+        ur5_wrist_3_joint: -1.6534700393676758
+        gripper_joint: 0.006500000134110451
+        gripper_base_gripper_left_joint: -0.0027000010013580322
+      floc9:
+        odom_x_joint: 0.0
+        odom_y_joint: 0.0
+        odom_z_joint: 0.00
+        ur5_shoulder_pan_joint: 1.9823357809267463
+        ur5_shoulder_lift_joint: -1.8299975516996142
+        ur5_elbow_joint: -1.9762726255540713
+        ur5_wrist_1_joint: 0.8666279970481103
+        ur5_wrist_2_joint: 1.5855963769735366
+        ur5_wrist_3_joint: -1.5770985888989753
+        gripper_joint: 0
+        gripper_base_gripper_left_joint: 0
+      floc10:
+        odom_x_joint: 0.1
+        odom_y_joint: 0.0
+        odom_z_joint: 0.01
+        ur5_shoulder_pan_joint: 1.9823357809267463
+        ur5_shoulder_lift_joint: -1.8299975516996142
+        ur5_elbow_joint: -1.9762726255540713
+        ur5_wrist_1_joint: 0.8666279970481103
+        ur5_wrist_2_joint: 1.5855963769735366
+        ur5_wrist_3_joint: -1.5770985888989753
+        gripper_joint: 0
+        gripper_base_gripper_left_joint: 0
 
 
 

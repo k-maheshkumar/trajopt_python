@@ -12,12 +12,81 @@ class Analyzer:
         # self.db = MongoDriver("Trajectory_planner_results")
         self.db = MongoDriver("Trajectory_planner_evaluation")
 
-        self.kuka_results()
-        self.donbot_arm_results()
-        self.donbot_full_results()
-        self.donbot_random_states()
-        self.plot_adatability()
+        # self.kuka_results()
+        # self.donbot_arm_results()
+        # self.donbot_full_results()
+        # self.donbot_random_states()
+        # self.plot_adatability()
+        # results = list(self.db.find({"type": "old_vs_new_solver", "sub_type": "kuka_new_solver"}))
+        # results += list(self.db.find({"type": "old_vs_new_solver", "sub_type": "kuka_old_solver"}))
+        results = list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_full_new_solver"}))
+        results += list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_full_old_solver"}))
+        self.plot_old_vs_new_solver(results, "donbot_full")
         plotter.show()
+
+    def plot_old_vs_new_solver(self, results, prefix):
+
+        old_solver_solved = []
+        old_solver_unsolved = []
+
+        new_solver_solved = []
+        new_solver_unsolved = []
+
+        solved_avg_qp_iterations = []
+        solved_avg_sqp_iterations = []
+        solved_avg_time = []
+
+        unsolved_avg_qp_iterations = []
+        unsolved_avg_sqp_iterations = []
+        unsolved_avg_time = []
+
+        for res in results:
+            if res["sub_type"] == prefix + "_old_solver" and res["is_collision_free"]:
+                old_solver_solved.append(res)
+                solved_avg_qp_iterations.append(res["num_qp_iterations"])
+                solved_avg_sqp_iterations.append(res["num_sqp_iterations"])
+                solved_avg_time.append(res["planning_time"])
+
+            elif res["sub_type"] == prefix + "_new_solver" and res["is_collision_free"]:
+                new_solver_solved.append(res)
+                unsolved_avg_qp_iterations.append(res["num_qp_iterations"])
+                unsolved_avg_sqp_iterations.append(res["num_sqp_iterations"])
+                unsolved_avg_time.append(res["planning_time"])
+            elif res["sub_type"] == prefix + "_old_solver" and not res["is_collision_free"]:
+                old_solver_unsolved.append(res)
+            elif res["sub_type"] == prefix + "_new_solver" and not res["is_collision_free"]:
+                new_solver_unsolved.append(res)
+
+        solved_avg_qp_iterations = sum(solved_avg_qp_iterations) / (float(len(solved_avg_qp_iterations)) + 1e-4)
+        solved_avg_sqp_iterations = sum(solved_avg_sqp_iterations) / (float(len(solved_avg_sqp_iterations)) + 1e-4)
+        solved_avg_time = sum(solved_avg_time) / float(len(solved_avg_time) + 1e-4)
+
+        unsolved_avg_qp_iterations = sum(unsolved_avg_qp_iterations) / (float(len(unsolved_avg_qp_iterations)) + 1e-4)
+        unsolved_avg_sqp_iterations = sum(unsolved_avg_sqp_iterations) / (float(len(unsolved_avg_sqp_iterations)) + 1e-4)
+        unsolved_avg_time = sum(unsolved_avg_time) / (float(len(unsolved_avg_time)) + 1e-4)
+
+        solved_percentage = (len(old_solver_solved) / float(len(old_solver_solved) + len(old_solver_unsolved))) * 100
+        unsolved_percentage = (len(new_solver_solved) / float(len(new_solver_solved) + len(new_solver_unsolved))) * 100
+
+        print "len new solved", len(new_solver_solved)
+        print "len new unsolved", len(new_solver_unsolved)
+
+        print "len old solved", len(old_solver_solved)
+        print "len old unsolved", len(old_solver_unsolved)
+
+        xticks = ['Old vs new \n sovler percentage', 'Number of QP \n iterations', 'Number of SQP \n  iterations',
+                  'Average \n solving time']
+        x = np.arange(len(xticks))
+
+        # x = [i for i in range(len(xticks))]
+        ys = [[solved_percentage, solved_avg_qp_iterations, solved_avg_sqp_iterations, solved_avg_time],
+              [unsolved_percentage, unsolved_avg_qp_iterations, unsolved_avg_sqp_iterations, unsolved_avg_time]
+              ]
+        labels = ["Case: Old solver", "Case: New solver"]
+
+        plotter.bar_chart_side_by_side(x, ys, xticks, labels, prefix + ": Old vs new sovler Trajectory problems",
+                                       "", "")
+
 
     def plot_adatability(self):
         result = list(self.db.find({"solver_config.trust_region_size": 30}))

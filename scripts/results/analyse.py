@@ -14,14 +14,17 @@ class Analyzer:
 
         # self.kuka_results()
         # self.donbot_arm_results()
-        # self.donbot_full_results()
+        self.donbot_full_results()
         # self.donbot_random_states()
         # self.plot_adatability()
         # results = list(self.db.find({"type": "old_vs_new_solver", "sub_type": "kuka_new_solver"}))
         # results += list(self.db.find({"type": "old_vs_new_solver", "sub_type": "kuka_old_solver"}))
-        results = list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_full_new_solver"}))
-        results += list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_full_old_solver"}))
-        self.plot_old_vs_new_solver(results, "donbot_full")
+        # results = list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_full_new_solver"}))
+        # results += list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_full_old_solver"}))
+        # results += list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_arm_new_solver"}))
+        # results += list(self.db.find({"type": "old_vs_new_solver", "sub_type": "donbot_arm_old_solver"}))
+        # self.plot_old_vs_new_solver(results, "Kuka")
+        # self.plot_old_vs_new_solver(results, "Donbot")
         plotter.show()
 
     def plot_old_vs_new_solver(self, results, prefix):
@@ -41,21 +44,27 @@ class Analyzer:
         unsolved_avg_time = []
 
         for res in results:
-            if res["sub_type"] == prefix + "_old_solver" and res["is_collision_free"]:
+            if prefix.lower() in res["sub_type"] and "old" in res["sub_type"] and res["is_collision_free"]:
                 old_solver_solved.append(res)
                 solved_avg_qp_iterations.append(res["num_qp_iterations"])
                 solved_avg_sqp_iterations.append(res["num_sqp_iterations"])
                 solved_avg_time.append(res["planning_time"])
 
-            elif res["sub_type"] == prefix + "_new_solver" and res["is_collision_free"]:
+            elif prefix.lower() in res["sub_type"] and "new" in res["sub_type"] and res["is_collision_free"]:
                 new_solver_solved.append(res)
                 unsolved_avg_qp_iterations.append(res["num_qp_iterations"])
                 unsolved_avg_sqp_iterations.append(res["num_sqp_iterations"])
                 unsolved_avg_time.append(res["planning_time"])
-            elif res["sub_type"] == prefix + "_old_solver" and not res["is_collision_free"]:
+            elif prefix.lower() in res["sub_type"] and "old" in res["sub_type"] and not res["is_collision_free"]:
                 old_solver_unsolved.append(res)
-            elif res["sub_type"] == prefix + "_new_solver" and not res["is_collision_free"]:
+            elif prefix.lower() in res["sub_type"] and "new" in res["sub_type"] and not res["is_collision_free"]:
                 new_solver_unsolved.append(res)
+        #
+        # print "len new solved", len(new_solver_solved)
+        # print "len new unsolved", len(new_solver_unsolved)
+        #
+        # print "len old solved", len(old_solver_solved)
+        # print "len old unsolved", len(old_solver_unsolved)
 
         solved_avg_qp_iterations = sum(solved_avg_qp_iterations) / (float(len(solved_avg_qp_iterations)) + 1e-4)
         solved_avg_sqp_iterations = sum(solved_avg_sqp_iterations) / (float(len(solved_avg_sqp_iterations)) + 1e-4)
@@ -68,14 +77,10 @@ class Analyzer:
         solved_percentage = (len(old_solver_solved) / float(len(old_solver_solved) + len(old_solver_unsolved))) * 100
         unsolved_percentage = (len(new_solver_solved) / float(len(new_solver_solved) + len(new_solver_unsolved))) * 100
 
-        print "len new solved", len(new_solver_solved)
-        print "len new unsolved", len(new_solver_unsolved)
 
-        print "len old solved", len(old_solver_solved)
-        print "len old unsolved", len(old_solver_unsolved)
 
-        xticks = ['Old vs new \n sovler percentage', 'Number of QP \n iterations', 'Number of SQP \n  iterations',
-                  'Average \n solving time']
+        xticks = ['Problems solved (%)', 'Number of QP \n iterations', 'Number of SQP \n  iterations',
+                  'Average \n solving time (s)']
         x = np.arange(len(xticks))
 
         # x = [i for i in range(len(xticks))]
@@ -84,18 +89,21 @@ class Analyzer:
               ]
         labels = ["Case: Old solver", "Case: New solver"]
 
-        plotter.bar_chart_side_by_side(x, ys, xticks, labels, prefix + ": Old vs new sovler Trajectory problems",
+        plotter.bar_chart_side_by_side(x, ys, xticks, labels, prefix + ": Old vs new sovler",
                                        "", "")
 
 
     def plot_adatability(self):
         result = list(self.db.find({"solver_config.trust_region_size": 30}))
         self.plot_avg_planning_time_vs_samples(result)
+
         results = list(self.db.find({"type": "kuka_only_random_trust_region"}))
         self.plot_avg_planning_time_vs_trust_region(results)
+
         results = list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 2}))
         results += list(self.db.find({"type": "kuka_only_penalty_1_vs_2", "solver_config.penalty_norm": 1}))
         self.plot_avg_planning_time_vs_penalty_1_and_2(results)
+
         results = list(self.db.find({"type": "kuka_only_random_trust_region"}))
         self.iterations_vs_trust_region(results)
 
@@ -106,8 +114,6 @@ class Analyzer:
         self.plot_consistency(results)
 
     def donbot_arm_results(self):
-        results = list(self.db.find({"type": "donbot_random_state_and_obstacles"}))
-        self.plot_reliability(results)
         results = list(self.db.find({"type": "donbot_random_state_and_obstacles"}))
         self.plot_reliability(results)
 
@@ -127,7 +133,6 @@ class Analyzer:
 
         results = list(self.db.find({"type": "kuka_random_state_and_obstacles"}))
         self.plot_reliability(results)
-
         results = list(self.db.find({"type": "kuka_consistency"}))
         self.plot_consistency(results)
 
@@ -166,12 +171,12 @@ class Analyzer:
 
         xticks = ['Number of QP \n iterations', 'Number of SQP \n  iterations', 'Average \n solving time']
         x = np.arange(len(xticks))
-        labels = ["Case: Problem Solved", "Case: Problem Unsolved"]
+        # labels = ["Case: Problem Solved", "Case: Problem Unsolved"]
 
-        plotter.multi_plot_1d(ys, labels, "Consistent results of Trajectory Solver", "Trails", "Time (S)")
+        plotter.multi_plot_1d(ys, labels, "Consistent results of Trajectory Solver", "Trails", "Time (s)")
 
-        for i, j in zip(initial_traj, final_traj):
-            plotter.multi_plot(group, i, j, "Samples", "Joint angles $\\Theta$")
+        # for i, j in zip(initial_traj, final_traj):
+        #     plotter.multi_plot(group, i, j, "Samples", "Joint angles $\\Theta$")
 
     def plot_reliability(self, results):
 
@@ -208,8 +213,8 @@ class Analyzer:
         solved_percentage = (len(solved) / float(len(results))) * 100
         unsolved_percentage = (len(unsolved) / float(len(results))) * 100
 
-        xticks = ['Solved vs Unsolved \n percentage', 'Number of QP \n iterations', 'Number of SQP \n  iterations',
-                   'Average \n solving time']
+        xticks = ['Solved vs Unsolved \n problems (%)', 'Number of QP \n iterations', 'Number of SQP \n  iterations',
+                   'Average \n solving time (s)']
         x = np.arange(len(xticks))
 
         # x = [i for i in range(len(xticks))]
@@ -261,9 +266,9 @@ class Analyzer:
         ys = [avg_solving_time, avg_collision_check_time, avg_prob_model_time]
         xs = [samples] * len(ys)
 
-        labels = ["solving_time", "collision_check_time", "prob_model_time"]
+        labels = ["Solving time", "Collision check time", "problem modelling time"]
         # plotter.multi_plot_best_fit_curve(xs, ys, labels, "Time vs Number of samples", "Number of samples", "Time (S)",
-        plotter.bar_chart(xs, ys, labels, "Time taken vs Number of samples", "Number of samples", "Average Time (S)")
+        plotter.bar_chart(xs, ys, labels, "Time taken vs Number of samples", "Number of samples", "Average Time (s)")
 
     def plot_avg_planning_time_vs_trust_region(self, results):
         # results = list(self.db.find({"type": "kuka_only_random_trust_region"}))
@@ -293,8 +298,8 @@ class Analyzer:
             avg_prob_model_time.append(sum(prb_t[k]) / len(prb_t[k]))
         ys = [avg_planning_time, avg_solving_time, avg_collision_check_time, avg_prob_model_time]
         xs = [trust_region.keys()] * len(ys)
-        labels = ["planning_time", "solving_time", "collision_check_time", "prob_model_time"]
-        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Average time taken vs Trust region size", "Trust region size", "Average Time (S)",
+        labels = ["Planning time", "Solving time", "Collision check time", "Problem modelling time"]
+        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Average time taken vs Trust region size", "Trust region size", "Average Time (s)",
                                           deg=2)
 
     def iterations_vs_trust_region(self, results):
@@ -314,8 +319,8 @@ class Analyzer:
             avg_sqp_iters.append(sum(sqp_iters[k]) / len(sqp_iters[k]))
         ys = [avg_qp_iters, avg_sqp_iters]
         xs = [trust_region.keys()] * len(ys)
-        labels = ["Number of qp iterations", "Num sqp iterations"]
-        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Number of SQP and QP iterations vs Trust region", "Trust region", "Number of SQP and QP iterations",
+        labels = ["QP iterations", "SQP iterations"]
+        plotter.multi_plot_best_fit_curve(xs, ys, labels, "Number of SQP and QP iterations vs Trust region", "Trust region", "Number of iterations",
                                           deg=2)
 
     def plot_avg_planning_time_vs_penalty_1_and_2(self, results):
@@ -373,11 +378,11 @@ class Analyzer:
               avg_planning_time1, avg_solving_time1, avg_collision_check_time1, avg_prob_model_time1]
         xs = [tr, tr1] * (len(ys) / 2)
 
-        labels = ["$l_1$ penalty: planning_time", "$l_1$ penalty: solving_time",
-                  "$l_1$ penalty: collision_check_time", "$l_1$ penalty: prob_model_time",
-                  "$l_2$ penalty 2: planning_time", "$l_2$ penalty: solving_time",
-                  "$l_2$ penalty: collision_check_time", "$l_2$ penalty: prob_model_time"]
-        plotter.multi_plot_best_fit_curve(xs, ys, labels, "$l_1$ Penalty vs $l_2$ penalty", "Number of samples", "Average time (S)",
+        labels = ["$l_1$ penalty: Planning time", "$l_1$ penalty: Solving time",
+                  "$l_1$ penalty: Collision check time", "$l_1$ penalty: Problem modelling time",
+                  "$l_2$ penalty 2: Planning time", "$l_2$ penalty: Solving time",
+                  "$l_2$ penalty: Collision check time", "$l_2$ penalty: Problem modelling time"]
+        plotter.multi_plot_best_fit_curve(xs, ys, labels, "$l_1$ Penalty vs $l_2$ penalty", "Number of samples", "Average time (s)",
                                           deg=2)
 
     def get_rounded_off_list(self, data, decimal=3):

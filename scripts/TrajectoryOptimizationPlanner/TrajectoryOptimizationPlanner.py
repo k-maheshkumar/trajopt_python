@@ -312,7 +312,8 @@ class TrajectoryOptimizationPlanner():
             result["type"] = "old_vs_new_solver"
             # result["sub_type"] = "prob_" + str(len(self.world.scene_items))
             # result["sub_type"] = "donbot_full_new_solver"
-            result["sub_type"] = "donbot_full_old_solver"
+            # result["sub_type"] = "donbot_arm_new_solver"
+            result["sub_type"] = "donbot_arm_old_solver"
 
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
             result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations

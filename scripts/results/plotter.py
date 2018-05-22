@@ -3,6 +3,8 @@ from collections import OrderedDict
 from scripts.DB.Mongo_driver import MongoDriver
 import numpy as np
 
+
+# fig, axes = plt.subplots(7, sharex=True)
 class Plotter:
     def __init__(self):
         pass
@@ -44,13 +46,17 @@ class Plotter:
     def bar_chart(self, xs, ys, labels, title, c_x_title, c_y_title, width=0.5):
 
         colors = ['r', 'b', 'g']
+        rects = []
         plt.figure()
         for x, y, l, c in zip(xs, ys, labels, colors):
-            plt.bar(x, y, label=l, color=c, width=width)
+            rects.append(plt.bar(x, y, label=l, color=c, width=width))
             plt.legend(loc='upper left', fontsize=18)
         plt.title(title, fontsize=18)
         plt.xlabel(c_x_title, fontsize=18)
         plt.ylabel(c_y_title, fontsize=18)
+        #
+        # for r in rects:
+        #     self.autolabel(r)
 
     @classmethod
     def autolabel(self, rects):
@@ -64,8 +70,9 @@ class Plotter:
                      ha='center', va='bottom', fontsize=12, fontweight='bold')
 
     @classmethod
-    def bar_chart_side_by_side(self, x, ys, xticks, labels, title, c_x_title, c_y_title, offset=0.2, width=0.3):
-        width = 0.5  # the width of the bars: can also be len(x) sequence
+    def bar_chart_side_by_side(self, x, ys, xticks, labels, title, c_x_title, c_y_title, offset=0.2,
+                               width=0.3, font_size=18):
+        # width = 0.5  # the width of the bars: can also be len(x) sequence
         colors = ['r', 'b', 'g']
         # fig, ax = plt.subplots()
         # fig, ax = plt.subplots()
@@ -74,11 +81,11 @@ class Plotter:
         rects = []
         for i, (y, l, c) in enumerate(zip(ys, labels, colors)):
             rects.append(plt.bar(x + offset * i, y, label=l, color=c, width=offset))
-            plt.legend(fontsize=16)
-        plt.xticks(x + offset, xticks, fontsize=14)
-        plt.title(title, fontsize=14)
-        plt.xlabel(c_x_title, fontsize=14)
-        plt.ylabel(c_y_title, fontsize=14)
+            plt.legend(fontsize=font_size)
+        plt.xticks(x + offset, xticks, fontsize=font_size)
+        plt.title(title, fontsize=font_size)
+        plt.xlabel(c_x_title, fontsize=font_size)
+        plt.ylabel(c_y_title, fontsize=font_size)
 
         for r in rects:
             self.autolabel(r)

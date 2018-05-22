@@ -14,14 +14,14 @@ class PlannerExample:
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
 
         config = {
-             # "use_gui": True,
+             "use_gui": True,
             # "verbose": "DEQBUG",
             "log_file": False,
             # "save_problem": True,
             # "db_name": "Trajectory_planner_results",
             "db_name": "Trajectory_planner_evaluation",
             "robot_config": "robot_config_kukka_arm.yaml",
-            "plot_trajectory": True
+            # "plot_trajectory": True
         }
 
         self.planner = TrajectoryOptimizationPlanner(**config)
@@ -71,8 +71,8 @@ class PlannerExample:
 
     def run(self):
 
-        # start_state = "pick"
-        # goal_state = "place"
+        start_state = "pick"
+        goal_state = "place"
         #
         # start_state = "place"
         # goal_state = "pick"
@@ -85,8 +85,8 @@ class PlannerExample:
             # end = end if start == 3 and end !=2 else randint(1, 8)
             # start = 1
             # end = 8
-            start_state = "loc" + str(start)
-            goal_state = "loc" + str(end)
+            # start_state = "loc" + str(start)
+            # goal_state = "loc" + str(end)
             group = "full_arm"
 
             # half_pi = 1.57
@@ -111,6 +111,9 @@ class PlannerExample:
             print (status)
             # if is_collision_free:
             #     self.planner.execute_trajectory()
+
+            from scripts.results.analyse import Analyzer
+            an = Analyzer()
 
     def manual_control(self):
         start_state = "loc3"

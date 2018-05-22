@@ -25,7 +25,7 @@ class PlannerExample:
             "log_file": True,
             # "save_problem": True,
             "robot_config": "robot_config_don_bot.yaml",
-            "plot_trajectory": True,
+            # "plot_trajectory": True,
             "db_name": "Trajectory_planner_evaluation"
 
         }
@@ -65,36 +65,38 @@ class PlannerExample:
         offset = -0.58
         # offset = uniform(-0.7, -0.58)
         zs = [0.2, 0.6, 1]
-        z = 1.4
-        z = 1
+        # z = 1.4
+        # z = 1
         obj_at_shelf = randint(1, 4)
         obj_at_shelf = 3
         for x in range(obj_at_shelf):
-            # y = uniform(-0.2, 0.2)
+            y = uniform(-0.2, 0.2)
             # z = uniform(0.3, 1.5)
-            # z = randint(0, 2)
+            z = randint(0, 2)
             gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
                                                               position=[offset + 0.1 * x, y, zs[z]])
             gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
                                                                   position=[offset + 0.1 * x, y - 0.38, zs[z]])
         y, z = 0.1, 0.719
-        offset = -0.58
+        offset = 0.38
         # x = uniform(-0.5, 0.5)
         obj_at_bot = randint(1, 4)
-        obj_at_bot = 3
+        # obj_at_bot = 3
         zs = [0.2, 0.6, 1]
-        z = 2
+        # z = 2
         lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
         for x in range(obj_at_bot):
-            # y = uniform(-0.2, 0.2)
+            y = uniform(-0.2, 0.2)
             # z = randint(0, 2)
             gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
-                                                              position=[offset + 0.1 * x, y, zs[z]])
+                                                              # position=[offset + 0.1 * x, y, zs[z]])
+                                                              position=[offset + 0.1 * x, y, z])
             gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
-                                                               position=[offset + 0.1 * x, y-0.38, zs[z]])
-        # gel_id = OrderedDict()
+                                                               # position=[offset + 0.1 * x, y-0.38, zs[z]])
+                                                               position=[offset + 0.1 * x, y-0.38, z])
+        # # gel_id = OrderedDict()
         # y, z = -0.3, 0.62
-        # offset = -0.29
+        # offset = -0.59
         # for x in range(2):
         #     gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
         #                                                       position=[offset + 0.1 * x, y, z])
@@ -107,7 +109,7 @@ class PlannerExample:
         # lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
         # lotion_id = OrderedDict()
         # y, z = -0.4, 1
-        # offset = -0.14
+        # offset = -0.59
         # for x in range(1):
         #     lotion_id[x] = self.planner.add_constraint_from_urdf("lotion" + str(x), urdf_file=lotion_urdf,
         #                                                          position=[offset + 0.1 * x, y, z])
@@ -122,18 +124,20 @@ class PlannerExample:
         start_state = "below_shelf"
         goal_state = "above_shelf"
         group = "full_body"
-
+        #
         start_state = "below_shelf1"
         goal_state = "above_shelf1"
-        group = "ur5_arm"
+        # group = "ur5_arm"
 
-        # start = randint(1, 4)
-        # end = randint(5, 8)
-        start = 3
-        end = 7
+        start = randint(1, 5)
+        end = randint(6, 10)
+        # start = 3
+        # end = 6
+        # start = 9
+        # end = 10
 
-        start_state = "aloc" + str(start)
-        goal_state = "aloc" + str(end)
+        start_state = "floc" + str(start)
+        goal_state = "floc" + str(end)
 
         self.planner.reset_robot_to(start_state, group)
 
@@ -155,8 +159,8 @@ class PlannerExample:
                                                             collision_check_distance=collision_check_distance)
         print("is trajectory free from collision: ", status)
 
-        # if status:
-        #     self.planner.execute_trajectory()
+        if status:
+            self.planner.execute_trajectory()
         # self.dummy()
 
     def dummy(self):
@@ -168,12 +172,12 @@ class PlannerExample:
         group = "full_body"
         start = randint(1, 4)
         end = randint(5, 8)
-        start = 4
-        end = 8
+        # start = 4
+        # end = 8
 
         start_state = "aloc" + str(start)
         goal_state = "aloc" + str(end)
-        # group = "ur5_arm"
+        group = "ur5_arm"
 
         self.planner.reset_robot_to(start_state, group)
         # group = "ur5_arm"
@@ -186,7 +190,7 @@ def main():
     example = PlannerExample()
     example.run()
     # example.manual_control()
-
+    # example.dummy()
 
 if __name__ == '__main__':
     main()

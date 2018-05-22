@@ -30,15 +30,13 @@ class SQPsolver:
         self.lbG = []
         self.ubG = []
         self.b = []
-        self.D = None
-        self.lbD = None
-        self.ubD = None
 
         self.initial_guess = []
         self.status = "-1"
         self.norm_ = 1
         self.rho_k = 0
         self.is_converged = False
+        self.is_initialized = False
 
         self.solver_config = OrderedDict()
 
@@ -50,18 +48,16 @@ class SQPsolver:
         self.num_qp_iterations = 0
         self.num_sqp_iterations = 0
         self.solving_time = 0
-        self.predicted_costs = []
+        self.predicted_reductions = []
+        self.actual_reductions = []
+        self.model_costs = []
         self.actual_costs = []
-        self.problem_costs = []
 
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
     def init(self, **kwargs):
 
-        self.D = None
-        self.lbD = None
-        self.ubD = None
         if "P" in kwargs:
             self.P = kwargs["P"]
         if "q" in kwargs:
@@ -326,16 +322,18 @@ class SQPsolver:
                 self.num_qp_iterations += 1
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
-                    self.D, self.lbD, self.ubD = callback_function(x_k, p_k)
+                    constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
                     self.num_qp_iterations += 1
-                    if callback_function is not None:
-                        if self.D is not None:
+                    if callback_function is not None or not self.is_initialized:
+                        if constraints is not None or not self.is_initialized:
+                            self.is_initialized = True
                             p_k, model_objective_at_p_k, \
                             actual_objective_at_x_k, solver_status, prob_value = self.solve_problem(x_k, penalty, p,
                                                                                                     trust_box_size,
-                                                                                                    self.D, self.lbD,
-                                                                                                    self.ubD)
+                                                                                                    constraints,
+                                                                                                    lower_limit,
+                                                                                                    upper_limit)
 
                         else:
                             dynamic_constraints_satisfied = True
@@ -364,9 +362,10 @@ class SQPsolver:
                         if predicted_reduction == 0:
                             predicted_reduction = 0.0000001
                         self.rho_k = actual_reduction / predicted_reduction
-                        self.predicted_costs.append(predicted_reduction)
-                        self.actual_costs.append(actual_reduction)
-                        self.problem_costs.append(prob_value)
+                        self.predicted_reductions.append(predicted_reduction)
+                        self.actual_reductions.append(actual_reduction)
+                        self.model_costs.append(prob_value)
+                        self.actual_costs.append(actual_objective_at_x_k.value)
 
                         self.logger.debug("\n x_k " + str(x_k))
                         self.logger.debug("rho_k " + str(self.rho_k))

@@ -1,2 +1,0 @@
-stepCount,timeStamp,contactFlag,bodyUniqueIdA,bodyUniqueIdB,linkIndexA,linkIndexB,positionOnAX,positionOnAY,positionOnAZ,positionOnBX,positionOnBY,positionOnBZ,contactNormalOnBX,contactNormalOnBY,contactNormalOnBZ,contactDistance,normalForce
-IfIiiiifffffffffff

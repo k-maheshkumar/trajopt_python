@@ -78,8 +78,8 @@ class PlannerExample:
         # goal_state = "pick"
         start = randint(1, 11)
         end = randint(1, 11)
-        start = 11
-        end = 3
+        # start = 11
+        # end = 3
         print start, end
         if start != end:
             # end = end if start == 3 and end !=2 else randint(1, 8)

@@ -37,7 +37,7 @@ class PlannerExample:
         box = randint(0, 4)
         loc = randint(0, 4)
         box = 1
-        loc = 4
+        loc = 2
         print box, loc
 
         box_loc = [[0.364830659421, -0.164962595183, 0.9], [-0.155743925678, -0.373197182129, 0.9],
@@ -55,9 +55,9 @@ class PlannerExample:
         table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
 
         self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=box_size[box],
-                                                  position=[0.28, -0.43, 0.9],
+                                                  # position=[0.28, -0.43, 0.9],
                                                   # position=[x, -y, z],
-                                                  # position=box_loc[loc],
+                                                  position=box_loc[loc],
                                                   mass=100)
         # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.25],
         #                                           position=[-0.48, -0.43, 0.9], mass=100)
@@ -76,17 +76,17 @@ class PlannerExample:
         #
         # start_state = "place"
         # goal_state = "pick"
-        # start = randint(1, 11)
-        # end = randint(1, 11)
-        start = 4
-        end = 6
+        start = randint(1, 11)
+        end = randint(1, 11)
+        start = 11
+        end = 3
         print start, end
         if start != end:
             # end = end if start == 3 and end !=2 else randint(1, 8)
             # start = 1
             # end = 8
-            # start_state = "loc" + str(start)
-            # goal_state = "loc" + str(end)
+            start_state = "loc" + str(start)
+            goal_state = "loc" + str(end)
             group = "full_arm"
 
             # half_pi = 1.57
@@ -109,8 +109,8 @@ class PlannerExample:
                                                                                 )
             print("is trajectory free from collision: ", is_collision_free)
             print (status)
-            # if is_collision_free:
-            #     self.planner.execute_trajectory()
+            if is_collision_free:
+                self.planner.execute_trajectory()
 
 
     def manual_control(self):

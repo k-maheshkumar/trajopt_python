@@ -10,17 +10,13 @@ class PlannerExample:
 
         location_prefix = home + '/masterThesis/bullet3/data/'
 
-        urdf_file = location_prefix + "kuka_iiwa/model.urdf"
-        srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_iiwa_description/moveit_config/config/lbr_iiwa.srdf"
-
         config = {
              "use_gui": True,
-            # "verbose": "DEQBUG",
+            # "verbose": "DEBUG",
             "log_file": False,
             # "save_problem": True,
             # "db_name": "Trajectory_planner_results",
             "db_name": "Trajectory_planner_evaluation",
-            "robot_config": "robot_config_kukka_arm.yaml",
             # "plot_trajectory": True
         }
 
@@ -64,7 +60,10 @@ class PlannerExample:
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
         #                                           position=[-0.48, 0.43, 0.9], mass=100)
 
-
+        sdf = self.planner.config["world"]["sdf"]
+        print sdf
+        import pybullet as p
+        p.loadURDF(sdf)
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(0.01)
 
@@ -135,7 +134,7 @@ def main():
     example = PlannerExample()
     example.run()
     # example.manual_control()
-    # example.dummy()
+    example.dummy()
 
 if __name__ == '__main__':
     main()

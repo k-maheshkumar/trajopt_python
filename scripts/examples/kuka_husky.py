@@ -61,10 +61,10 @@ class PlannerExample:
 
         start_state = OrderedDict()
 
-        start_state["front_left_wheel"] = 0.0
-        start_state["front_right_wheel"] = 0.0
-        start_state["rear_left_wheel"] = 0.0
-        start_state["rear_right_wheel"] = 0.0
+        # start_state["front_left_wheel"] = 0.0
+        # start_state["front_right_wheel"] = 0.0
+        # start_state["rear_left_wheel"] = 0.0
+        # start_state["rear_right_wheel"] = 0.0
 
         start_state["lbr_iiwa_joint_1"] = -1.8933
         start_state["lbr_iiwa_joint_2"] = 1.5694
@@ -97,10 +97,10 @@ class PlannerExample:
 
         goal_state = OrderedDict()
 
-        goal_state["front_left_wheel"] = 0.5
-        goal_state["front_right_wheel"] = 0.5
-        goal_state["rear_left_wheel"] = 0.2
-        goal_state["rear_right_wheel"] = 0.6
+        # goal_state["front_left_wheel"] = 0.5
+        # goal_state["front_right_wheel"] = 0.5
+        # goal_state["rear_left_wheel"] = 0.2
+        # goal_state["rear_right_wheel"] = 0.6
 
         goal_state["lbr_iiwa_joint_1"] = 0.8032
         goal_state["lbr_iiwa_joint_2"] = 1.4067

@@ -12,9 +12,6 @@ home = os.path.expanduser('~')
 class PlannerExample:
     def __init__(self):
 
-        location_prefix = home + "/catkin_ws/src/iai_robots/"
-
-
         shelf_file = home + "/catkin_ws/src/iai_shelf_description/urdf/shelf.urdf"
 
         config = {
@@ -22,7 +19,6 @@ class PlannerExample:
             "verbose": "INFO",
             "log_file": True,
             # "save_problem": True,
-            "robot_config": "robot_config_don_bot.yaml",
             # "plot_trajectory": True,
             "db_name": "Trajectory_planner_evaluation"
 
@@ -34,7 +30,7 @@ class PlannerExample:
         plane_id = self.planner.add_constraint_from_urdf("plane", "plane.urdf", position=[0, 0, 0.0])
 
         self.planner.world.toggle_rendering(0)
-        shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[-0.49, 0, 0.0],
+        shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[-0.45, 0, 0.0],
                                                          orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
         # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.03, 0.03, 0.1],
         #                                           position=[0.68, -0.1, 0.7],
@@ -119,17 +115,17 @@ class PlannerExample:
         #
         start_state = "below_shelf1"
         goal_state = "above_shelf1"
-        group = "ur5_arm"
+        # group = "ur5_arm"
 
         start = randint(1, 5)
         end = randint(6, 10)
-        # start = 3
+        start = 3
         # end = 6
         # start = 9
-        # end = 10
+        end = 10
 
-        start_state = "aloc" + str(start)
-        goal_state = "aloc" + str(end)
+        start_state = "floc" + str(start)
+        goal_state = "floc" + str(end)
 
         self.planner.reset_robot_to(start_state, group)
 

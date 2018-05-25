@@ -171,7 +171,9 @@ class TrajectoryOptimizationPlanner():
         self.robot.init_plan_trajectory(group=group, current_state=current_robot_state,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
-                                        collision_check_distance=collision_check_distance)
+                                        collision_check_distance=collision_check_distance,
+                                        solver_class=self.sqp_config["solver_class"]
+                                        )
 
         # self.world.toggle_rendering_while_planning(False)
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)

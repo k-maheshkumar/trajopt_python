@@ -78,6 +78,11 @@ class Robot:
         else:
             collision_check_distance = 0.1
 
+        if "solver_class" in kwargs:
+            solver_class = kwargs["solver_class"]
+        else:
+            solver_class = "new"
+
         if "verbose" in kwargs:
             verbose = kwargs["verbose"]
         else:
@@ -115,7 +120,7 @@ class Robot:
                               collision_safe_distance=collision_safe_distance,
                               collision_check_distance=collision_check_distance,
                               solver=solver, solver_config=solver_config,
-                              solver_class=1, decimals_to_round=decimals_to_round, verbose=verbose)
+                              solver_class=solver_class, decimals_to_round=decimals_to_round, verbose=verbose)
 
     def calulate_trajecotory(self, callback_function=None):
         status, planning_time, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)

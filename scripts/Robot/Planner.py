@@ -4,8 +4,8 @@ import numpy as np
 from scripts.utils.utils import Utils as utils
 import scripts.sqp_solver.ProblemModelling as model
 from scripts.Robot import Trajectory
-# from scripts.sqp_solver import SQPsolver
-from scripts.sqp_solver import SQPsolver_old as SQPsolver
+from scripts.sqp_solver import SQPsolver
+from scripts.sqp_solver import SQPsolver_old
 from collections import OrderedDict
 
 
@@ -49,6 +49,7 @@ class TrajectoryPlanner:
         self.current_planning_joint_group = None
         self.callback_function_to_get_collision_infos = None
         self.sqp_solver = SQPsolver.SQPsolver(main_logger_name, verbose, log_file)
+        self.sqp_solver_old = SQPsolver_old.SQPsolver(main_logger_name, verbose, log_file)
 
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
@@ -126,7 +127,6 @@ class TrajectoryPlanner:
             else:
                 self.decimals_to_round = 5
 
-
             if "joint_group" in kwargs:
                 self.current_planning_joint_group = kwargs["joint_group"]
 
@@ -136,10 +136,16 @@ class TrajectoryPlanner:
                 self.collision_check_distance = float(kwargs["collision_check_distance"])
 
             if "solver_class" in kwargs:
-                self.solver_class = kwargs["solver_class"]
+                self.solver_class = kwargs["solver_class"][0]
+            else:
+                self.solver_class = "new"
+
+            if self.solver_class.lower() == "old":
+                self.sqp_solver = self.sqp_solver_old
 
             if "solver_config" in kwargs:
                 self.solver_config = kwargs["solver_config"]
+
             start = time.time()
             self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
                               self.collision_safe_distance, self.collision_check_distance)

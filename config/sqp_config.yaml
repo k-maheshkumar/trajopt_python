@@ -11,10 +11,13 @@ sqp:
   penalty_norm: 1
   replace_none_with: 10e5
   solver:
-  - ECOS
-  - CVXOPT
-  - SCS
-  - ECOS_BB
+    - ECOS
+    - CVXOPT
+    - SCS
+    - ECOS_BB
+  solver_class:
+    - new
+    - old
   trust_bad_region_ratio: 0.25
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75

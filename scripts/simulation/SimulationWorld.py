@@ -67,6 +67,7 @@ class SimulationWorld(ISimulationWorldBase):
         self.scene_items = OrderedDict()
         self.joint_name_to_info = OrderedDict()
         self.joint_id_to_info = OrderedDict()
+        self.joint_name_to_jac_id = OrderedDict()
         self.ignored_collisions = DefaultOrderedDict(bool)
         self.link_pairs = DefaultOrderedDict(list)
         self.robot_info = DefaultOrderedDict(list)
@@ -194,15 +195,18 @@ class SimulationWorld(ISimulationWorldBase):
     def init_js_info(self, robot_id):
         self.joint_name_to_info['base'] = JointInfo(*([-1, 'base'] + [None] * 15))
         self.joint_id_to_info[-1] = JointInfo(*([-1, 'base'] + [None] * 15))
+        dof_count = 0
         for joint_index in range(sim.getNumJoints(robot_id)):
             joint_info = JointInfo(*sim.getJointInfo(robot_id, joint_index))
             self.joint_name_to_info[joint_info.joint_name] = joint_info
             self.joint_id_to_info[joint_info.joint_index] = joint_info
+            if joint_info.q_index > -1:
+                self.joint_name_to_jac_id[joint_info.joint_name] = dof_count
+                dof_count += 1
 
         for body_a, body_b in itertools.combinations(self.joint_ids, 2):
             self.link_pairs[body_a].append(body_b)
             self.link_pairs[body_b].append(body_a)
-
         # initial_distances = self.check_self_collision(robot_id, distance=0.05)
         # for (link_a, link_b) in initial_distances:
         #     self.ignored_collisions[link_a, link_b] = True
@@ -243,7 +247,7 @@ class SimulationWorld(ISimulationWorldBase):
         joint_positions = []
         joint_velocities = []
         joint_torques = []
-
+        # print "start . .. . . . ............................."
         self.reset_joint_states_to(robot_id, trajectory, group)
 
         for i in range(len(self.joint_ids)):
@@ -255,11 +259,14 @@ class SimulationWorld(ISimulationWorldBase):
 
             joint_state = sim.getJointState(robot_id, self.joint_ids[i])
             joint_info = sim.getJointInfo(robot_id, i)
+            inf = JointInfo(*joint_info)
             if joint_info[3] > -1:
+                # print inf
+
                 joint_positions.append(joint_state[0])
                 joint_velocities.append(joint_state[1])
                 joint_torques.append(joint_state[3])
-
+        # print "end ******************************************"
         return [joint_positions, joint_velocities, joint_torques], link_states
 
     def extract_ids_from_planning_group(self, group):
@@ -380,20 +387,20 @@ class SimulationWorld(ISimulationWorldBase):
         position_jacobian, _ = sim.calculateJacobian( robot_id, link_index,
             closest_point_on_link_in_link_frame,
             robot_state, zero_vec, zero_vec)
+        position_jacobian = [jac[-len(robot_state):] for jac in position_jacobian]
 
         current_position_jacobian1 = []
-        if len(group) < len(robot_state):
-            current_position_jacobian1.append(
-                # [jac[3:9] for jac in position_jacobian])
-                [jac[3:] for jac in position_jacobian])
-        else:
-            current_position_jacobian1.append(
-                [jac[-len(robot_state):] for jac in position_jacobian])
+        # if len(group) < len(robot_state):
+        #     current_position_jacobian1.append(
+        #         # [jac[3:9] for jac in position_jacobian])
+        #         [jac[3:] for jac in position_jacobian])
+        # else:
+        #     current_position_jacobian1.append(
+        #         [jac[-len(robot_state):] for jac in position_jacobian])
 
-        jacobian_matrix = self.get_jacobian_matrix(current_position_jacobian1[0],
-                                                                 len(trajectory),
-                                                                 len(group),
-                                                                 time_step_count)
+        group_jacobian = [[x[self.joint_name_to_jac_id[g]] for g in group] for x in position_jacobian]
+
+        jacobian_matrix = self.get_jacobian_matrix(group_jacobian, len(trajectory), len(group), time_step_count)
 
         return jacobian_matrix
 

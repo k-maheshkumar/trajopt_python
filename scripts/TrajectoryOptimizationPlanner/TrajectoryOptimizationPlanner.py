@@ -88,7 +88,7 @@ class TrajectoryOptimizationPlanner():
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
 
-    def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=False):
+    def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=True):
         self.robot.id = self.world.load_robot(urdf_file, position, orientation, use_fixed_base)
         self.robot.load_robot_model(urdf_file)
 

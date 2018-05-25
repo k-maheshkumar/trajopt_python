@@ -19,5 +19,5 @@ sqp:
   trust_expand_ratio: 2
   trust_good_region_ratio: 0.75
   trust_region_norm: 2
-  trust_region_size: 5.0
+  trust_region_size: 10.0
   trust_shrink_ratio: 0.25

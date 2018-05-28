@@ -53,6 +53,11 @@ class SQPsolver:
         self.model_costs = []
         self.actual_costs = []
 
+        self.actual_reduction_improve = 0
+        self.predicted_reduction_improve = 0
+        self.actual_cost_improve = 0
+        self.model_cost_improve = 0
+
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
@@ -250,6 +255,28 @@ class SQPsolver:
 
         return max_con1, max_con2, max_con3
 
+    def calc_cost_improve(self):
+        act_redutcion = self.actual_reductions
+        pred_reduction = self.predicted_reductions
+        actual_costs = self.actual_costs
+        model_costs = self.model_costs
+        if len(act_redutcion):
+            self.actual_reduction_improve = act_redutcion[0] - act_redutcion[-1]
+            self.actual_reduction_improve /= (act_redutcion[0] + 0.000000001)
+            self.actual_reduction_improve *= 100
+        if len(pred_reduction):
+            self.predicted_reduction_improve = pred_reduction[0] - pred_reduction[-1]
+            self.predicted_reduction_improve /= (pred_reduction[0] + 0.000000001)
+            self.predicted_reduction_improve *= 100
+        if len(actual_costs):
+            self.actual_cost_improve = actual_costs[0] - actual_costs[-1]
+            self.actual_cost_improve /= (actual_costs[0] + 0.000000001)
+            self.actual_cost_improve *= 100
+        if len(actual_costs):
+            self.model_cost_improve = model_costs[0] - model_costs[-1]
+            self.model_cost_improve /= (model_costs[0] + 0.000000001)
+            self.model_cost_improve *= 100
+
     def solve(self, initial_guess=None, callback_function=None):
         self.logger.info("Starting SQP solver . . . . . . .")
         x = cvxpy.Variable(self.P.shape[0])
@@ -429,5 +456,6 @@ class SQPsolver:
         self.logger.debug("\n initial x_0 " + str(x_0))
         self.logger.debug("\n final x_k " + str(x_k))
         self.logger.debug("solver status: " + self.status)
+        self.calc_cost_improve()
 
         return self.status, x_k

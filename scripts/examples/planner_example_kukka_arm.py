@@ -16,8 +16,7 @@ class PlannerExample:
             "use_gui": True,
             "verbose": False,
             "log_file": False,
-            # "robot_config": "robot_config_kukka_arm.yaml"
-
+            "robot_config": "robot_config_kuka_arm.yaml"
         }
 
         self.planner = TrajectoryOptimizationPlanner(**config)

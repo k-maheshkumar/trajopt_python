@@ -158,11 +158,10 @@ class TrajectoryOptimizationPlanner():
                                         ignore_goal_states=ignore_goal_states
                                         )
 
-        # self.world.toggle_rendering_while_planning(False)
+        self.world.toggle_rendering_while_planning(False)
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
         trajectory = self.robot.planner.get_trajectory()
 
-        # is_collision_free = True
         is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
                                                                     group,
                                                                     0.02)
@@ -191,8 +190,7 @@ class TrajectoryOptimizationPlanner():
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance,
                                         solver_config=solver_config)
-        print "is_collision_free",
-        print is_collision_free
+        status += ", is trajectory collision free: " + str(is_collision_free)
         return status, is_collision_free
 
     def execute_trajectory(self):

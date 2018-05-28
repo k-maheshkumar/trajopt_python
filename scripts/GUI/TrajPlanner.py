@@ -7,7 +7,7 @@ import os
 
 
 class PlannerGui(QtGui.QMainWindow):
-    def __init__(self, logger_name=__name__, config_file=None, verbose=False, file_log=False, planner=None, width=1200, height=400):
+    def __init__(self, logger_name=__name__, config_file=None, verbose=False, file_log=False, planner=None, width=900, height=400):
         QtGui.QMainWindow.__init__(self)
         self.setGeometry(200, 100, width, height)
 
@@ -61,21 +61,9 @@ class PlannerGui(QtGui.QMainWindow):
         self.robot_action_buttons["plan"] = QtGui.QPushButton('Plan')
         self.robot_action_buttons["random_pose"] = QtGui.QPushButton('Random Pose')
         self.robot_action_buttons["plan_and_execute"] = QtGui.QPushButton('Plan and Execute')
-
-        self.simulation_action_buttons = {}
-
-        # self.start_simulation_button = QtGui.QPushButton('Start Simulation')
-        self.simulation_action_buttons["start_simulation"] = QtGui.QPushButton('Start Simulation')
-        self.simulation_action_buttons["reset_object"] = QtGui.QPushButton('Reset Box')
-
         self.robot_action_button_hbox = QtGui.QHBoxLayout()
 
         self.robot_config_scroll = QtGui.QScrollArea()
-
-        self.simulation_action_button_hbox = QtGui.QHBoxLayout()
-        self.simulation_action_vbox_layout = QtGui.QVBoxLayout()
-
-        self.simulation_scroll = QtGui.QScrollArea()
 
         self.selected_robot_combo_value = {}
         self.selected_robot_spin_value = {}
@@ -102,10 +90,7 @@ class PlannerGui(QtGui.QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.setStatusBar(self.statusBar)
 
-        min_sqp_config = 0.00001
-        max_sqp_config = 100
-        min_robot_config = 3
-        max_robot_config = 60
+        max_sqp_config = 1e4
 
         for key, value in self.sqp_config.items():
             self.sqp_labels[key] = QtGui.QLabel(key)
@@ -173,38 +158,16 @@ class PlannerGui(QtGui.QMainWindow):
                 functools.partial(self.on_robot_action_button_clicked, key))
             self.robot_action_buttons[key].setMaximumWidth(220)
 
-        for key in self.simulation_action_buttons:
-            self.simulation_action_button_hbox.addWidget(self.simulation_action_buttons[key])
-            self.simulation_action_buttons[key].clicked.connect(
-                functools.partial(self.on_simulation_action_button_clicked, key))
-            self.simulation_action_buttons[key].setMaximumWidth(220)
+
 
         self.robot_config_vbox_layout.addItem(self.robot_action_button_hbox)
 
         self.robot_config_vbox_layout.addStretch(1)
-
-        self.simulation_action_vbox_layout.addItem(self.simulation_action_button_hbox)
-        self.simulation_action_vbox_layout.addStretch(1)
-
         self.robot_config_group_box.setLayout(self.robot_config_vbox_layout)
         self.robot_config_scroll.setWidget(self.robot_config_group_box)
         self.robot_config_scroll.setWidgetResizable(True)
         self.robot_config_scroll.setFixedHeight(400)
         self.main_hbox_layout.addWidget(self.robot_config_scroll)
-
-        self.simulation_action_group_box.setLayout(self.simulation_action_vbox_layout)
-        self.simulation_scroll.setWidget(self.simulation_action_group_box)
-        self.simulation_scroll.setWidgetResizable(True)
-        self.simulation_scroll.setFixedHeight(400)
-        self.main_hbox_layout.addWidget(self.simulation_scroll)
-
-    def on_simulation_action_button_clicked(self, key):
-        # self.sim_world.run_simulation()
-
-        if key == "start_simulation":
-            self.is_simulation_started = True
-        if key == "reset_object" or key == "execute":
-            self.planner.world.reset_objects_to()
 
     def on_robot_spin_box_value_changed(self, key, value):
         # self.selected_robot_spin_value.clear()
@@ -294,7 +257,8 @@ class PlannerGui(QtGui.QMainWindow):
         self.sqp_yaml.save()
 
     def on_sqp_combo_box_value_changed(self, combo_box_key):
-        print (combo_box_key, self.sqp_combo_box[combo_box_key].currentText())
+        # print (combo_box_key, self.sqp_combo_box[combo_box_key].currentText())
+        pass
 
     def on_robot_config_combo_box_value_changed(self, combo_box_key):
         # self.selected_robot_combo_value.clear()

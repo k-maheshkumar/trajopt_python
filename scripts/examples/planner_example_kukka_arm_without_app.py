@@ -61,10 +61,6 @@ class PlannerExample:
         # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
         #                                           position=[-0.48, 0.43, 0.9], mass=100)
 
-        sdf = self.planner.config["world"]["sdf"]
-        print sdf
-        import pybullet as p
-        p.loadURDF(sdf)
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(0.01)
 

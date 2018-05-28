@@ -59,7 +59,6 @@ class Robot:
 
     def get_group_state_from_srdf(self, group_name):
         joint_state = OrderedDict()
-        print group_name
         if group_name in self.joint_states_map:
             joint_state = self.joint_states_map[group_name]
         return joint_state.keys(), joint_state.values()
@@ -133,7 +132,6 @@ class Robot:
                         if ignore_goal_states is not None and len(ignore_goal_states):
                             if joint in ignore_goal_states:
                                 ignore_state = True
-                        print joint, ignore_state
                         joints.append([c_state, n_state, self.model.joint_map[joint].limit, ignore_state])
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,

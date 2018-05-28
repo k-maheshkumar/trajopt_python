@@ -1,5 +1,6 @@
-import os
-import time
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
+
 from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
 import pybullet as p
 from random import randint

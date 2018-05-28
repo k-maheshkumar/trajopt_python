@@ -1,4 +1,6 @@
-import os
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
+
 from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
 from scripts.utils.dict import DefaultOrderedDict
 from collections import OrderedDict

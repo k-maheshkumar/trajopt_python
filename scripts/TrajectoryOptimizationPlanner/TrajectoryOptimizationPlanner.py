@@ -168,7 +168,7 @@ class TrajectoryOptimizationPlanner:
                                         ignore_goal_states=ignore_goal_states
                                         )
 
-        # self.world.toggle_rendering_while_planning(False)
+        self.world.toggle_rendering_while_planning(False)
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
         trajectory = self.robot.planner.get_trajectory()
 

@@ -16,7 +16,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            # "verbose": "INzFO",
+            # "verbose": "INFO",
             "log_file": True,
             # "save_problem": True,
             # "plot_trajectory": True,

@@ -16,42 +16,24 @@ class TrajectoryOptimizationPlanner():
         self.robot_config = None
         self.elapsed_time = 0
 
-        if "logger_name" in kwargs:
-            main_logger_name = kwargs["logger_name"]
-        else:
-            # main_logger_name = "Trajectory_Planner."
-            main_logger_name = "Trajectory_Optimization_Planner."
+        main_logger_name = utils.get_var_from_kwargs("logger_name", optional=True,
+                                                     default="Trajectory_Optimization_Planner.", **kwargs)
+        verbose = utils.get_var_from_kwargs("verbose", optional=True, default=False, **kwargs)
 
-        if "verbose" in kwargs:
-            verbose = kwargs["verbose"]
-        else:
-            verbose = False
+        log_file = utils.get_var_from_kwargs("log_file", optional=True, default=False, **kwargs)
 
-        if "log_file" in kwargs:
-            log_file = kwargs["log_file"]
-        else:
-            log_file = False
+        robot_config = utils.get_var_from_kwargs("robot_config", optional=True, **kwargs)
+        self.load_configs(robot_config)
 
-        if "robot_config" in kwargs:
-            robot_config = kwargs["robot_config"]
-            self.load_configs(robot_config)
-        else:
-            self.load_configs()
-        if "save_problem" in kwargs:
-            self.save_problem = kwargs["save_problem"]
-            if "db_name" in kwargs:
-                db_name = kwargs["db_name"]
-            else:
-                db_name = "Trajectory_planner_results"
-
+        self.save_problem = utils.get_var_from_kwargs("save_problem", optional=True, **kwargs)
+        if self.save_problem is not None:
+            db_name = utils.get_var_from_kwargs("db_name", optional=True, default="Trajectory_planner_results", **kwargs)
             self.db_driver = MongoDriver(db_name)
         else:
             self.db_driver = None
             self.save_problem = None
-        if "plot_trajectory" in kwargs:
-            self.if_plot_traj = kwargs["plot_trajectory"]
-        else:
-            self.if_plot_traj = False
+
+        self.if_plot_traj = utils.get_var_from_kwargs("plot_trajectory", optional=True, default=False, **kwargs)
 
         self.robot = Robot(main_logger_name, verbose, log_file)
         self.world = SimulationWorld(**kwargs)
@@ -117,17 +99,17 @@ class TrajectoryOptimizationPlanner():
 
     def get_trajectory(self, **kwargs):
         group = []
-        if "group" in kwargs:
-            group_name = kwargs["group"]
+        group_name = utils.get_var_from_kwargs("group", **kwargs)
+        if group_name is not None:
             if type(group_name) is list:
                 group = group_name
             if type(group_name) is str:
-                group = self.robot_config["joints_groups"][kwargs["group"]]
-                print group
+                group = self.robot_config["joints_groups"][group_name]
             if not len(group):
                 group = self.robot.get_planning_group_from_srdf(group)
-        if "start_state" in kwargs and len(group):
-            start_state = kwargs["start_state"]
+
+        start_state = utils.get_var_from_kwargs("start_state", **kwargs)
+        if start_state is not None and len(group):
             if not type(start_state) is list:
                 _, start_state = self.get_planning_group_and_corresponding_state("start_state", **kwargs)
             self.reset_robot_to(start_state, group, key="start_state")
@@ -137,8 +119,9 @@ class TrajectoryOptimizationPlanner():
                 print "is_start_state_in_collision", is_start_state_in_collision
                 status = "start state in collision"
                 return status, is_collision_free, trajectory
-        if "goal_state" in kwargs and len(group):
-            goal_state = kwargs["goal_state"]
+
+        goal_state = utils.get_var_from_kwargs("goal_state", **kwargs)
+        if goal_state is not None and len(group):
             if not type(goal_state) is list:
                 _, goal_state = self.get_planning_group_and_corresponding_state("goal_state", **kwargs)
                 status, is_collision_free, trajectory = "goal state in collision", False, -1
@@ -148,22 +131,12 @@ class TrajectoryOptimizationPlanner():
                     status = "goal state in collision"
                     return status, is_collision_free, trajectory
 
-        if "samples" in kwargs:
-            samples = kwargs["samples"]
-        else:
-            samples = 20
-        if "duration" in kwargs:
-            duration = kwargs["duration"]
-        else:
-            duration = 10
-        if "collision_safe_distance" in kwargs:
-            collision_safe_distance = kwargs["collision_safe_distance"]
-        else:
-            collision_safe_distance = 0.05
-        if "collision_check_distance" in kwargs:
-            collision_check_distance = kwargs["collision_check_distance"]
-        else:
-            collision_check_distance = 0.1
+        samples = utils.get_var_from_kwargs("samples", optional=True, default=20, **kwargs)
+        duration = utils.get_var_from_kwargs("duration", optional=True, default=10, **kwargs)
+        collision_safe_distance = utils.get_var_from_kwargs("collision_safe_distance", optional=True,
+                                                            default=0.05, **kwargs)
+        collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
+                                                             default=0.1, **kwargs)
 
         current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
 
@@ -218,8 +191,9 @@ class TrajectoryOptimizationPlanner():
     def get_planning_group_and_corresponding_state(self, group_state, **kwargs):
         group = []
         joint_states = []
-        if "group" in kwargs:
-            group_name = kwargs["group"]
+
+        group_name = utils.get_var_from_kwargs("group", **kwargs)
+        if group_name is not None:
             if type(group_name) is str:
                 group = self.robot_config["joints_groups"][kwargs["group"]]
                 if not len(group):

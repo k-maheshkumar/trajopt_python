@@ -57,42 +57,21 @@ class SQPsolver:
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
     def init(self, **kwargs):
+        self.D = None
+        self.lbD = None
+        self.ubD = None
 
-        if "P" in kwargs:
-            self.P = kwargs["P"]
-        if "q" in kwargs:
-            self.q = kwargs["q"]
-        if "G" in kwargs:
-            self.G = kwargs["G"]
-        if "lbG" in kwargs:
-            self.lbG = kwargs["lbG"]
-        else:
-            self.lbG = None
-        if "ubG" in kwargs:
-            self.ubG = kwargs["ubG"]
-        else:
-            self.ubG = None
-        if "A" in kwargs:
-            self.A = kwargs["A"]
-        else:
-            self.A = None
-        if "b" in kwargs:
-            self.b = kwargs["b"]
-        else:
-            self.A = None
-        if "initial_guess" in kwargs:
-            self.initial_guess = kwargs["initial_guess"]
-        else:
-            self.initial_guess = np.zeros((self.P.shape[0], 1)).flatten()
-
-        if "solver_config" in kwargs:
-            solver_config = kwargs["solver_config"]
-        else:
-            solver_config = None
-        if "solver" in kwargs:
-            solver = kwargs["solver"]
-        else:
-            solver = None
+        self.P = utils.get_var_from_kwargs("P", **kwargs)
+        self.q = utils.get_var_from_kwargs("q", **kwargs)
+        self.G = utils.get_var_from_kwargs("G", optional=False, **kwargs)
+        self.lbG = utils.get_var_from_kwargs("lbG", optional=True, **kwargs)
+        self.ubG = utils.get_var_from_kwargs("ubG", optional=True, **kwargs)
+        self.A = utils.get_var_from_kwargs("A", optional=False, **kwargs)
+        self.b = utils.get_var_from_kwargs("b", optional=False, **kwargs)
+        self.initial_guess = utils.get_var_from_kwargs("initial_guess", optional=True,
+                                                       default=np.zeros((self.P.shape[0], 1)).flatten(), **kwargs)
+        solver_config = utils.get_var_from_kwargs("solver_config", optional=True, **kwargs)
+        solver = utils.get_var_from_kwargs("solver", optional=True, **kwargs)
 
         if solver_config is not None:
             self.solver_config = solver_config

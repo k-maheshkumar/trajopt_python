@@ -15,35 +15,13 @@ from scripts.utils.yaml_paser import ConfigParser
 class SimulationWorld(ISimulationWorldBase):
     def __init__(self, **kwargs):
 
-        if "use_gui" in kwargs:
-            use_gui = kwargs["use_gui"]
-        else:
-            use_gui = False
-
-        if "verbose" in kwargs:
-            verbose = kwargs["verbose"]
-        else:
-            verbose = False
-
-        if "log_file" in kwargs:
-            log_file = kwargs["log_file"]
-        else:
-            log_file = False
-
-        if "use_real_time_simulation" in kwargs:
-            use_real_time_simulation = kwargs["use_real_time_simulation"]
-        else:
-            use_real_time_simulation = False
-
-        if "fixed_time_step" in kwargs:
-            fixed_time_step = kwargs["fixed_time_step"]
-        else:
-            fixed_time_step = 0.01
-
-        if "logger_name" in kwargs:
-            logger_name = kwargs["logger_name"]
-        else:
-            logger_name = __name__
+        use_gui = utils.get_var_from_kwargs("use_gui", optional=True, default=False, **kwargs)
+        verbose = utils.get_var_from_kwargs("verbose", optional=True, default=False, **kwargs)
+        log_file = utils.get_var_from_kwargs("log_file", optional=True, default=False, **kwargs)
+        use_real_time_simulation = utils.get_var_from_kwargs("use_real_time_simulation", optional=True,
+                                                             default=False, **kwargs)
+        fixed_time_step = utils.get_var_from_kwargs("fixed_time_step", optional=True,  default=0.01, **kwargs)
+        logger_name = utils.get_var_from_kwargs("logger_name", optional=True,  default=__name__, **kwargs)
 
         self.CYLINDER = sim.GEOM_CYLINDER
         self.BOX = sim.GEOM_BOX

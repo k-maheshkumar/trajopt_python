@@ -48,33 +48,20 @@ class Robot:
 
     def get_planning_group_joint_values(self, name, group):
         joint_state = OrderedDict()
-        print "----------------------------------------------"
-        print name
-        print group
         if (name, group) in self.group_states_map:
             joint_state = self.group_states_map[name, group]
-        print "***********************************************"
         return joint_state.keys(), joint_state.values()
 
     def get_planning_group_from_srdf(self, group):
-        # group = OrderedDict()
-        print "----------------------------------------------"
-        print group
         if group in self.group_map:
             group = self.group_map[group]
-        print "***********************************************"
         return group
 
     def get_group_state_from_srdf(self, group_name):
-        # group = OrderedDict()
         joint_state = OrderedDict()
-        print "----------------------------------------------"
-        print group_name
         if group_name in self.joint_states_map:
             joint_state = self.joint_states_map[group_name]
-        print "***********************************************"
         return joint_state.keys(), joint_state.values()
-
 
     def get_trajectory(self):
         return self.planner.trajectory
@@ -83,52 +70,33 @@ class Robot:
         return self.planner.trajectory.initial
 
     def init_plan_trajectory(self, **kwargs):
-        if "group" in kwargs:
-            joint_group = kwargs["group"]
-        if "samples" in kwargs:
-            samples = kwargs["samples"]
-        if "duration" in kwargs:
-            duration = kwargs["duration"]
-        if "solver" in kwargs:
-            solver = kwargs["solver"]
+
+        joint_group = utils.get_var_from_kwargs("group", **kwargs)
+        samples = utils.get_var_from_kwargs("samples", **kwargs)
+        duration = utils.get_var_from_kwargs("duration", **kwargs)
+        solver = utils.get_var_from_kwargs("solver", optional=True, default="SCS", **kwargs)
+        solver_config = utils.get_var_from_kwargs("solver_config", optional=True, **kwargs)
+
+        if solver_config is not None:
+            if "decimals_to_round" in solver_config:
+                decimals_to_round = int(solver_config["decimals_to_round"])
         else:
-            solver = "SCS"
-        if "solver_config" in kwargs:
-            solver_config = kwargs["solver_config"]
-            if solver_config is not None:
-                if "decimals_to_round" in solver_config:
-                    decimals_to_round = int(solver_config["decimals_to_round"])
-            else:
-                decimals_to_round = 5
-        else:
-            solver_config = None
             decimals_to_round = 5
 
-        if "current_state" in kwargs:
-            current_state = kwargs["current_state"]
+        current_state = utils.get_var_from_kwargs("current_state", **kwargs)
+        goal_state = utils.get_var_from_kwargs("goal_state", **kwargs)
 
-        if "goal_state" in kwargs:
-            goal_state = kwargs["goal_state"]
+        collision_safe_distance = utils.get_var_from_kwargs("collision_safe_distance", optional=True,
+                                                            default=0.05, **kwargs)
 
-        if "collision_safe_distance" in kwargs:
-            collision_safe_distance = kwargs["collision_safe_distance"]
-        else:
-            collision_safe_distance = 0.05
+        collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
+                                                            default=0.1, **kwargs)
 
-        if "collision_check_distance" in kwargs:
-            collision_check_distance = kwargs["collision_check_distance"]
-        else:
-            collision_check_distance = 0.1
+        solver_class = utils.get_var_from_kwargs("solver_class", optional=True,
+                                                            default="new", **kwargs)
 
-        if "solver_class" in kwargs:
-            solver_class = kwargs["solver_class"]
-        else:
-            solver_class = "new"
-
-        if "verbose" in kwargs:
-            verbose = kwargs["verbose"]
-        else:
-            verbose = False
+        verbose = utils.get_var_from_kwargs("verbose", optional=True,
+                                                            default=False, **kwargs)
 
         if verbose:
             main_logger_name = "Trajectory_Planner"

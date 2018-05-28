@@ -72,93 +72,64 @@ class TrajectoryPlanner:
 
     def init(self, **kwargs):
         self.__clear_all_data()
-        if kwargs is not None:
-            if "problem" in kwargs:
-                self.problem = kwargs["problem"]
-                if "samples" in self.problem:
-                    self.no_of_samples = self.problem["samples"]
-                else:
-                    self.logger.critical("attribute: number of samples is missing")
-                if "duration" in self.problem:
-                    self.duration = self.problem["duration"]
-                else:
-                    self.logger.critical("attribute: duration is missing")
-                if "max_iteration" in self.problem:
-                    self.max_no_of_Iteration = self.problem["max_iteration"]
-                else:
-                    self.max_no_of_Iteration = 10
-                if "joints" in self.problem:
-                    self.joints = self.problem["joints"]
-                    self.num_of_joints = len(self.problem["joints"])
-                else:
-                    self.logger.critical("attribute: joints is missing")
-                if "max_penalty" in self.problem:
-                    self.max_penalty = self.problem["max_penalty"]
-                else:
-                    self.max_penalty = 1e4
-                if "max_delta" in self.problem:
-                    self.delta_max = self.problem["max_delta"]
-                else:
-                    self.delta_max = 5
-                if "collision_safe_distance" in self.problem:
-                    self.collision_safe_distance = self.problem["collision_safe_distance"]
-                if "collision_check_distance" in self.problem:
-                    self.collision_check_distance = self.problem["collision_check_distance"]
-                if "joint_group" in self.problem:
-                    self.current_planning_joint_group = self.problem["joint_group"]
+        # self.problem = utils.get_var_from_kwargs("problem", optional=True, **kwargs)
+        # if self.problem is not None:
+        #     self.no_of_samples = utils.get_var_from_kwargs("samples", **self.problem)
+        #     self.duration = utils.get_var_from_kwargs("duration", **self.problem)
+        #     self.max_no_of_Iteration = utils.get_var_from_kwargs("max_iteration", optional=True,
+        #                                                          default=20, **self.problem)
+        #     self.joints = utils.get_var_from_kwargs("joints", **self.problem)
+        #     if self.joints is not None:
+        #         self.num_of_joints = len(self.joints)
+        #     self.max_penalty = utils.get_var_from_kwargs("max_penalty", optional=True,
+        #                                                  default=1e4, **self.problem)
+        #     self.delta_max = utils.get_var_from_kwargs("max_delta", optional=True,
+        #                                                  default=50, **self.problem)
+        #     self.collision_safe_distance = utils.get_var_from_kwargs("collision_safe_distance", optional=True,
+        #                                                  default=0.1, **self.problem)
+        #     self.collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
+        #                                                  default=0.15, **self.problem)
+        #     self.delta_max = utils.get_var_from_kwargs("max_delta", optional=True,
+        #                                                  default=50, **self.problem)
+        #     self.current_planning_joint_group = utils.get_var_from_kwargs("joint_group", **self.problem)
 
-            if "joints" in kwargs:
-                self.joints = kwargs["joints"]
-                self.num_of_joints = len(self.joints)
-            if "solver" in kwargs:
-                self.solver = kwargs["solver"]
-            else:
-                self.solver = None
-            if "duration" in kwargs:
-                self.duration = kwargs["duration"]
-            if "samples" in kwargs:
-                self.no_of_samples = kwargs["samples"]
-            if "max_iteration" in kwargs:
-                self.max_no_of_Iteration = kwargs["max_iteration"]
-            else:
-                self.max_no_of_Iteration = 20
-            if "decimals_to_round" in kwargs:
-                self.decimals_to_round = int(kwargs["decimals_to_round"])
-            else:
-                self.decimals_to_round = 5
+        self.joints = utils.get_var_from_kwargs("joints", **kwargs)
+        if self.joints is not None:
+            self.num_of_joints = len(self.joints)
 
-            if "joint_group" in kwargs:
-                self.current_planning_joint_group = kwargs["joint_group"]
+        self.solver = utils.get_var_from_kwargs("solver", optional=True, **kwargs)
+        self.duration = utils.get_var_from_kwargs("duration", optional=True, default=10, **kwargs)
+        self.no_of_samples = utils.get_var_from_kwargs("samples", optional=True, default=20, **kwargs)
+        self.max_no_of_Iteration = utils.get_var_from_kwargs("max_iteration", optional=True, default=20, **kwargs)
+        self.decimals_to_round = utils.get_var_from_kwargs("decimals_to_round", optional=True, default=5, **kwargs)
+        self.collision_safe_distance = utils.get_var_from_kwargs("collision_safe_distance", optional=True,
+                                                                 default=0.1, **kwargs)
+        self.collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
+                                                                  default=0.15, **kwargs)
+        self.current_planning_joint_group = utils.get_var_from_kwargs("joint_group", **kwargs)
+        self.solver_class = utils.get_var_from_kwargs("solver_class", optional=True,
+                                                                      default="new", **kwargs)
+        if self.solver_class is not None:
+            self.solver_class = self.solver_class[0]
 
-            if "collision_safe_distance" in kwargs:
-                self.collision_safe_distance = float(kwargs["collision_safe_distance"])
-            if "collision_check_distance" in kwargs:
-                self.collision_check_distance = float(kwargs["collision_check_distance"])
+        if self.solver_class.lower() == "old":
+            self.sqp_solver = self.sqp_solver_old
 
-            if "solver_class" in kwargs:
-                self.solver_class = kwargs["solver_class"][0]
-            else:
-                self.solver_class = "new"
+        self.solver_config = utils.get_var_from_kwargs("solver_config", optional=True, **kwargs)
 
-            if self.solver_class.lower() == "old":
-                self.sqp_solver = self.sqp_solver_old
+        start = time.time()
+        self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
+                          self.collision_safe_distance, self.collision_check_distance)
+        end = time.time()
+        self.prob_model_time += end - start
+        self.sqp_solver.init(P=self.problem_model.cost_matrix_P, q=self.problem_model.cost_matrix_q,
+                             G=self.problem_model.robot_constraints_matrix,
+                             lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,
+                             A=self.problem_model.start_and_goal_matrix, b=self.problem_model.start_and_goal_limits,
+                             initial_guess=self.problem_model.initial_guess, solver_config=self.solver_config)
 
-            if "solver_config" in kwargs:
-                self.solver_config = kwargs["solver_config"]
-
-            start = time.time()
-            self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
-                              self.collision_safe_distance, self.collision_check_distance)
-            end = time.time()
-            self.prob_model_time += end - start
-            self.sqp_solver.init(P=self.problem_model.cost_matrix_P, q=self.problem_model.cost_matrix_q,
-                                 G=self.problem_model.robot_constraints_matrix,
-                                 lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,
-                                 A=self.problem_model.start_and_goal_matrix, b=self.problem_model.start_and_goal_limits,
-                                 initial_guess=self.problem_model.initial_guess, solver_config=self.solver_config)
-
-            self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
-                                 , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
+        self.trajectory.init(np.array((np.split(self.problem_model.initial_guess, self.no_of_samples)))
+                             , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
 
     def update_prob(self):
         self.sqp_solver.update_prob(G=self.problem_model.robot_constraints_matrix,

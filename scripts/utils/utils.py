@@ -148,13 +148,13 @@ class Utils:
         return urdf_string_with_abs_path
 
     @classmethod
-    def get_var_from_kwargs(cls, key, optional=False, **kwargs):
+    def get_var_from_kwargs(cls, key, optional=False, default=None, **kwargs):
         if key in kwargs:
             return kwargs[key]
+        elif optional and default is not None:
+            return default
         elif not optional:
             method_name = sys._getframe().f_back.f_code.co_name
             raise Exception("Method: \"" + method_name + "\" expects a parameter with key: " + str(key))
         else:
             return None
-
-

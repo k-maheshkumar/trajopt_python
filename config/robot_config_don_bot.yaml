@@ -74,7 +74,7 @@ robot:
         ur5_wrist_3_joint: -1.5770983695983887
         gripper_base_gripper_left_joint: -0.0027000010013580322
         gripper_joint: 0.006500000134110451
-      aloc3:
+      aloc31:
         ur5_shoulder_pan_joint: 1.6534695625305176
         ur5_shoulder_lift_joint: -2.1164417266845703
         ur5_elbow_joint: -2.2487189769744873

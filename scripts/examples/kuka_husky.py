@@ -21,7 +21,7 @@ class PlannerExample:
             "verbose": True,
             "log_file": False,
             # "save_problem": True,
-            "robot_config": "robot_config_kukka_arm.yaml"
+            "robot_config": "robot_config_kuka_husky.yaml"
 
         }
 
@@ -31,9 +31,9 @@ class PlannerExample:
 
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
-        self.robot_id = self.planner.load_robot(urdf_file,
-                                                use_fixed_base=True
-                                                )
+        # self.robot_id = self.planner.load_robot(urdf_file,
+        #                                         use_fixed_base=True
+        #                                         )
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
         # table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf",
@@ -128,10 +128,8 @@ class PlannerExample:
         print("is trajectory free from collision: ", is_collision_free)
         print status
         # print trajectory.final
-        self.planner.execute_trajectory()
-        self.planner.world.step_simulation_for(2)
-        # # # import sys
-        # # # sys.exit(0)
+        if is_collision_free:
+            self.planner.execute_trajectory()
 
     def load_srdf(self):
         srdf_file = home + "/catkin_ws/src/robot_descriptions/kuka_husky_description/moveit_config/config/kuka_husky.srdf"
@@ -197,25 +195,25 @@ class PlannerExample:
         import pybullet as p
         from scripts.simulation.bulletTypes import ClosestPointInfo
         p.connect(p.SHARED_MEMORY, "localhost")
-        joints = [i for i in range(p.getNumJoints(self.robot_id))]
+        joints = [i for i in range(p.getNumJoints(self.planner.robot.id))]
 
         index = 17
         # print "ghdghrdklhg", p.getNumJoints(self.robot_id)
         # zero_vec = [0] * 11
-        zero_vec = [0] * p.getNumJoints(self.robot_id)
+        zero_vec = [0] * p.getNumJoints(self.planner.robot.id)
         # for i in range(p.getNumJoints(self.robot_id)):
         #     print p.getJointInfo(self.robot_id, i)
 
         self.planner.world.reset_joint_states(self.planner.robot.id, start_state.values(), start_state.keys())
 
-        current_robot_state = self.planner.world.get_joint_states_at(self.robot_id, start_state.values(), start_state.keys())
+        current_robot_state = self.planner.world.get_joint_states_at(self.planner.robot.id, start_state.values(), start_state.keys())
         zero_vec = [0] * len(current_robot_state[0])
 
         print "current_robot_state*------------------", len(current_robot_state[0])
         print current_robot_state[0]
-        print len(zero_vec), len(current_robot_state[0]), p.getNumJoints(self.robot_id)
+        print len(zero_vec), len(current_robot_state[0]), p.getNumJoints(self.planner.robot.id)
 
-        current_position_jacobian, _ = p.calculateJacobian(self.robot_id, index,
+        current_position_jacobian, _ = p.calculateJacobian(self.planner.robot.id, index,
                                                              # closest_pt_on_A_at_t,
                                                              [0, 0, 0],
                                                            current_robot_state[0],
@@ -224,8 +222,8 @@ class PlannerExample:
         print current_position_jacobian
         print len(current_position_jacobian[0])
 
-        cast_points = [ClosestPointInfo(*x) for x in p.getClosestPoints(self.robot_id, self.box_id, distance=0.1)]
-        cast_points1 = [ClosestPointInfo(*x) for x in p.getClosestPoints(self.robot_id, self.robot_id, distance=0.1)]
+        cast_points = [ClosestPointInfo(*x) for x in p.getClosestPoints(self.planner.robot.id, self.box_id, distance=0.1)]
+        cast_points1 = [ClosestPointInfo(*x) for x in p.getClosestPoints(self.planner.robot.id, self.planner.robot.id, distance=0.1)]
 
         for cp in cast_points:
             if cp.contact_distance < 0:
@@ -250,7 +248,7 @@ class PlannerExample:
 def main():
     example = PlannerExample()
     # example.load_srdf()
-    example.connect_directly()
+    # example.connect_directly()
     example.run()
     # example.manual_control()
     while True:

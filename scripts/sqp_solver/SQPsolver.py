@@ -256,8 +256,8 @@ class SQPsolver:
 
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, p, penalizer)
-        if self.D is not None:
-            print self.D.shape, p.shape, delta, penalizer.value
+        # if self.D is not None:
+        #     print self.D.shape, p.shape, delta, penalizer.value
         constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
 
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)

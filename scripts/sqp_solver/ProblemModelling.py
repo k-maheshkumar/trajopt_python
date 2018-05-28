@@ -136,6 +136,7 @@ class ProblemModelling:
                 start_state = joint[0]
                 end_state = joint[1]
                 joint_type = joint[3]
+                ignore_state = joint[4]
             elif type(joint) is dict:
                 max_vel = self.joints[joint]["limit"]["velocity"]
                 min_vel = -self.joints[joint]["limit"]["velocity"]
@@ -143,6 +144,7 @@ class ProblemModelling:
                 joint_upper_limit = self.joints[joint]["limit"]["upper"]
                 start_state = self.joints[joint]["states"]["start"]
                 end_state = self.joints[joint]["states"]["end"]
+                ignore_state = self.joints[joint]["ignore_state"]
             else:
                 max_vel = self.joints[joint]["limit"].velocity
                 min_vel = -self.joints[joint]["limit"].velocity
@@ -150,11 +152,12 @@ class ProblemModelling:
                 joint_upper_limit = self.joints[joint]["limit"].upper
                 start_state = self.joints[joint]["states"]["start"]
                 end_state = self.joints[joint]["states"]["end"]
+                ignore_state = self.joints[joint]["ignore_state"]
 
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)
 
-            if joint_type == "prismatic" or "continuous":
+            if ignore_state:
                 self.start_and_goal_matrix[i + len(self.joints), i + self.samples + len(self.joints) + 1] = 0
 
             self.velocity_lower_limits.append(np.full((1, self.samples - 1), min_vel))

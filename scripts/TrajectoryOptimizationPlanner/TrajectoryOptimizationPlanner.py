@@ -141,6 +141,7 @@ class TrajectoryOptimizationPlanner():
                                                             default=0.05, **kwargs)
         collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
                                                              default=0.1, **kwargs)
+        ignore_goal_states = utils.get_var_from_kwargs("ignore_goal_states", optional=True, **kwargs)
 
         current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
 
@@ -148,7 +149,8 @@ class TrajectoryOptimizationPlanner():
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance,
-                                        solver_class=self.sqp_config["solver_class"]
+                                        solver_class=self.sqp_config["solver_class"],
+                                        ignore_goal_states=ignore_goal_states
                                         )
 
         # self.world.toggle_rendering_while_planning(False)

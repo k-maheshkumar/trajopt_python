@@ -16,7 +16,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            # "verbose": "INFO",
+            "verbose": "INFO",
             "log_file": True,
             # "save_problem": True,
             # "plot_trajectory": True,
@@ -111,11 +111,11 @@ class PlannerExample:
 
         start_state = "below_shelf"
         goal_state = "above_shelf"
-        # group = "full_body"
+        group = "full_body"
         #
         start_state = "below_shelf1"
         goal_state = "above_shelf1"
-        group = "ur5_arm"
+        # group = "ur5_arm"
 
         start = randint(1, 5)
         end = randint(6, 10)
@@ -124,8 +124,8 @@ class PlannerExample:
         # start = 9
         end = 10
 
-        start_state = "aloc" + str(start)
-        goal_state = "aloc" + str(end)
+        start_state = "floc" + str(start)
+        goal_state = "floc" + str(end)
 
         self.planner.reset_robot_to(start_state, group)
 
@@ -140,6 +140,9 @@ class PlannerExample:
         print "start_state: ", start_state
         print "goal_state: ", goal_state
 
+        ignore_goal_states = ["odom_x_joint", "odom_y_joint", "odom_z_joint", "gripper_base_gripper_left_joint",
+                              "gripper_joint"]
+
         # start_state = OrderedDict(
         #     [('ur5_shoulder_pan_joint', 1.6534695625305176), ('ur5_shoulder_lift_joint', -2.1164417266845703),
         #      ('ur5_elbow_joint', -2.2487189769744873), ('ur5_wrist_1_joint', 0.5952491760253906),
@@ -150,7 +153,9 @@ class PlannerExample:
                                                             group=group, goal_state=goal_state, start_state=start_state,
                                                             # group=group1, goal_state=goal_state1,
                                                             collision_safe_distance=collision_safe_distance,
-                                                            collision_check_distance=collision_check_distance)
+                                                            collision_check_distance=collision_check_distance,
+                                                            ignore_goal_states=ignore_goal_states
+                                                            )
         print("is trajectory free from collision: ", status)
 
         if status:

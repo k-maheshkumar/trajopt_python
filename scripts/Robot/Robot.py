@@ -92,6 +92,7 @@ class Robot:
 
         collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
                                                             default=0.1, **kwargs)
+        ignore_goal_states = utils.get_var_from_kwargs("ignore_goal_states", optional=True, **kwargs)
 
         solver_class = utils.get_var_from_kwargs("solver_class", optional=True,
                                                             default="new", **kwargs)
@@ -112,20 +113,28 @@ class Robot:
                     if joint_in_group in current_state and joint_in_group in goal_state and \
                                     joint_in_group in self.model.joint_map:
                         if self.model.joint_map[joint_in_group].type != "fixed":
+                            ignore_state = False
+                            if joint_in_group in ignore_goal_states:
+                                ignore_state = True
                             states[joint_in_group] = {"start": current_state[joint_in_group],
                                                       "end": goal_state[joint_in_group]}
                             joints[joint_in_group] = {
                                 "states": states[joint_in_group],
                                 "limit": self.model.joint_map[joint_in_group].limit,
+                                "ignore_state": ignore_state
                             }
             elif type(current_state) is list and type(current_state) is list:
                 joints = []
 
                 assert len(current_state) == len(goal_state) == len(joint_group)
-                for joint, current_state, next_state in itertools.izip(joint_group, current_state, goal_state):
+                for joint, c_state, n_state in itertools.izip(joint_group, current_state, goal_state):
                     if joint in self.model.joint_map:
-                        joints.append([current_state, next_state, self.model.joint_map[joint].limit,
-                                       self.model.joint_map[joint].type])
+                        ignore_state = False
+                        if joint in ignore_goal_states:
+                            ignore_state = True
+                        print joint, ignore_state
+                        joints.append([c_state, n_state, self.model.joint_map[joint].limit,
+                                       self.model.joint_map[joint].type, ignore_state])
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,

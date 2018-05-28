@@ -115,7 +115,7 @@ class PlannerExample:
         #
         start_state = "below_shelf1"
         goal_state = "above_shelf1"
-        # group = "ur5_arm"
+        group = "ur5_arm"
 
         start = randint(1, 5)
         end = randint(6, 10)
@@ -124,8 +124,8 @@ class PlannerExample:
         # start = 9
         end = 10
 
-        start_state = "floc" + str(start)
-        goal_state = "floc" + str(end)
+        start_state = "aloc" + str(start)
+        goal_state = "aloc" + str(end)
 
         self.planner.reset_robot_to(start_state, group)
 
@@ -150,7 +150,8 @@ class PlannerExample:
         #      ('gripper_base_gripper_left_joint', -0.0027000010013580322), ('gripper_joint', 0.006500000134110451)])
 
         _, status, trajectory = self.planner.get_trajectory(samples=samples, duration=duration,
-                                                            group=group, goal_state=goal_state, start_state=start_state,
+                                                            group=group, goal_state=goal_state,
+                                                            # start_state=start_state,
                                                             # group=group1, goal_state=goal_state1,
                                                             collision_safe_distance=collision_safe_distance,
                                                             collision_check_distance=collision_check_distance,

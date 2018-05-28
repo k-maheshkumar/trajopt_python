@@ -130,8 +130,9 @@ class Robot:
                 for joint, c_state, n_state in itertools.izip(joint_group, current_state, goal_state):
                     if joint in self.model.joint_map:
                         ignore_state = False
-                        if joint in ignore_goal_states:
-                            ignore_state = True
+                        if ignore_goal_states is not None and len(ignore_goal_states):
+                            if joint in ignore_goal_states:
+                                ignore_state = True
                         print joint, ignore_state
                         joints.append([c_state, n_state, self.model.joint_map[joint].limit,
                                        self.model.joint_map[joint].type, ignore_state])

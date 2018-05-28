@@ -14,6 +14,11 @@ class TrajectoryOptimizationPlanner():
     def __init__(self, **kwargs):
 
         self.robot_config = None
+        self.default_config = None
+        self.config = None
+        self.sqp_yaml = None
+        self.sqp_config = None
+        self.robot_default_config_params = None
         self.elapsed_time = 0
 
         main_logger_name = utils.get_var_from_kwargs("logger_name", optional=True,
@@ -49,9 +54,9 @@ class TrajectoryOptimizationPlanner():
         self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
         self.config = self.default_config.get_by_key("config")
 
-        self.sqp_config_file = file_path_prefix + self.config["solver"]
+        sqp_config_file = file_path_prefix + self.config["solver"]
 
-        self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
+        self.sqp_yaml = yaml.ConfigParser(sqp_config_file)
         self.sqp_config = self.sqp_yaml.get_by_key("sqp")
         if config_file is not None:
             robot_config_file = file_path_prefix + config_file
@@ -108,7 +113,7 @@ class TrajectoryOptimizationPlanner():
             if not len(group):
                 group = self.robot.get_planning_group_from_srdf(group)
 
-        start_state = utils.get_var_from_kwargs("start_state", **kwargs)
+        start_state = utils.get_var_from_kwargs("start_state", optional=True, **kwargs)
         if start_state is not None and len(group):
             if type(start_state) is dict or type(start_state) is OrderedDict:
                 start_state = start_state.values()
@@ -121,6 +126,8 @@ class TrajectoryOptimizationPlanner():
                 print "is_start_state_in_collision", is_start_state_in_collision
                 status = "start state in collision"
                 return status, is_collision_free, trajectory
+        elif len(group):
+            start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
 
         goal_state = utils.get_var_from_kwargs("goal_state", **kwargs)
         if goal_state is not None and len(group):
@@ -143,9 +150,7 @@ class TrajectoryOptimizationPlanner():
                                                              default=0.1, **kwargs)
         ignore_goal_states = utils.get_var_from_kwargs("ignore_goal_states", optional=True, **kwargs)
 
-        current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
-
-        self.robot.init_plan_trajectory(group=group, current_state=current_robot_state,
+        self.robot.init_plan_trajectory(group=group, current_state=start_state,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance,

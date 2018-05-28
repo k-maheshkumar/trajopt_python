@@ -31,9 +31,8 @@ class PlannerExample:
 
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
-        # self.robot_id = self.planner.load_robot(urdf_file,
-        #                                         use_fixed_base=True
-        #                                         )
+        self.robot_id = self.planner.load_robot(urdf_file, use_fixed_base=True)
+        self.robot_id = self.planner.load_robot_srdf(srdf_file)
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
         # table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf",
@@ -244,6 +243,10 @@ class PlannerExample:
 
         print "*********************************"
 
+    def dummy(self):
+        while True:
+            pass
+
 
 def main():
     example = PlannerExample()
@@ -251,8 +254,7 @@ def main():
     # example.connect_directly()
     example.run()
     # example.manual_control()
-    while True:
-        pass
+    # example.dummy()
 
 if __name__ == '__main__':
     main()

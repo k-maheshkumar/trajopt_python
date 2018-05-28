@@ -1,6 +1,6 @@
 robot:
-    urdf: "/home/mahesh//catkin_ws/src/robot_descriptions/kuka_husky_description/urdf/kuka_husky.urdf"
-    srdf: "/home/mahesh//catkin_ws/src/robot_descriptions/kuka_husky_description/moveit_config/config/kuka_husky.srdf"
+#    urdf: "/home/mahesh/catkin_ws/src/robot_descriptions/kuka_husky_description/urdf/kuka_husky.urdf"
+#    srdf: "/home/mahesh/catkin_ws/src/robot_descriptions/kuka_husky_description/moveit_config/config/kuka_husky.srdf"
 #    position: [0.0, 0.0, 0.0]
 #    orientation: [0.0, 0.0, 0.0]
     joints_groups:

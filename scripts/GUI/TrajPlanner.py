@@ -3,6 +3,8 @@ from scripts.utils import yaml_paser as yaml
 import functools
 from scripts.utils.utils import Utils as utils
 import logging
+import os
+
 
 class PlannerGui(QtGui.QMainWindow):
     def __init__(self, logger_name=__name__, config_file=None, verbose=False, file_log=False, planner=None, width=1200, height=400):
@@ -13,7 +15,9 @@ class PlannerGui(QtGui.QMainWindow):
         self.planner = planner
 
         if config_file is None:
-            file_path_prefix = '../../config/'
+            dirname = os.path.dirname(__file__)
+            file_path_prefix = os.path.join(dirname, '../../config/')
+            # file_path_prefix = '../../config/'
             config_file = file_path_prefix + 'default_config.yaml'
 
         self.default_config = yaml.ConfigParser(config_file)

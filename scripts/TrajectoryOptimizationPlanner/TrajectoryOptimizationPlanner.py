@@ -1,5 +1,3 @@
-from samba.dcerpc.smb_acl import group
-
 from scripts.simulation.SimulationWorld import SimulationWorld
 from scripts.Robot.Robot import Robot
 import numpy as np
@@ -61,16 +59,7 @@ class TrajectoryOptimizationPlanner():
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
         self.world.toggle_rendering(0)
-
-        urdf_file = self.robot_config["urdf"]
-        print urdf_file
-        srdf_file = self.robot_config["srdf"]
-        pos = self.robot_config["position"] if "position" in self.robot_config else [0, 0, 0]
-        orn = self.robot_config["orientation"] if "orientation" in self.robot_config else [0, 0, 0]
-        self.load_robot(urdf_file, position=pos, orientation=orn)
-        self.robot.load_srdf(srdf_file)
-        self.world.ignored_collisions = self.robot.get_ignored_collsion()
-
+        self.load_robot_from_config()
         self.world.toggle_rendering(1)
 
     def load_configs(self, config_file=None):
@@ -93,8 +82,21 @@ class TrajectoryOptimizationPlanner():
     def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=True):
         self.robot.id = self.world.load_robot(urdf_file, position, orientation, use_fixed_base)
         self.robot.load_robot_model(urdf_file)
-
         return self.robot.id
+
+    def load_robot_srdf(self, srdf_file):
+        self.robot.load_srdf(srdf_file)
+        self.world.ignored_collisions = self.robot.get_ignored_collsion()
+
+    def load_robot_from_config(self):
+        urdf_file = utils.get_var_from_kwargs("urdf", optional=True, **self.robot_config)
+        srdf_file = utils.get_var_from_kwargs("srdf", optional=True, **self.robot_config)
+        if urdf_file is not None:
+            pos = self.robot_config["position"] if "position" in self.robot_config else [0, 0, 0]
+            orn = self.robot_config["orientation"] if "orientation" in self.robot_config else [0, 0, 0]
+            self.load_robot(urdf_file, position=pos, orientation=orn)
+        if srdf_file is not None:
+            self.load_robot_srdf(srdf_file)
 
     def load_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
         urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
@@ -115,107 +117,6 @@ class TrajectoryOptimizationPlanner():
 
     def get_trajectory(self, **kwargs):
         group = []
-        # if "group" in kwargs:
-        #     group_name = kwargs["group"]
-        #     if type(group_name) is str:
-        #         group = self.robot_config["joints_groups"][kwargs["group"]]
-        #     if not len(group):
-        #         group = self.robot.get_planning_group_from_srdf(group)
-        # if "start_state" in kwargs and len(group):
-        #     start_state = kwargs["start_state"]
-        #     if type(start_state) is str and start_state in self.robot_config["joint_configurations"]:
-        #         start_state = self.robot_config["joint_configurations"][start_state]
-        #     if not len(start_state):
-        #         group, start_state = self.robot.get_group_state_from_srdf(group_name)
-        #
-        #     if type(start_state) is dict or type(start_state) is OrderedDict:
-        #         start_state = start_state.values()
-        #
-        #     # self.world.reset_joint_states(self.robot.id, start_state, group)
-        #     self.reset_robot_to(start_state, group, key="start_state")
-        #     # self.world.step_simulation_for(0.2)
-        # else:
-        #     start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
-        #
-        # if "group" in kwargs and "goal_state" in kwargs:
-        #     group = kwargs["group"]
-        #     goal_state = kwargs["goal_state"]
-        #     group, goal_state = self.robot.get_planning_group_joint_values(goal_state, group)
-        #
-        #     if not len(group) and not len(goal_state):
-        #         group = kwargs["group"]
-        #         if type(group) is str:
-        #             group = self.robot_config["joints_groups"][kwargs["group"]]
-        #         goal_state = kwargs["goal_state"]
-        #         if type(goal_state) is str:
-        #             goal_state = self.robot_config["joint_configurations"][goal_state]
-        #
-        #         if type(goal_state) is dict or type(goal_state) is OrderedDict:
-        #             goal_state = goal_state.values()
-
-        # if "group" in kwargs and "start_state" in kwargs:
-        #     group = kwargs["group"]
-        #     start_state = kwargs["start_state"]
-        #     group, start_state = self.robot.get_planning_group_joint_values(start_state, group)
-        #     if not len(group) and not len(start_state):
-        #         group = kwargs["group"]
-        #         if type(group) is str:
-        #             group = self.robot_config["joints_groups"][kwargs["group"]]
-        #         start_state = kwargs["start_state"]
-        #         if type(start_state) is str:
-        #             start_state = self.robot_config["joint_configurations"][start_state]
-        #
-        #         if type(start_state) is dict or type(start_state) is OrderedDict:
-        #             start_state = start_state.values()
-        #
-        #         self.world.reset_joint_states(self.robot.id, start_state, group)
-        #         # self.world.step_simulation_for(0.2)
-        #     else:
-        #         start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
-        #
-        # if "group" in kwargs and "goal_state" in kwargs:
-        #     group = kwargs["group"]
-        #     goal_state = kwargs["goal_state"]
-        #     group, goal_state = self.robot.get_planning_group_joint_values(goal_state, group)
-        #
-        #     if not len(group) and not len(goal_state):
-        #         group = kwargs["group"]
-        #         if type(group) is str:
-        #             group = self.robot_config["joints_groups"][kwargs["group"]]
-        #         goal_state = kwargs["goal_state"]
-        #         if type(goal_state) is str:
-        #             goal_state = self.robot_config["joint_configurations"][goal_state]
-        #
-        #         if type(goal_state) is dict or type(goal_state) is OrderedDict:
-        #             goal_state = goal_state.values()
-
-            # print goal_state
-            # print OrderedDict(zip(group, goal_state))
-
-        # if "group" in kwargs:
-        #     group = kwargs["group"]
-        #     if type(group) is str:
-        #         group = self.robot_config["joints_groups"][kwargs["group"]]
-        # if "start_state" in kwargs:
-        #     start_state = kwargs["start_state"]
-        #     if type(start_state) is str:
-        #         start_state = self.robot_config["joint_configurations"][start_state]
-        #
-        #     if type(start_state)is dict or type(start_state) is OrderedDict:
-        #         start_state = start_state.values()
-        #
-        #     self.world.reset_joint_states(self.robot.id, start_state, group)
-        #     # self.world.step_simulation_for(0.2)
-        # else:
-        #     start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
-        #
-        # if "goal_state" in kwargs:
-        #     goal_state = kwargs["goal_state"]
-        #     if type(goal_state) is str:
-        #         goal_state = self.robot_config["joint_configurations"][goal_state]
-        #
-        #     if type(goal_state)is dict or type(goal_state)is OrderedDict:
-        #         goal_state = goal_state.values()
         if "group" in kwargs:
             group_name = kwargs["group"]
             if type(group_name) is list:
@@ -230,10 +131,22 @@ class TrajectoryOptimizationPlanner():
             if not type(start_state) is list:
                 _, start_state = self.get_planning_group_and_corresponding_state("start_state", **kwargs)
             self.reset_robot_to(start_state, group, key="start_state")
+            status, is_collision_free, trajectory = "start state in collision", False, -1
+            is_start_state_in_collision = self.world.is_given_state_in_collision(self.robot.id, start_state, group)
+            if is_start_state_in_collision:
+                print "is_start_state_in_collision", is_start_state_in_collision
+                status = "start state in collision"
+                return status, is_collision_free, trajectory
         if "goal_state" in kwargs and len(group):
             goal_state = kwargs["goal_state"]
             if not type(goal_state) is list:
                 _, goal_state = self.get_planning_group_and_corresponding_state("goal_state", **kwargs)
+                status, is_collision_free, trajectory = "goal state in collision", False, -1
+                is_goal_in_collision = self.world.is_given_state_in_collision(self.robot.id, goal_state, group)
+                if is_goal_in_collision:
+                    print "is_goal_in_collision", is_goal_in_collision
+                    status = "goal state in collision"
+                    return status, is_collision_free, trajectory
 
         if "samples" in kwargs:
             samples = kwargs["samples"]
@@ -251,19 +164,6 @@ class TrajectoryOptimizationPlanner():
             collision_check_distance = kwargs["collision_check_distance"]
         else:
             collision_check_distance = 0.1
-        #
-        status, is_collision_free, trajectory = "goal state in collision", False, -1
-        is_start_state_in_collision = self.world.is_given_state_in_collision(self.robot.id, start_state, group)
-        if is_start_state_in_collision:
-            print "is_start_state_in_collision", is_start_state_in_collision
-            status = "start state in collision"
-            return status, is_collision_free, trajectory
-
-        is_goal_in_collision = self.world.is_given_state_in_collision(self.robot.id, goal_state, group)
-        if is_goal_in_collision:
-            print "is_goal_in_collision", is_goal_in_collision
-            status = "goal state in collision"
-            return status, is_collision_free, trajectory
 
         current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
 

@@ -18,6 +18,7 @@ class PlannerExample:
             # "db_name": "Trajectory_planner_results",
             "db_name": "Trajectory_planner_evaluation",
             # "plot_trajectory": True
+            "robot_config": "robot_config_kuka_arm.yaml"
         }
 
         self.planner = TrajectoryOptimizationPlanner(**config)

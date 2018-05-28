@@ -47,10 +47,3 @@ class ConfigParser:
         with open(file_name, mode) as yaml_file:
             yaml.dump(data, yaml_file, default_flow_style=default_flow_style,
                       Dumper=yamlordereddictloader.Dumper)
-
-# file_path_prefix = '../../config/'
-# sqp_config_file = file_path_prefix + 'robot_config.yaml'
-#
-# sqp_yaml = ConfigParser(sqp_config_file)
-# sqp_config = sqp_yaml.get_by_key("robot")
-# # print sqp_config

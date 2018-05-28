@@ -1,4 +1,0 @@
-trajectory_planner:
-  params:
-    max_iteration: 20
-    max_penalty:

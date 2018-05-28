@@ -110,6 +110,8 @@ class TrajectoryOptimizationPlanner():
 
         start_state = utils.get_var_from_kwargs("start_state", **kwargs)
         if start_state is not None and len(group):
+            if type(start_state) is dict or type(start_state) is OrderedDict:
+                start_state = start_state.values()
             if not type(start_state) is list:
                 _, start_state = self.get_planning_group_and_corresponding_state("start_state", **kwargs)
             self.reset_robot_to(start_state, group, key="start_state")
@@ -122,6 +124,8 @@ class TrajectoryOptimizationPlanner():
 
         goal_state = utils.get_var_from_kwargs("goal_state", **kwargs)
         if goal_state is not None and len(group):
+            if type(goal_state) is dict or type(goal_state) is OrderedDict:
+                goal_state = goal_state.values()
             if not type(goal_state) is list:
                 _, goal_state = self.get_planning_group_and_corresponding_state("goal_state", **kwargs)
                 status, is_collision_free, trajectory = "goal state in collision", False, -1

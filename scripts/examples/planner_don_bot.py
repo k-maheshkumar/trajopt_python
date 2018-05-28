@@ -16,7 +16,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": "INFO",
+            # "verbose": "INFO",
             "log_file": True,
             # "save_problem": True,
             # "plot_trajectory": True,
@@ -32,19 +32,6 @@ class PlannerExample:
         self.planner.world.toggle_rendering(0)
         shelf_id = self.planner.add_constraint_from_urdf("shelf", urdf_file=shelf_file, position=[-0.45, 0, 0.0],
                                                          orientation=p.getQuaternionFromEuler([0, 0, 1.57]))
-        # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.03, 0.03, 0.1],
-        #                                           position=[0.68, -0.1, 0.7],
-        #                                           mass=.2)
-
-        # table_id = self.planner.add_constraint_from_urdf(urdf_file=location_prefix + "table/table.urdf",
-        #                                                  position=[0, 0, 0.0])
-        # #
-        # self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
-        #                                           position=[-0.15, 0.3, 0.62], mass=100)
-        # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.1],
-        #                                           position=[0.0, -0.2, 0.62], mass=100)
-        # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.05, 0.1],
-        #                                           position=[0.0, 0.4, 1], mass=100)
 
         shelf_item_prefix = home + "/catkin_ws/src/shelf_item_descriptions/urdf/"
         salt_urdf = shelf_item_prefix + "salt.urdf"
@@ -105,40 +92,25 @@ class PlannerExample:
         #                                                          position=[offset + 0.1 * x, y, z])
 
         self.planner.world.toggle_rendering(1)
-        # self.planner.world.step_simulation_for(0.2)
 
     def run(self):
-
-        start_state = "below_shelf"
-        goal_state = "above_shelf"
-        group = "full_body"
-        #
-        start_state = "below_shelf1"
-        goal_state = "above_shelf1"
-        group = "ur5_arm"
-
         start = randint(1, 5)
         end = randint(6, 10)
-        start = 3
-        # end = 6
-        # start = 9
-        end = 10
 
         start_state = "aloc" + str(start)
         goal_state = "aloc" + str(end)
+        group = "ur5_arm1"
+
+        # start_state = "floc" + str(start)
+        # goal_state = "floc" + str(end)
+        # group = "full_body"
 
         self.planner.reset_robot_to(start_state, group)
-
-        # goal_state1 = "above_shelf1"
-        # group1 = "ur5_arm"
 
         duration = 10
         samples = 20
         collision_check_distance = 0.15
         collision_safe_distance = 0.1
-
-        print "start_state: ", start_state
-        print "goal_state: ", goal_state
 
         ignore_goal_states = ["odom_x_joint", "odom_y_joint", "odom_z_joint", "gripper_base_gripper_left_joint",
                               "gripper_joint"]
@@ -161,36 +133,28 @@ class PlannerExample:
 
         if status:
             self.planner.execute_trajectory()
-        self.dummy()
-
-    def dummy(self):
-        while True:
-            pass
 
     def manual_control(self):
         start_state = "below_shelf"
         group = "full_body"
         start = randint(1, 4)
         end = randint(5, 8)
-        # start = 4
-        # end = 8
 
         start_state = "aloc" + str(start)
         goal_state = "aloc" + str(end)
         group = "ur5_arm"
 
         self.planner.reset_robot_to(start_state, group)
-        # group = "ur5_arm"
 
         group = self.planner.get_group_names(group)
-        self.planner.world.manual_control(self.robot_id, group, file_name="./donbot_state.yaml", use_current_state=True)
+        self.planner.world.manual_control(self.planner.robot.id, group, file_name="./donbot_state.yaml", use_current_state=True)
 
 
 def main():
     example = PlannerExample()
     example.run()
     # example.manual_control()
-    # example.dummy()
+
 
 if __name__ == '__main__':
     main()

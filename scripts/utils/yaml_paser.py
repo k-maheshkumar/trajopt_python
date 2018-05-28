@@ -12,23 +12,25 @@ class ConfigParser:
             # print self.config
         self.flatten_nested_list(self.config)
     def flatten_nested_list(self, input):
-        for key, value in input.items():
-            # print key, value
-            if isinstance(value, dict):
-                self.flatten_nested_list(value)
-            if isinstance(value, (list, tuple)):
-                # print key, np.asarray(value)
-                if key in input:
-                    input[key] = self.__flatten__(value)
+        if input is not None:
+            for key, value in input.items():
+                # print key, value
+                if isinstance(value, dict):
+                    self.flatten_nested_list(value)
+                if isinstance(value, (list, tuple)):
+                    # print key, np.asarray(value)
+                    if key in input:
+                        input[key] = self.__flatten__(value)
 
 
 
 
 
     def get_by_key(self, key):
-        if key in self.config:
-            self.key = key
-            return self.config[key]
+        if self.config is not None:
+            if key in self.config:
+                self.key = key
+                return self.config[key]
 
     def __flatten__(self, l):
         return self.__flatten__(l[0]) + (self.__flatten__(l[1:]) if len(l) > 1 else []) if type(l) is list else [l]

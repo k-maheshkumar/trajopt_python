@@ -12,7 +12,7 @@ class PlannerExample:
 
         config = {
              "use_gui": True,
-            # "verbose": "DEBUG",
+            "verbose": "DEBUG",
             "log_file": False,
             # "save_problem": True,
             # "db_name": "Trajectory_planner_results",
@@ -120,18 +120,14 @@ class PlannerExample:
         # while True:
         #     pass
 
-        self.planner.world.manual_control(self.robot_id, group, use_current_state=True)
+        self.planner.world.manual_control(self.planner.robot.id, group, use_current_state=True)
 
-    def dummy(self):
-       while True:
-           pass
 
 
 def main():
     example = PlannerExample()
     example.run()
     # example.manual_control()
-    example.dummy()
 
 if __name__ == '__main__':
     main()

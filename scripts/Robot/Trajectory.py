@@ -14,11 +14,6 @@ class Trajectory:
         self.__final = None
         self.__trajectory_group = None
 
-    def get_single_joint_trajectory(self, joint_index):
-        if joint_index == self.__trajectory.shape[0]:
-            joint_index = joint_index - 1
-        return self.__trajectory[joint_index]
-
     @property
     def trajectory(self):
         return self.__trajectory
@@ -49,26 +44,30 @@ class Trajectory:
     def trajectory_group(self):
         return self.__trajectory_group
 
+    # initializing initial trajectory guess for the SQP solver, number of samples and planning group
     def init(self, trajectory, no_of_samples, duration, group):
         self.__no_of_samples = no_of_samples
         self.__duration = duration
         self.__initial = np.array(trajectory).T
         self.__trajectory_group = group
 
+    # updating final trajectory from the SQP solver
     def update(self, trajectory, group):
         self.__trajectory = trajectory
         self.__final = np.array(trajectory)
         self.extract_trajectory_of_individual_joints(group)
         self.add_trajectory(trajectory)
 
+    # converting and combining list of trajectory to trajectory by joint name
     def extract_trajectory_of_individual_joints(self, group):
         self.__trajectory_by_joint_name = OrderedDict(zip(group, self.final.T))
 
+    # adding trajectory from each SQP iteration
     def add_trajectory(self, trajectory):
         self.__trajectories.append(OrderedDict(zip(self.trajectory_group, np.array(trajectory).T)))
 
+    # to plot final result
     def plot_trajectories(self):
-
         plt.multi_plot(self.trajectory_by_name.keys(), self.initial, self.trajectory_by_name.values(),
                                   # "Time steps (t)", "Joint angle (q)", block=True)
                                   "Samples", "Joint angle ($\\Theta$)", block=True)

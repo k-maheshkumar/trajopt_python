@@ -10,9 +10,10 @@ from scripts.DB.Mongo_driver import MongoDriver
 import time
 
 
-class TrajectoryOptimizationPlanner():
-    def __init__(self, **kwargs):
+class TrajectoryOptimizationPlanner:
 
+    # initializing robot model, simulation environment and SQP solver
+    def __init__(self, **kwargs):
         self.robot_config = None
         self.default_config = None
         self.config = None
@@ -49,6 +50,7 @@ class TrajectoryOptimizationPlanner():
         self.load_robot_from_config()
         self.world.toggle_rendering(1)
 
+    # to load default configuration from a file
     def load_configs(self, config_file=None):
         file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
         self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
@@ -66,15 +68,18 @@ class TrajectoryOptimizationPlanner():
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
 
+    # to load a robot model from urdf file
     def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=True):
         self.robot.id = self.world.load_robot(urdf_file, position, orientation, use_fixed_base)
         self.robot.load_robot_model(urdf_file)
         return self.robot.id
 
+    # to load a robot configuration from srdf file
     def load_robot_srdf(self, srdf_file):
         self.robot.load_srdf(srdf_file)
         self.world.ignored_collisions = self.robot.get_ignored_collsion()
 
+    # load robot from urdf file specified in config file
     def load_robot_from_config(self):
         urdf_file = utils.get_var_from_kwargs("urdf", optional=True, **self.robot_config)
         srdf_file = utils.get_var_from_kwargs("srdf", optional=True, **self.robot_config)
@@ -85,33 +90,38 @@ class TrajectoryOptimizationPlanner():
         if srdf_file is not None:
             self.load_robot_srdf(srdf_file)
 
+    # load an objects into simulation environment from urdf file
     def load_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
         urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         return urdf_id
 
+    # load a collision constraints into simulation environment from urdf file
     def add_constraint_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
         urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         self.world.add_collision_constraints(urdf_id)
         return urdf_id
 
+    # load primitive shape collision constraints into simulation environment
     def add_constraint(self, name, shape, mass, position, size=None, radius=None, height=None, orientation=None):
         shape_id = self.world.create_constraint(name, shape, mass, position, orientation, size, radius, height)
         self.world.add_collision_constraints(shape_id)
         return shape_id
 
+    # if already an object loaded into simulation environment, it can be then added as collision constraint
     def add_constraint_with_id(self, constraint_id):
         self.world.add_collision_constraints(constraint_id)
 
+    # method to plan and get the optimized trajectory
     def get_trajectory(self, **kwargs):
         group = []
         group_name = utils.get_var_from_kwargs("group", **kwargs)
         if group_name is not None:
             if type(group_name) is list:
                 group = group_name
-            if type(group_name) is str:
+            if type(group_name) is str and group_name in self.robot_config["joints_groups"]:
                 group = self.robot_config["joints_groups"][group_name]
             if not len(group):
-                group = self.robot.get_planning_group_from_srdf(group)
+                group = self.robot.get_planning_group_from_srdf(group_name)
 
         start_state = utils.get_var_from_kwargs("start_state", optional=True, **kwargs)
         if start_state is not None and len(group):
@@ -158,7 +168,7 @@ class TrajectoryOptimizationPlanner():
                                         ignore_goal_states=ignore_goal_states
                                         )
 
-        self.world.toggle_rendering_while_planning(False)
+        # self.world.toggle_rendering_while_planning(False)
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
         trajectory = self.robot.planner.get_trajectory()
 
@@ -181,6 +191,7 @@ class TrajectoryOptimizationPlanner():
 
         return status, is_collision_free, trajectory
 
+    # method to plan an optimized trajectory
     def plan_trajectory(self, planning_group, goal_state, samples=20, duration=10,
                         collision_safe_distance=0.1,
                        collision_check_distance=0.05, solver_config=None):
@@ -193,11 +204,13 @@ class TrajectoryOptimizationPlanner():
         status += ", is trajectory collision free: " + str(is_collision_free)
         return status, is_collision_free
 
+    # method to execute the planned trajectory
     def execute_trajectory(self):
         self.world.execute_trajectory(self.robot, self.robot.planner.get_trajectory())
 
         return "Trajectory execution completed"
 
+    # method to extract planning group and corresponding joint values from a config file
     def get_planning_group_and_corresponding_state(self, group_state, **kwargs):
         group = []
         joint_states = []
@@ -205,9 +218,10 @@ class TrajectoryOptimizationPlanner():
         group_name = utils.get_var_from_kwargs("group", **kwargs)
         if group_name is not None:
             if type(group_name) is str:
-                group = self.robot_config["joints_groups"][kwargs["group"]]
+                if kwargs["group"] in self.robot_config["joints_groups"]:
+                    group = self.robot_config["joints_groups"][kwargs["group"]]
                 if not len(group):
-                    group = self.robot.get_planning_group_from_srdf(group)
+                    group = self.robot.get_planning_group_from_srdf(group_name)
             if group_state in kwargs and len(group):
                 joint_states = kwargs[group_state]
                 if type(joint_states) is str and joint_states in self.robot_config["joint_configurations"]:
@@ -220,16 +234,21 @@ class TrajectoryOptimizationPlanner():
 
         return group, joint_states
 
+    # robots can be reset to a given state
     def reset_robot_to(self, state, group, key="reset_state"):
         group, joint_states = self.get_planning_group_and_corresponding_state(key, group=group, reset_state=state)
         self.world.reset_joint_states(self.robot.id, joint_states, group)
 
-    def reset_robot_to_random_state(self, group):
+    # robots can be reset to a random state
+    def reset_robot_to_random_state(self, group_name):
+        group =[]
         if type(group) is str:
-            group = self.robot_config["joints_groups"][group]
+            group = self.robot_config["joints_groups"][group_name]
+        if not len(group):
+            group = self.robot.get_planning_group_from_srdf(group)
         if type(group) is dict or type(group) is OrderedDict:
             group = group.values()
-        status = self.world.reset_joints_to_random_states(self.robot, group)
+        status = self.world.reset_joints_to_random_states(self.robot.id, group)
         self.world.step_simulation_for(0.2)
 
         return status

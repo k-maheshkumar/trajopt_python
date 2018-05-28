@@ -72,13 +72,6 @@ class ISimulationWorldBase(object):
         """This a callback function from the solver which takes a new trajectory from the solver and
         returns solver constraints along with upper and lower bounds"""
 
-
-    @abc.abstractmethod
-    def plan_trajectory(self, group, goal_state, samples, duration, solver_config=None, collision_safe_distance=None,
-                        collision_check_distance=0.2):
-        """given planning group, goal state, samples, duration, solver_config, collsion safe and check distance,
-        this method should plan the trajectory"""
-
     @abc.abstractmethod
     def get_current_states_for_given_joints(self, robot_id, group):
         """given planning group, this method should return robot's current state from the simulation environment"""
@@ -87,11 +80,6 @@ class ISimulationWorldBase(object):
     @abc.abstractmethod
     def execute_trajectory(self, robot, trajectory, step_time):
         """should execute the given trajectoy for a given robot"""
-
-    @abc.abstractmethod
-    def plan_and_execute_trajectory(self, group, goal_state, samples, duration, solver_config=None,
-                                   collision_safe_distance=0.05, collision_check_distance=0.1):
-        """method plan and execute trajectory clubbed together"""
 
     @abc.abstractmethod
     def is_trajectory_collision_free(self, robot_id, trajectory, group, collision_safe_distance=0.05):

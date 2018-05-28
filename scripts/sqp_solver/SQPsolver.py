@@ -66,6 +66,7 @@ class SQPsolver:
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
+    # initializing SQP solver variables and solver config
     def init(self, **kwargs):
         self.D = None
         self.lbD = None
@@ -104,6 +105,7 @@ class SQPsolver:
         else:
             self.solver = self.solver_config["solver"][0]
 
+    # to print problem data
     def display_problem(self):
         print ("P")
         print (self.P)
@@ -126,6 +128,7 @@ class SQPsolver:
         print ("initial guess")
         print (self.initial_guess)
 
+    # updating solver variables on each call of callback function
     def update_prob(self, G=None, lbG=None, ubG=None, A=None, b=None):
         if G is not None:
             self.G = G
@@ -139,10 +142,13 @@ class SQPsolver:
             self.b = b
         self.analyse_inputs()
 
+    # to analyze input and accordingly to adjust constraints and limits
     def analyse_inputs(self):
+        # replacing lower limit none constraints with very lower value
         if self.lbG is not None:
             self.lbG = np.array([utils.replace_none(lb, float(self.solver_config["replace_none_with"]), negate=True)
                                  for lb in self.lbG])
+        # replacing upper limit none constraints with very lower value
         if self.ubG is not None:
             self.ubG = np.array([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
                                  for ub in self.ubG])
@@ -154,13 +160,16 @@ class SQPsolver:
             self.lbG = np.hstack([-self.ubG, -self.ubG])
             self.ubG = np.hstack([self.ubG, -self.ubG])
 
+    # method to check if the solver state variable has converged
     def is_x_converged(self, x_k, p_k, tolerance=1e-3):
         return abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= tolerance
 
+    # method to check if the objective function has converged
     def is_objective_function_converged(self, objective, tolerance=1e-3):
 
         return abs(objective) <= tolerance
 
+    # method to check if the given state variable respects the given constraints
     def is_constraints_satisfied(self, x_k, p, tolerance=1e-3):
         cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
         cons2_cond = np.isclose(np.matmul(self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
@@ -172,6 +181,7 @@ class SQPsolver:
 
         return cons1_cond.all() and cons2_cond.all() and cons3_cond.all() and cons4_cond
 
+    # evaluating constraints for a given solver state
     def evaluate_constraints(self, x_k, p):
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
         cons2 = np.add(np.matmul(-self.G, x_k), self.lbG)
@@ -183,6 +193,7 @@ class SQPsolver:
 
         return cons1.flatten(), cons2.flatten(), cons3.flatten(), cons4
 
+    # gradient of solver constraint matrices
     def get_constraints_gradients(self):
         cons1_grad = self.G
         cons2_grad = -self.G
@@ -192,11 +203,13 @@ class SQPsolver:
             cons4_grad = -self.D
         return cons1_grad, cons2_grad, cons3_grad, cons4_grad
 
+    # gradient and hessian of the solver objective function
     def get_objective_gradient_and_hessian(self, x_k):
         model_grad = 0.5 * np.matmul((self.P + self.P.T), x_k)
         model_hess = 0.5 * (self.P + self.P.T)
         return model_grad, model_hess
 
+    # formulating objective function with l1 times constraint norm
     def get_model_objective(self, x_k, p, penalty):
         cons1_at_xk, cons2_at_xk, cons3_at_xk, cons4_at_xk = self.evaluate_constraints(x_k, p)
         cons1_grad_at_xk, cons2_grad_at_xk, cons3_grad_at_xk, cons4_grad_at_xk = self.get_constraints_gradients()
@@ -219,6 +232,7 @@ class SQPsolver:
 
         return model, objective_at_xk
 
+    # to get the value of the original objective cost
     def get_actual_objective(self, xk, p, penalty):
         x = cvxpy.Variable(self.P.shape[0])
         x.value = copy.copy(xk)
@@ -235,6 +249,7 @@ class SQPsolver:
         objective += penalty * (constraints1 + constraints2 + constraints3 + constraints4)
         return objective
 
+    # solving given SQP sub-problem
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, p, penalizer)
         # if self.D is not None:
@@ -254,9 +269,11 @@ class SQPsolver:
 
         return p.value, model_objective, actual_objective, problem.status, problem.value
 
+    # to check if two quatities are approximately equal
     def approx_equal(self, x, y, tolerance=0.001):
         return abs(x - y) <= 0.5 * tolerance * (x + y)
 
+    # calculating the constraint norm
     def get_constraints_norm(self, x_k):
         con1, con2, con3, cons4 = self.evaluate_constraints(x_k)
         max_con1 = (np.linalg.norm(con1, np.inf))
@@ -266,6 +283,7 @@ class SQPsolver:
 
         return max_con1, max_con2, max_con3, max_con4
 
+    # calculating cost improve from initial to final solution of the given problem
     def calc_cost_improve(self):
         act_redutcion = self.actual_reductions
         pred_reduction = self.predicted_reductions
@@ -288,6 +306,7 @@ class SQPsolver:
             self.model_cost_improve /= (model_costs[0] + 0.000000001)
             self.model_cost_improve *= 100
 
+    # solving SQP problem
     def solve(self, initial_guess=None, callback_function=None):
         self.logger.info("Starting SQP solver . . . . . . .")
         x = cvxpy.Variable(self.P.shape[0])

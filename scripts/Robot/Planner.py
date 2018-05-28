@@ -11,6 +11,7 @@ from collections import OrderedDict
 
 class TrajectoryPlanner:
 
+    # basic constructor to initialize all necessary variables
     def __init__(self, main_logger_name=__name__, verbose=False, log_file=False):
         self.sqp = OrderedDict()
         self.P = []
@@ -54,6 +55,7 @@ class TrajectoryPlanner:
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
+    # clearing all variables so that next trajectory can be planned
     def __clear_all_data(self):
         self.sqp = OrderedDict()
         self.P = []
@@ -70,6 +72,7 @@ class TrajectoryPlanner:
         self.solver_status = []
         self.joint_names = []
 
+    # method to initialize necessary variables on each trajectory plan request
     def init(self, **kwargs):
         self.__clear_all_data()
         self.joints = utils.get_var_from_kwargs("joints", **kwargs)
@@ -86,9 +89,9 @@ class TrajectoryPlanner:
         self.collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
                                                                   default=0.15, **kwargs)
         self.current_planning_joint_group = utils.get_var_from_kwargs("joint_group", **kwargs)
-        self.solver_class = utils.get_var_from_kwargs("solver_class", optional=True,
-                                                                      default="new", **kwargs)
+        self.solver_class = utils.get_var_from_kwargs("solver_class", optional=True, default="new", **kwargs)
         if self.solver_class is not None:
+            # considering 1st element of the solver class list from sqp config file
             self.solver_class = self.solver_class[0]
 
         if self.solver_class.lower() == "old":
@@ -97,10 +100,12 @@ class TrajectoryPlanner:
         self.solver_config = utils.get_var_from_kwargs("solver_config", optional=True, **kwargs)
 
         start = time.time()
+        # creating model of the trajectory planning problem
         self.problem_model.init(self.joints, self.no_of_samples, self.duration, self.decimals_to_round,
                           self.collision_safe_distance, self.collision_check_distance)
         end = time.time()
         self.prob_model_time += end - start
+        # initializing SQP solver
         self.sqp_solver.init(P=self.problem_model.cost_matrix_P, q=self.problem_model.cost_matrix_q,
                              G=self.problem_model.robot_constraints_matrix,
                              lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits,
@@ -111,12 +116,15 @@ class TrajectoryPlanner:
                              , self.problem_model.samples, self.problem_model.duration, self.current_planning_joint_group)
 
     def update_prob(self):
+        # updating SQP solver variables on updating constraints
         self.sqp_solver.update_prob(G=self.problem_model.robot_constraints_matrix,
                                     lbG=self.problem_model.constraints_lower_limits, ubG=self.problem_model.constraints_upper_limits)
 
     def display_problem(self):
+        # method to display SQP problem data
         self.sqp_solver.display_problem()
 
+    # caling SQP solver to calculate the trajectory
     def calculate_trajectory(self, initial_guess= None, callback_function=None):
         can_execute_trajectory = False
         self.logger.info("getting trajectory")
@@ -126,7 +134,9 @@ class TrajectoryPlanner:
         planning_time = end - start
 
         trajectory = np.array((np.split(trajectory, self.no_of_samples)))
+        # final solved trajectory is updated
         self.trajectory.update(trajectory, self.current_planning_joint_group)
+        # updating status of the SQP solver
         if self.solver_status == "Solved":
             can_execute_trajectory = True
             status = "Total time taken to calculate Optimal Trajectory: " + str(planning_time) + " secs"
@@ -139,18 +149,4 @@ class TrajectoryPlanner:
     def get_trajectory(self):
         return self.trajectory
 
-    def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
-        constraints, lower_limit, upper_limit = None, None, None
-        trajectory = np.split(new_trajectory, self.no_of_samples)
-        self.trajectory.add_trajectory(trajectory)
-
-        collision_infos = self.callback_function_to_get_collision_infos(trajectory, self.current_planning_joint_group,
-                                                                        distance=self.collision_check_distance)
-
-        if len(collision_infos[2]) > 0:
-            constraints, lower_limit, upper_limit = \
-                self.problem_model.update_collision_infos(collision_infos, self.collision_safe_distance)
-            self.update_prob()
-
-        return constraints, lower_limit, upper_limit
 

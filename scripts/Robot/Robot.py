@@ -21,12 +21,14 @@ class Robot:
         self.group_map = OrderedDict()
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
+    # method to load robot model from urdf file
     def load_robot_model(self, urdf_file=None):
         if urdf_file is not None:
             self.model = URDF.from_xml_file(urdf_file)
         else:
             self.model = URDF.from_parameter_server()
 
+    # method to load robot' configurations from srdf file
     def load_srdf(self, srdf_file):
 
         stream = open(srdf_file, 'r')
@@ -46,37 +48,43 @@ class Robot:
 
         return self.ignored_collisions
 
+    # given a planning group and name of the configuration to be moved, corresponding joint states will be returned
     def get_planning_group_joint_values(self, name, group):
         joint_state = OrderedDict()
         if (name, group) in self.group_states_map:
             joint_state = self.group_states_map[name, group]
         return joint_state.keys(), joint_state.values()
 
+    # planning group name as string to joint names list
     def get_planning_group_from_srdf(self, group):
         if group in self.group_map:
             group = self.group_map[group]
         return group
 
+    # planning group name as string to joint states list
     def get_group_state_from_srdf(self, group_name):
         joint_state = OrderedDict()
         if group_name in self.joint_states_map:
             joint_state = self.joint_states_map[group_name]
         return joint_state.keys(), joint_state.values()
 
+    # returns final planned trajectory
     def get_trajectory(self):
         return self.planner.trajectory
 
+    # returns initial guess for trajectory calculation
     def get_initial_trajectory(self):
         return self.planner.trajectory.initial
 
+    # method to model the problem and to initialize the SQP solver
     def init_plan_trajectory(self, **kwargs):
-
         joint_group = utils.get_var_from_kwargs("group", **kwargs)
         samples = utils.get_var_from_kwargs("samples", **kwargs)
         duration = utils.get_var_from_kwargs("duration", **kwargs)
         solver = utils.get_var_from_kwargs("solver", optional=True, default="SCS", **kwargs)
         solver_config = utils.get_var_from_kwargs("solver_config", optional=True, **kwargs)
 
+        # some default config for the SQP solver
         if solver_config is not None:
             if "decimals_to_round" in solver_config:
                 decimals_to_round = int(solver_config["decimals_to_round"])
@@ -93,17 +101,11 @@ class Robot:
                                                             default=0.1, **kwargs)
         ignore_goal_states = utils.get_var_from_kwargs("ignore_goal_states", optional=True, **kwargs)
 
-        solver_class = utils.get_var_from_kwargs("solver_class", optional=True,
-                                                            default="new", **kwargs)
+        solver_class = utils.get_var_from_kwargs("solver_class", optional=True, default="new", **kwargs)
 
-        verbose = utils.get_var_from_kwargs("verbose", optional=True,
-                                                            default=False, **kwargs)
+        verbose = utils.get_var_from_kwargs("verbose", optional=True, default=False, **kwargs)
 
-        if verbose:
-            main_logger_name = "Trajectory_Planner"
-            self.logger = logging.getLogger(main_logger_name)
-            self.setup_logger(main_logger_name, verbose)
-
+        # combing all necessary infos to model and plan a trajectory
         if "current_state" in kwargs and "goal_state" in kwargs:
             if type(current_state) is dict and type(current_state) is dict:
                 states = {}
@@ -134,6 +136,7 @@ class Robot:
                                 ignore_state = True
                         joints.append([c_state, n_state, self.model.joint_map[joint].limit, ignore_state])
         if len(joints):
+            # initializing the trajectory planner to model the problem
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,
                               collision_safe_distance=collision_safe_distance,

@@ -1,7 +1,8 @@
 import numpy as np
-import logging
 from scripts.utils.utils import Utils as utils
-import collections
+from collections import OrderedDict
+from scripts.utils.dict import DefaultOrderedDict
+
 
 class ProblemModelling:
     def __init__(self):
@@ -128,6 +129,11 @@ class ProblemModelling:
         start_and_goal_lower_limits = []
         start_and_goal_upper_limits = []
         for i, joint in enumerate(self.joints):
+            ignore_state = False
+            min_vel = 0
+            max_vel = 0
+            joint_lower_limit = -1
+            joint_upper_limit = 1
             if type(joint) is list:
                 max_vel = joint[2].velocity
                 min_vel = -joint[2].velocity
@@ -135,24 +141,19 @@ class ProblemModelling:
                 joint_upper_limit = joint[2].upper
                 start_state = joint[0]
                 end_state = joint[1]
-                joint_type = joint[3]
-                ignore_state = joint[4]
-            elif type(joint) is dict:
+                ignore_state = joint[3]
+            elif type(self.joints) is dict or type(self.joints) is OrderedDict \
+                    or type(self.joints) is DefaultOrderedDict:
                 max_vel = self.joints[joint]["limit"]["velocity"]
                 min_vel = -self.joints[joint]["limit"]["velocity"]
                 joint_lower_limit = self.joints[joint]["limit"]["lower"]
                 joint_upper_limit = self.joints[joint]["limit"]["upper"]
                 start_state = self.joints[joint]["states"]["start"]
                 end_state = self.joints[joint]["states"]["end"]
-                ignore_state = self.joints[joint]["ignore_state"]
-            else:
-                max_vel = self.joints[joint]["limit"].velocity
-                min_vel = -self.joints[joint]["limit"].velocity
-                joint_lower_limit = self.joints[joint]["limit"].lower
-                joint_upper_limit = self.joints[joint]["limit"].upper
-                start_state = self.joints[joint]["states"]["start"]
-                end_state = self.joints[joint]["states"]["end"]
-                ignore_state = self.joints[joint]["ignore_state"]
+                if "ignore_state" in self.joints[joint]:
+                    ignore_state = self.joints[joint]["ignore_state"]
+                else:
+                    ignore_state = False
 
             min_vel = min_vel * self.duration / float(self.samples - 1)
             max_vel = max_vel * self.duration / float(self.samples - 1)

@@ -134,8 +134,7 @@ class Robot:
                             if joint in ignore_goal_states:
                                 ignore_state = True
                         print joint, ignore_state
-                        joints.append([c_state, n_state, self.model.joint_map[joint].limit,
-                                       self.model.joint_map[joint].type, ignore_state])
+                        joints.append([c_state, n_state, self.model.joint_map[joint].limit, ignore_state])
         if len(joints):
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,

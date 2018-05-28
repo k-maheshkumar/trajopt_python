@@ -4,7 +4,6 @@ sys.path.insert(0, '../')
 import unittest
 import scripts.sqp_solver.ProblemModelling as modelling
 import numpy as np
-from easydict import EasyDict as edict
 import time
 
 
@@ -12,7 +11,7 @@ class Test_Problem_Modelling(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.problem = edict(np.load("problem.npy").item())
+        cls.problem = dict(np.load("problem.npy").item())
 
     def setUp(self):
         pass
@@ -33,12 +32,12 @@ class Test_Problem_Modelling(unittest.TestCase):
             if sample == 0 or duration == 0:
                 with self.assertRaises(ValueError):
                     start = time.time()
-                    self.model.init(self.problem.joints, sample, duration,
+                    self.model.init(self.problem["joints"], sample, duration,
                                     collision_safe_distance=0.5, collision_check_distance=2)
                 end = time.time()
             else:
                 start = time.time()
-                self.model.init(self.problem.joints, sample, duration,
+                self.model.init(self.problem["joints"], sample, duration,
                                 collision_safe_distance=0.5, collision_check_distance=2)
                 end = time.time()
             init_time = end - start

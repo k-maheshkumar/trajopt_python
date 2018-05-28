@@ -72,27 +72,6 @@ class TrajectoryPlanner:
 
     def init(self, **kwargs):
         self.__clear_all_data()
-        # self.problem = utils.get_var_from_kwargs("problem", optional=True, **kwargs)
-        # if self.problem is not None:
-        #     self.no_of_samples = utils.get_var_from_kwargs("samples", **self.problem)
-        #     self.duration = utils.get_var_from_kwargs("duration", **self.problem)
-        #     self.max_no_of_Iteration = utils.get_var_from_kwargs("max_iteration", optional=True,
-        #                                                          default=20, **self.problem)
-        #     self.joints = utils.get_var_from_kwargs("joints", **self.problem)
-        #     if self.joints is not None:
-        #         self.num_of_joints = len(self.joints)
-        #     self.max_penalty = utils.get_var_from_kwargs("max_penalty", optional=True,
-        #                                                  default=1e4, **self.problem)
-        #     self.delta_max = utils.get_var_from_kwargs("max_delta", optional=True,
-        #                                                  default=50, **self.problem)
-        #     self.collision_safe_distance = utils.get_var_from_kwargs("collision_safe_distance", optional=True,
-        #                                                  default=0.1, **self.problem)
-        #     self.collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
-        #                                                  default=0.15, **self.problem)
-        #     self.delta_max = utils.get_var_from_kwargs("max_delta", optional=True,
-        #                                                  default=50, **self.problem)
-        #     self.current_planning_joint_group = utils.get_var_from_kwargs("joint_group", **self.problem)
-
         self.joints = utils.get_var_from_kwargs("joints", **kwargs)
         if self.joints is not None:
             self.num_of_joints = len(self.joints)

@@ -5,6 +5,8 @@ from scripts.Robot.Planner import TrajectoryPlanner
 import itertools
 from srdfdom.srdf import SRDF
 from scripts.utils.dict import DefaultOrderedDict
+from collections import OrderedDict
+
 
 class Robot:
     def __init__(self, logger_name=__name__, verbose=False, log_file=False):
@@ -14,6 +16,9 @@ class Robot:
         self.logger = logging.getLogger(logger_name + __name__)
         self.ignored_collisions = DefaultOrderedDict(bool)
         self.srdf = None
+        self.group_states_map = OrderedDict()
+        self.joint_states_map = OrderedDict()
+        self.group_map = OrderedDict()
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
     def load_robot_model(self, urdf_file=None):
@@ -26,6 +31,13 @@ class Robot:
 
         stream = open(srdf_file, 'r')
         self.srdf = SRDF.from_xml_string(stream.read())
+        for gs in self.srdf.group_states:
+            joint_map = OrderedDict()
+            for joint in  gs.joints:
+                joint_map[joint.name] = joint.value[0]
+            self.group_states_map[gs.name, gs.group] = joint_map
+            self.joint_states_map[gs.name] = joint_map
+            self.group_map[gs.group] = joint_map.keys()
 
     def get_ignored_collsion(self):
         for collision in self.srdf.disable_collisionss:
@@ -33,6 +45,36 @@ class Robot:
             self.ignored_collisions[collision.link2, collision.link1] = True
 
         return self.ignored_collisions
+
+    def get_planning_group_joint_values(self, name, group):
+        joint_state = OrderedDict()
+        print "----------------------------------------------"
+        print name
+        print group
+        if (name, group) in self.group_states_map:
+            joint_state = self.group_states_map[name, group]
+        print "***********************************************"
+        return joint_state.keys(), joint_state.values()
+
+    def get_planning_group_from_srdf(self, group):
+        # group = OrderedDict()
+        print "----------------------------------------------"
+        print group
+        if group in self.group_map:
+            group = self.group_map[group]
+        print "***********************************************"
+        return group
+
+    def get_group_state_from_srdf(self, group_name):
+        # group = OrderedDict()
+        joint_state = OrderedDict()
+        print "----------------------------------------------"
+        print group_name
+        if group_name in self.joint_states_map:
+            joint_state = self.joint_states_map[group_name]
+        print "***********************************************"
+        return joint_state.keys(), joint_state.values()
+
 
     def get_trajectory(self):
         return self.planner.trajectory
@@ -109,6 +151,7 @@ class Robot:
                             }
             elif type(current_state) is list and type(current_state) is list:
                 joints = []
+
                 assert len(current_state) == len(goal_state) == len(joint_group)
                 for joint, current_state, next_state in itertools.izip(joint_group, current_state, goal_state):
                     if joint in self.model.joint_map:

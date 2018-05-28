@@ -16,12 +16,12 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": "INFO",
+            # "verbose": "INzFO",
             "log_file": True,
             # "save_problem": True,
             # "plot_trajectory": True,
-            "db_name": "Trajectory_planner_evaluation"
-
+            "db_name": "Trajectory_planner_evaluation",
+            "robot_config": "robot_config_don_bot.yaml"
         }
 
         self.planner = TrajectoryOptimizationPlanner(**config)
@@ -67,24 +67,24 @@ class PlannerExample:
                                                               position=[offset + 0.1 * x, y, zs[z]])
             gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
                                                                   position=[offset + 0.1 * x, y - 0.38, zs[z]])
-        y, z = 0.1, 0.719
-        offset = 0.38
-        # x = uniform(-0.5, 0.5)
-        obj_at_bot = randint(1, 4)
-        # obj_at_bot = 3
-        zs = [0.2, 0.6, 1]
-        # z = 2
-        lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
-        for x in range(obj_at_bot):
-            y = uniform(-0.2, 0.2)
-            # z = randint(0, 2)
-            gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
-                                                              # position=[offset + 0.1 * x, y, zs[z]])
-                                                              position=[offset + 0.1 * x, y, z])
-            gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
-                                                               # position=[offset + 0.1 * x, y-0.38, zs[z]])
-                                                               position=[offset + 0.1 * x, y-0.38, z])
-        # # gel_id = OrderedDict()
+        # y, z = 0.1, 0.719
+        # offset = 0.38
+        # # x = uniform(-0.5, 0.5)
+        # obj_at_bot = randint(1, 4)
+        # # obj_at_bot = 3
+        # zs = [0.2, 0.6, 1]
+        # # z = 2
+        # lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
+        # for x in range(obj_at_bot):
+        #     y = uniform(-0.2, 0.2)
+        #     # z = randint(0, 2)
+        #     gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
+        #                                                       # position=[offset + 0.1 * x, y, zs[z]])
+        #                                                       position=[offset + 0.1 * x, y, z])
+        #     gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
+        #                                                        # position=[offset + 0.1 * x, y-0.38, zs[z]])
+        #                                                        position=[offset + 0.1 * x, y-0.38, z])
+        # # # gel_id = OrderedDict()
         # y, z = -0.3, 0.62
         # offset = -0.59
         # for x in range(2):
@@ -111,11 +111,11 @@ class PlannerExample:
 
         start_state = "below_shelf"
         goal_state = "above_shelf"
-        group = "full_body"
+        # group = "full_body"
         #
         start_state = "below_shelf1"
         goal_state = "above_shelf1"
-        # group = "ur5_arm"
+        group = "ur5_arm"
 
         start = randint(1, 5)
         end = randint(6, 10)
@@ -124,8 +124,8 @@ class PlannerExample:
         # start = 9
         end = 10
 
-        start_state = "floc" + str(start)
-        goal_state = "floc" + str(end)
+        start_state = "aloc" + str(start)
+        goal_state = "aloc" + str(end)
 
         self.planner.reset_robot_to(start_state, group)
 
@@ -140,6 +140,12 @@ class PlannerExample:
         print "start_state: ", start_state
         print "goal_state: ", goal_state
 
+        # start_state = OrderedDict(
+        #     [('ur5_shoulder_pan_joint', 1.6534695625305176), ('ur5_shoulder_lift_joint', -2.1164417266845703),
+        #      ('ur5_elbow_joint', -2.2487189769744873), ('ur5_wrist_1_joint', 0.5952491760253906),
+        #      ('ur5_wrist_2_joint', 1.984163761138916), ('ur5_wrist_3_joint', -1.6534700393676758),
+        #      ('gripper_base_gripper_left_joint', -0.0027000010013580322), ('gripper_joint', 0.006500000134110451)])
+
         _, status, trajectory = self.planner.get_trajectory(samples=samples, duration=duration,
                                                             group=group, goal_state=goal_state, start_state=start_state,
                                                             # group=group1, goal_state=goal_state1,
@@ -149,7 +155,7 @@ class PlannerExample:
 
         if status:
             self.planner.execute_trajectory()
-        # self.dummy()
+        self.dummy()
 
     def dummy(self):
         while True:

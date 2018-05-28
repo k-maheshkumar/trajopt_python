@@ -1,3 +1,5 @@
+from samba.dcerpc.smb_acl import group
+
 from scripts.simulation.SimulationWorld import SimulationWorld
 from scripts.Robot.Robot import Robot
 import numpy as np
@@ -112,30 +114,127 @@ class TrajectoryOptimizationPlanner():
         self.world.add_collision_constraints(constraint_id)
 
     def get_trajectory(self, **kwargs):
+        group = []
+        # if "group" in kwargs:
+        #     group_name = kwargs["group"]
+        #     if type(group_name) is str:
+        #         group = self.robot_config["joints_groups"][kwargs["group"]]
+        #     if not len(group):
+        #         group = self.robot.get_planning_group_from_srdf(group)
+        # if "start_state" in kwargs and len(group):
+        #     start_state = kwargs["start_state"]
+        #     if type(start_state) is str and start_state in self.robot_config["joint_configurations"]:
+        #         start_state = self.robot_config["joint_configurations"][start_state]
+        #     if not len(start_state):
+        #         group, start_state = self.robot.get_group_state_from_srdf(group_name)
+        #
+        #     if type(start_state) is dict or type(start_state) is OrderedDict:
+        #         start_state = start_state.values()
+        #
+        #     # self.world.reset_joint_states(self.robot.id, start_state, group)
+        #     self.reset_robot_to(start_state, group, key="start_state")
+        #     # self.world.step_simulation_for(0.2)
+        # else:
+        #     start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
+        #
+        # if "group" in kwargs and "goal_state" in kwargs:
+        #     group = kwargs["group"]
+        #     goal_state = kwargs["goal_state"]
+        #     group, goal_state = self.robot.get_planning_group_joint_values(goal_state, group)
+        #
+        #     if not len(group) and not len(goal_state):
+        #         group = kwargs["group"]
+        #         if type(group) is str:
+        #             group = self.robot_config["joints_groups"][kwargs["group"]]
+        #         goal_state = kwargs["goal_state"]
+        #         if type(goal_state) is str:
+        #             goal_state = self.robot_config["joint_configurations"][goal_state]
+        #
+        #         if type(goal_state) is dict or type(goal_state) is OrderedDict:
+        #             goal_state = goal_state.values()
+
+        # if "group" in kwargs and "start_state" in kwargs:
+        #     group = kwargs["group"]
+        #     start_state = kwargs["start_state"]
+        #     group, start_state = self.robot.get_planning_group_joint_values(start_state, group)
+        #     if not len(group) and not len(start_state):
+        #         group = kwargs["group"]
+        #         if type(group) is str:
+        #             group = self.robot_config["joints_groups"][kwargs["group"]]
+        #         start_state = kwargs["start_state"]
+        #         if type(start_state) is str:
+        #             start_state = self.robot_config["joint_configurations"][start_state]
+        #
+        #         if type(start_state) is dict or type(start_state) is OrderedDict:
+        #             start_state = start_state.values()
+        #
+        #         self.world.reset_joint_states(self.robot.id, start_state, group)
+        #         # self.world.step_simulation_for(0.2)
+        #     else:
+        #         start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
+        #
+        # if "group" in kwargs and "goal_state" in kwargs:
+        #     group = kwargs["group"]
+        #     goal_state = kwargs["goal_state"]
+        #     group, goal_state = self.robot.get_planning_group_joint_values(goal_state, group)
+        #
+        #     if not len(group) and not len(goal_state):
+        #         group = kwargs["group"]
+        #         if type(group) is str:
+        #             group = self.robot_config["joints_groups"][kwargs["group"]]
+        #         goal_state = kwargs["goal_state"]
+        #         if type(goal_state) is str:
+        #             goal_state = self.robot_config["joint_configurations"][goal_state]
+        #
+        #         if type(goal_state) is dict or type(goal_state) is OrderedDict:
+        #             goal_state = goal_state.values()
+
+            # print goal_state
+            # print OrderedDict(zip(group, goal_state))
+
+        # if "group" in kwargs:
+        #     group = kwargs["group"]
+        #     if type(group) is str:
+        #         group = self.robot_config["joints_groups"][kwargs["group"]]
+        # if "start_state" in kwargs:
+        #     start_state = kwargs["start_state"]
+        #     if type(start_state) is str:
+        #         start_state = self.robot_config["joint_configurations"][start_state]
+        #
+        #     if type(start_state)is dict or type(start_state) is OrderedDict:
+        #         start_state = start_state.values()
+        #
+        #     self.world.reset_joint_states(self.robot.id, start_state, group)
+        #     # self.world.step_simulation_for(0.2)
+        # else:
+        #     start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
+        #
+        # if "goal_state" in kwargs:
+        #     goal_state = kwargs["goal_state"]
+        #     if type(goal_state) is str:
+        #         goal_state = self.robot_config["joint_configurations"][goal_state]
+        #
+        #     if type(goal_state)is dict or type(goal_state)is OrderedDict:
+        #         goal_state = goal_state.values()
         if "group" in kwargs:
-            group = kwargs["group"]
-            if type(group) is str:
+            group_name = kwargs["group"]
+            if type(group_name) is list:
+                group = group_name
+            if type(group_name) is str:
                 group = self.robot_config["joints_groups"][kwargs["group"]]
-        if "start_state" in kwargs:
+                print group
+            if not len(group):
+                group = self.robot.get_planning_group_from_srdf(group)
+        if "start_state" in kwargs and len(group):
             start_state = kwargs["start_state"]
-            if type(start_state) is str:
-                start_state = self.robot_config["joint_configurations"][start_state]
-
-            if type(start_state)is dict or type(start_state) is OrderedDict:
-                start_state = start_state.values()
-
-            self.world.reset_joint_states(self.robot.id, start_state, group)
-            # self.world.step_simulation_for(0.2)
-        else:
-            start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
-
-        if "goal_state" in kwargs:
+            if not type(start_state) is list:
+                _, start_state = self.get_planning_group_and_corresponding_state("start_state", **kwargs)
+            self.reset_robot_to(start_state, group, key="start_state")
+        if "goal_state" in kwargs and len(group):
             goal_state = kwargs["goal_state"]
-            if type(goal_state) is str:
-                goal_state = self.robot_config["joint_configurations"][goal_state]
+            if not type(goal_state) is list:
+                _, goal_state = self.get_planning_group_and_corresponding_state("goal_state", **kwargs)
 
-            if type(goal_state)is dict or type(goal_state)is OrderedDict:
-                goal_state = goal_state.values()
         if "samples" in kwargs:
             samples = kwargs["samples"]
         else:
@@ -216,15 +315,30 @@ class TrajectoryOptimizationPlanner():
 
         return "Trajectory execution completed"
 
-    def reset_robot_to(self, state, group):
-        if type(group) is str:
-            group = self.robot_config["joints_groups"][group]
-        if type(state) is str:
-            state = self.robot_config["joint_configurations"][state]
+    def get_planning_group_and_corresponding_state(self, group_state, **kwargs):
+        group = []
+        joint_states = []
+        if "group" in kwargs:
+            group_name = kwargs["group"]
+            if type(group_name) is str:
+                group = self.robot_config["joints_groups"][kwargs["group"]]
+                if not len(group):
+                    group = self.robot.get_planning_group_from_srdf(group)
+            if group_state in kwargs and len(group):
+                joint_states = kwargs[group_state]
+                if type(joint_states) is str and joint_states in self.robot_config["joint_configurations"]:
+                    joint_states = self.robot_config["joint_configurations"][joint_states]
+                # if not len(joint_states):
+                else:
+                    group, joint_states = self.robot.get_group_state_from_srdf(joint_states)
+                if type(joint_states) is dict or type(joint_states) is OrderedDict:
+                    joint_states = joint_states.values()
 
-        if type(state) is dict or type(state) is OrderedDict:
-            state = state.values()
-        self.world.reset_joint_states(self.robot.id, state, group)
+        return group, joint_states
+
+    def reset_robot_to(self, state, group, key="reset_state"):
+        group, joint_states = self.get_planning_group_and_corresponding_state(key, group=group, reset_state=state)
+        self.world.reset_joint_states(self.robot.id, joint_states, group)
 
     def reset_robot_to_random_state(self, group):
         if type(group) is str:
@@ -263,12 +377,17 @@ class TrajectoryOptimizationPlanner():
 
         return constraints, lower_limit, upper_limit
 
-    # def save_problem_in_db(self, **request):
-    #     for i in request:
-    #         print i
-    #
-    #     db_driver = MongoDriver("trajectory_planner")
-    #     db_driver.insert(request)
+    def get_group_and_state(self, group, state, **kwargs):
+        if type(group) is str:
+            group = self.robot_config["joints_groups"][kwargs["group"]]
+        goal_state = kwargs["goal_state"]
+        if type(goal_state) is str:
+            goal_state = self.robot_config["joint_configurations"][goal_state]
+
+        if type(goal_state) is dict or type(goal_state) is OrderedDict:
+            goal_state = goal_state.values()
+
+        return goal_state
 
     def save_to_db(self, samples, duration, current_robot_state, goal_state, group, d_safe, d_check, is_collision_free):
 

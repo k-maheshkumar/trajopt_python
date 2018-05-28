@@ -17,7 +17,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            # "verbose": "INFO",
+            "verbose": "DEBUG",
             "log_file": True,
             # "save_problem": True,
             # "plot_trajectory": True,
@@ -43,10 +43,8 @@ class PlannerExample:
         offset = -0.58
         # offset = uniform(-0.7, -0.58)
         zs = [0.2, 0.6, 1]
-        # z = 1.4
-        # z = 1
+
         obj_at_shelf = randint(1, 4)
-        obj_at_shelf = 3
         for x in range(obj_at_shelf):
             y = uniform(-0.2, 0.2)
             # z = uniform(0.3, 1.5)
@@ -55,24 +53,19 @@ class PlannerExample:
                                                               position=[offset + 0.1 * x, y, zs[z]])
             gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
                                                                   position=[offset + 0.1 * x, y - 0.38, zs[z]])
-        # y, z = 0.1, 0.719
         # offset = 0.38
-        # # x = uniform(-0.5, 0.5)
         # obj_at_bot = randint(1, 4)
-        # # obj_at_bot = 3
+        #
         # zs = [0.2, 0.6, 1]
-        # # z = 2
+        #
         # lotion_urdf = shelf_item_prefix + "bodyLotion.urdf"
         # for x in range(obj_at_bot):
         #     y = uniform(-0.2, 0.2)
-        #     # z = randint(0, 2)
+        #     z = randint(0, 2)
         #     gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
-        #                                                       # position=[offset + 0.1 * x, y, zs[z]])
-        #                                                       position=[offset + 0.1 * x, y, z])
+        #                                                       position=[offset + 0.1 * x, y, zs[z]])
         #     gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=lotion_urdf,
-        #                                                        # position=[offset + 0.1 * x, y-0.38, zs[z]])
-        #                                                        position=[offset + 0.1 * x, y-0.38, z])
-        # # # gel_id = OrderedDict()
+        #                                                        position=[offset + 0.1 * x, y-0.38, zs[z]])
         # y, z = -0.3, 0.62
         # offset = -0.59
         # for x in range(2):

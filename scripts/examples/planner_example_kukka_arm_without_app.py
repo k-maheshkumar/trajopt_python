@@ -13,11 +13,10 @@ class PlannerExample:
         location_prefix = home + '/masterThesis/bullet3/data/'
 
         config = {
-             "use_gui": True,
+            "use_gui": True,
             "verbose": "DEBUG",
             "log_file": False,
             # "save_problem": True,
-            # "db_name": "Trajectory_planner_results",
             "db_name": "Trajectory_planner_evaluation",
             # "plot_trajectory": True
             "robot_config": "robot_config_kuka_arm.yaml"
@@ -29,18 +28,8 @@ class PlannerExample:
 
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
-        x = uniform(-0.5, 0.5)
-        y = uniform(-0.1, 0.5)
-        z = 0.9
-        # print "box location: ", x, -y, z
         box = randint(0, 4)
         loc = randint(0, 4)
-        box = 1
-        loc = 2
-        print box, loc
-
-        box_loc = [[0.364830659421, -0.164962595183, 0.9], [-0.155743925678, -0.373197182129, 0.9],
-                   [0.1, -0.1, 0.9], [-0.5, -0.2, 0.9], [0.5, -0.2, 0.9], [0.28, -0.43, 0.9]]
 
         box_loc = [[0.164830659421, -0.464962595183, 0.9], [0.255743925678, -0.373197182129, 0.9],
                    [0.2, -0.4, 0.9], [0.4, -0.2, 0.9], [0.5, -0.3, 0.9], [0.48, -0.43, 0.9]]
@@ -54,43 +43,21 @@ class PlannerExample:
         table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf", position=[0, 0, 0.0])
 
         self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=box_size[box],
-                                                  # position=[0.28, -0.43, 0.9],
-                                                  # position=[x, -y, z],
                                                   position=box_loc[loc],
                                                   mass=100)
-        # self.box_id1 = self.planner.add_constraint("box2", shape=self.planner.world.BOX, size=[0.05, 0.05, 0.25],
-        #                                           position=[-0.48, -0.43, 0.9], mass=100)
-        # self.box_id2 = self.planner.add_constraint("box3", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-        #                                           position=[-0.48, 0.43, 0.9], mass=100)
 
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(0.01)
 
 
     def run(self):
-
-        start_state = "pick"
-        goal_state = "place"
-        #
-        # start_state = "place"
-        # goal_state = "pick"
         start = randint(1, 11)
         end = randint(1, 11)
-        # start = 11
-        # end = 3
         print start, end
         if start != end:
-            # end = end if start == 3 and end !=2 else randint(1, 8)
-            # start = 1
-            # end = 8
             start_state = "loc" + str(start)
             goal_state = "loc" + str(end)
             group = "full_arm"
-
-            # half_pi = 1.57
-            # start_state = np.random.uniform(low=-2.96, high=2.96, size=(len(group),)) * -half_pi
-            # start_state = np.random.uniform(low=-2.96, high=2.96, size=(len(group),)) * -half_pi
-
             duration = 20
             # samples = randrange(5, 30) + randrange(1, 10)
             samples = 20
@@ -98,7 +65,6 @@ class PlannerExample:
             collision_check_distance = 0.15
             collision_safe_distance = 0.1
             self.planner.reset_robot_to(start_state, group)
-
 
             status, is_collision_free, trajectory = self.planner.get_trajectory(group=group, start_state=start_state,
                                                                                 goal_state=goal_state, samples=samples, duration=duration,
@@ -116,11 +82,8 @@ class PlannerExample:
         goal_state = "pick"
         group = "full_arm"
         group = self.planner.get_group_names(group)
-        # start_state = np.random.uniform(low=-2.96, high=2.96, size=(len(group),))
 
         self.planner.reset_robot_to(start_state, group)
-        # while True:
-        #     pass
 
         self.planner.world.manual_control(self.planner.robot.id, group, use_current_state=True)
 

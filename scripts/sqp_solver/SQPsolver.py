@@ -13,10 +13,11 @@ from collections import OrderedDict
             (1/2) * x.T * P * x + q.T * x
 
         subject to
-            lbC <= G * x <= ubC
+            lbG <= G * x <= ubG
+            lbD <= D * x <= ubD
             A * x == b
             lb <= x <= ub
-
+            D - dynamic constraint
 '''
 
 
@@ -38,6 +39,9 @@ class SQPsolver:
         self.initial_guess = []
         self.status = "-1"
         self.norm_ = 1
+        self.rho_k = 0
+        self.is_converged = False
+        self.is_initialized = False
 
         self.solver_config = OrderedDict()
 
@@ -49,69 +53,36 @@ class SQPsolver:
         self.num_qp_iterations = 0
         self.num_sqp_iterations = 0
         self.solving_time = 0
-        self.initial_cost = 0
-        self.final_cost = 0
-        self.initial_cost1 = 0
-        self.final_cost1 = 0
-        self.initial_cost2 = 0
-        self.final_cost2 = 0
-        self.initial_cost3 = 0
-        self.final_cost3 = 0
+        self.predicted_reductions = []
+        self.actual_reductions = []
+        self.model_costs = []
+        self.actual_costs = []
 
-        self.initial_costs = []
-        self.final_costs = []
-        self.initial_costs1 = []
-        self.final_costs1 = []
-        self.initial_costs2 = []
-        self.final_costs2 = []
-        self.initial_costs3 = []
-        self.final_costs3 = []
-
-        self.is_initialised = False
+        self.actual_reduction_improve = 0
+        self.predicted_reduction_improve = 0
+        self.actual_cost_improve = 0
+        self.model_cost_improve = 0
 
         self.logger = logging.getLogger(main_logger_name + __name__)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
 
+    # initializing SQP solver variables and solver config
     def init(self, **kwargs):
-
         self.D = None
         self.lbD = None
         self.ubD = None
-        if "P" in kwargs:
-            self.P = kwargs["P"]
-        if "q" in kwargs:
-            self.q = kwargs["q"]
-        if "G" in kwargs:
-            self.G = kwargs["G"]
-        if "lbG" in kwargs:
-            self.lbG = kwargs["lbG"]
-        else:
-            self.lbG = None
-        if "ubG" in kwargs:
-            self.ubG = kwargs["ubG"]
-        else:
-            self.ubG = None
-        if "A" in kwargs:
-            self.A = kwargs["A"]
-        else:
-            self.A = None
-        if "b" in kwargs:
-            self.b = kwargs["b"]
-        else:
-            self.A = None
-        if "initial_guess" in kwargs:
-            self.initial_guess = kwargs["initial_guess"]
-        else:
-            self.initial_guess = np.zeros((self.P.shape[0], 1)).flatten()
 
-        if "solver_config" in kwargs:
-            solver_config = kwargs["solver_config"]
-        else:
-            solver_config = None
-        if "solver" in kwargs:
-            solver = kwargs["solver"]
-        else:
-            solver = None
+        self.P = utils.get_var_from_kwargs("P", **kwargs)
+        self.q = utils.get_var_from_kwargs("q", **kwargs)
+        self.G = utils.get_var_from_kwargs("G", optional=False, **kwargs)
+        self.lbG = utils.get_var_from_kwargs("lbG", optional=True, **kwargs)
+        self.ubG = utils.get_var_from_kwargs("ubG", optional=True, **kwargs)
+        self.A = utils.get_var_from_kwargs("A", optional=False, **kwargs)
+        self.b = utils.get_var_from_kwargs("b", optional=False, **kwargs)
+        self.initial_guess = utils.get_var_from_kwargs("initial_guess", optional=True,
+                                                       default=np.zeros((self.P.shape[0], 1)).flatten(), **kwargs)
+        solver_config = utils.get_var_from_kwargs("solver_config", optional=True, **kwargs)
+        solver = utils.get_var_from_kwargs("solver", optional=True, **kwargs)
 
         if solver_config is not None:
             self.solver_config = solver_config
@@ -134,6 +105,7 @@ class SQPsolver:
         else:
             self.solver = self.solver_config["solver"][0]
 
+    # to print problem data
     def display_problem(self):
         print ("P")
         print (self.P)
@@ -156,6 +128,7 @@ class SQPsolver:
         print ("initial guess")
         print (self.initial_guess)
 
+    # updating solver variables on each call of callback function
     def update_prob(self, G=None, lbG=None, ubG=None, A=None, b=None):
         if G is not None:
             self.G = G
@@ -169,10 +142,13 @@ class SQPsolver:
             self.b = b
         self.analyse_inputs()
 
+    # to analyze input and accordingly to adjust constraints and limits
     def analyse_inputs(self):
+        # replacing lower limit none constraints with very lower value
         if self.lbG is not None:
             self.lbG = np.array([utils.replace_none(lb, float(self.solver_config["replace_none_with"]), negate=True)
                                  for lb in self.lbG])
+        # replacing upper limit none constraints with very lower value
         if self.ubG is not None:
             self.ubG = np.array([utils.replace_none(ub, float(self.solver_config["replace_none_with"]))
                                  for ub in self.ubG])
@@ -184,13 +160,16 @@ class SQPsolver:
             self.lbG = np.hstack([-self.ubG, -self.ubG])
             self.ubG = np.hstack([self.ubG, -self.ubG])
 
+    # method to check if the solver state variable has converged
     def is_x_converged(self, x_k, p_k, tolerance=1e-3):
         return abs((np.linalg.norm(x_k - (x_k + p_k), np.inf))) <= tolerance
 
+    # method to check if the objective function has converged
     def is_objective_function_converged(self, objective, tolerance=1e-3):
 
         return abs(objective) <= tolerance
 
+    # method to check if the given state variable respects the given constraints
     def is_constraints_satisfied(self, x_k, p, tolerance=1e-3):
         cons1_cond = np.isclose(np.matmul(self.G, x_k) <= self.ubG, 1, rtol=tolerance, atol=tolerance)
         cons2_cond = np.isclose(np.matmul(self.G, x_k) >= self.lbG, 1, rtol=tolerance, atol=tolerance)
@@ -202,6 +181,7 @@ class SQPsolver:
 
         return cons1_cond.all() and cons2_cond.all() and cons3_cond.all() and cons4_cond
 
+    # evaluating constraints for a given solver state
     def evaluate_constraints(self, x_k, p):
         cons1 = np.subtract(np.matmul(self.G, x_k), self.ubG)
         cons2 = np.add(np.matmul(-self.G, x_k), self.lbG)
@@ -213,6 +193,7 @@ class SQPsolver:
 
         return cons1.flatten(), cons2.flatten(), cons3.flatten(), cons4
 
+    # gradient of solver constraint matrices
     def get_constraints_gradients(self):
         cons1_grad = self.G
         cons2_grad = -self.G
@@ -222,11 +203,13 @@ class SQPsolver:
             cons4_grad = -self.D
         return cons1_grad, cons2_grad, cons3_grad, cons4_grad
 
+    # gradient and hessian of the solver objective function
     def get_objective_gradient_and_hessian(self, x_k):
         model_grad = 0.5 * np.matmul((self.P + self.P.T), x_k)
         model_hess = 0.5 * (self.P + self.P.T)
         return model_grad, model_hess
 
+    # formulating objective function with l1 times constraint norm
     def get_model_objective(self, x_k, p, penalty):
         cons1_at_xk, cons2_at_xk, cons3_at_xk, cons4_at_xk = self.evaluate_constraints(x_k, p)
         cons1_grad_at_xk, cons2_grad_at_xk, cons3_grad_at_xk, cons4_grad_at_xk = self.get_constraints_gradients()
@@ -249,6 +232,7 @@ class SQPsolver:
 
         return model, objective_at_xk
 
+    # to get the value of the original objective cost
     def get_actual_objective(self, xk, p, penalty):
         x = cvxpy.Variable(self.P.shape[0])
         x.value = copy.copy(xk)
@@ -265,14 +249,14 @@ class SQPsolver:
         objective += penalty * (constraints1 + constraints2 + constraints3 + constraints4)
         return objective
 
+    # solving given SQP sub-problem
     def solve_problem(self, x_k, penalizer, p, delta, constraints=None, lower_limit=None, upper_limit=None):
         model_objective, actual_objective = self.get_model_objective(x_k, p, penalizer)
-        if self.D is not None:
-            print self.D.shape, p.shape, delta, penalizer.value
+        # if self.D is not None:
+        #     print self.D.shape, p.shape, delta, penalizer.value
         constraints = [cvxpy.norm(p, self.trust_region_norm) <= delta]
 
         problem = cvxpy.Problem(cvxpy.Minimize(model_objective), constraints)
-        # print problem.get_problem_data(self.solver)[0]
         if self.solver == "CVXOPT":
             start = time.time()
             result = problem.solve(solver=self.solver, warm_start=True, kktsolver=cvxpy.ROBUST_KKTSOLVER, verbose=False)
@@ -285,21 +269,44 @@ class SQPsolver:
 
         return p.value, model_objective, actual_objective, problem.status, problem.value
 
+    # to check if two quatities are approximately equal
     def approx_equal(self, x, y, tolerance=0.001):
         return abs(x - y) <= 0.5 * tolerance * (x + y)
 
+    # calculating the constraint norm
     def get_constraints_norm(self, x_k):
-        con1, con2, con3 = self.evaluate_constraints(x_k)
+        con1, con2, con3, cons4 = self.evaluate_constraints(x_k)
         max_con1 = (np.linalg.norm(con1, np.inf))
         max_con2 = (np.linalg.norm(con2, np.inf))
         max_con3 = (np.linalg.norm(con3, np.inf))
+        max_con4 = (np.linalg.norm(con3, np.inf))
 
-        return max_con1, max_con2, max_con3
+        return max_con1, max_con2, max_con3, max_con4
 
-    def test_prob(self, p, problem, constraints, penalty, delta, solver, trust_region_norm, penalty_norm):
-        from scripts.cvxpy_optimizer.solver_cvxpy2 import ConvexOptimizer
-        opt = ConvexOptimizer(p, problem, constraints, penalty, delta, solver, trust_region_norm, penalty_norm)
+    # calculating cost improve from initial to final solution of the given problem
+    def calc_cost_improve(self):
+        act_redutcion = self.actual_reductions
+        pred_reduction = self.predicted_reductions
+        actual_costs = self.actual_costs
+        model_costs = self.model_costs
+        if len(act_redutcion):
+            self.actual_reduction_improve = act_redutcion[0] - act_redutcion[-1]
+            self.actual_reduction_improve /= (act_redutcion[0] + 0.000000001)
+            self.actual_reduction_improve *= 100
+        if len(pred_reduction):
+            self.predicted_reduction_improve = pred_reduction[0] - pred_reduction[-1]
+            self.predicted_reduction_improve /= (pred_reduction[0] + 0.000000001)
+            self.predicted_reduction_improve *= 100
+        if len(actual_costs):
+            self.actual_cost_improve = actual_costs[0] - actual_costs[-1]
+            self.actual_cost_improve /= (actual_costs[0] + 0.000000001)
+            self.actual_cost_improve *= 100
+        if len(actual_costs):
+            self.model_cost_improve = model_costs[0] - model_costs[-1]
+            self.model_cost_improve /= (model_costs[0] + 0.000000001)
+            self.model_cost_improve *= 100
 
+    # solving SQP problem
     def solve(self, initial_guess=None, callback_function=None):
         self.logger.info("Starting SQP solver . . . . . . .")
         x = cvxpy.Variable(self.P.shape[0])
@@ -319,59 +326,45 @@ class SQPsolver:
         max_penalty = float(self.solver_config["max_penalty"])
         min_trust_box_size = float(self.solver_config["min_trust_region_size"])
         max_trust_box_size = float(self.solver_config["max_trust_region_size"])
-
         trust_shrink_ratio = float(self.solver_config["trust_shrink_ratio"])
         trust_expand_ratio = float(self.solver_config["trust_expand_ratio"])
-
         trust_good_region_ratio = float(self.solver_config["trust_good_region_ratio"])
         trust_bad_region_ratio = float(self.solver_config["trust_bad_region_ratio"])
         max_iteration = float(self.solver_config["max_iteration"])
-
         min_actual_redution = float(self.solver_config["min_actual_redution"])
         min_x_redution = float(self.solver_config["min_x_redution"])
-
         const_violation_tolerance = float(self.solver_config["const_violation_tolerance"])
 
         x_k = copy.copy(x_0)
-
         iteration_count = 0
         check_for_constraints = False
-
         is_adjust_penalty = False
-
-        same_trust_region_count = 0
-        old_trust_region = copy.copy(trust_box_size)
-
+        dynamic_constraints_satisfied = False
         actual_reduction = 1000
 
-        rho_k = 0
-        old_rho_k = 0
+        self.rho_k = 0
+        self.is_converged = False
         inter_status = "-1"
+
         p_k = [0] * len(x_0)
         last_p_k = [0] * len(x_0)
-
-        dynamic_constraints_satisfied = False
-
         p.value = copy.deepcopy(p_0.value)
 
         while penalty.value <= max_penalty:
-            # print "penalty ", penalty.value
             self.logger.debug("penalty " + str(penalty.value))
             self.num_qp_iterations += 1
             self.num_sqp_iterations += 1
             while iteration_count < max_iteration:
-                # self.is_initialised = False
                 iteration_count += 1
                 self.num_qp_iterations += 1
-                # print "iteration_count", iteration_count
                 self.logger.debug("iteration_count " + str(iteration_count))
                 if callback_function is not None:
-                    # constraints, lower_limit, upper_limit = callback_function(x_k, p_k)
                     self.D, self.lbD, self.ubD = callback_function(x_k, p_k)
                 while trust_box_size >= min_trust_box_size:
                     self.num_qp_iterations += 1
-                    if callback_function is not None:
-                        if self.D is not None:
+                    if callback_function is not None or not self.is_initialized:
+                        if self.D is not None or not self.is_initialized:
+                            self.is_initialized = True
                             p_k, model_objective_at_p_k, \
                             actual_objective_at_x_k, solver_status, prob_value = self.solve_problem(x_k, penalty, p,
                                                                                                     trust_box_size,
@@ -404,44 +397,25 @@ class SQPsolver:
 
                         if predicted_reduction == 0:
                             predicted_reduction = 0.0000001
-                        rho_k = actual_reduction / predicted_reduction
-                        self.initial_costs.append(predicted_reduction)
-                        self.initial_costs1.append(actual_objective_at_x_k.value)
-                        self.initial_costs2.append(actual_reduction)
-                        self.initial_costs3.append(prob_value)
-
-                        if not self.is_initialised:
-                            self.is_initialised = True
-                            self.initial_cost = predicted_reduction
-                            self.initial_cost1 = actual_objective_at_x_k.value
-                            self.initial_cost2 = actual_reduction
-                            self.initial_cost3 = prob_value
-
-
-                        else:
-                            self.final_cost = predicted_reduction
-                            self.final_cost1 = actual_objective_at_x_k.value
-                            self.final_cost2 = actual_reduction
-                            self.final_cost3 = prob_value
-
-                            self.final_costs.append(predicted_reduction)
-                            self.final_costs1.append(actual_objective_at_x_k.value)
-                            self.final_costs2.append(actual_reduction)
-                            self.final_costs3.append(prob_value)
+                        self.rho_k = actual_reduction / predicted_reduction
+                        self.predicted_reductions.append(predicted_reduction)
+                        self.actual_reductions.append(actual_reduction)
+                        self.model_costs.append(prob_value)
+                        self.actual_costs.append(actual_objective_at_x_k.value)
 
                         self.logger.debug("\n x_k " + str(x_k))
-                        self.logger.debug("rho_k " + str(rho_k))
+                        self.logger.debug("rho_k " + str(self.rho_k))
 
                         if solver_status == cvxpy.INFEASIBLE or solver_status == cvxpy.INFEASIBLE_INACCURATE or solver_status == cvxpy.UNBOUNDED or solver_status == cvxpy.UNBOUNDED_INACCURATE:
                             penalty.value *= trust_expand_ratio
                             break
 
-                        if rho_k >= trust_good_region_ratio:
+                        if self.rho_k >= trust_good_region_ratio:
                             trust_box_size = np.fmin(trust_box_size * trust_expand_ratio, max_trust_box_size)
                             self.logger.debug("expanding trust region" + str(trust_box_size))
                             x_k += p_k
                             break
-                        elif rho_k <= trust_bad_region_ratio:
+                        elif self.rho_k <= trust_bad_region_ratio:
                             trust_box_size *= trust_shrink_ratio
                             self.logger.debug("shrinking trust region " + str(trust_box_size))
                             x_k -= p_k
@@ -461,16 +435,16 @@ class SQPsolver:
                     break
 
                 if self.is_objective_function_converged(actual_reduction, min_actual_redution):
-                    is_objective_converged = True
+                    self.is_converged = True
                     inter_status = "actual reduction is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"
                     break
                 # else:
-                #     is_converged = False
+                #     self.is_converged = False
 
                 if self.is_x_converged(x_k, p_k, min_x_redution):
-                    is_x_converged = True
+                    self.is_converged = True
                     inter_status = "reduction in x is very small"
                     self.logger.info(inter_status)
                     self.status = "Solved"
@@ -478,7 +452,7 @@ class SQPsolver:
             if self.is_constraints_satisfied(x_k, p, const_violation_tolerance):
                 if callback_function is not None:
                     if dynamic_constraints_satisfied:
-                        is_converged = True
+                        self.is_converged = True
                         if inter_status != "-1":
                             inter_status += " and"
                         else:
@@ -488,9 +462,9 @@ class SQPsolver:
                         self.status = "Solved"
                         break
                     else:
-                        is_converged = False
+                        self.is_converged = False
                 else:
-                    is_converged = True
+                    self.is_converged = True
                     if inter_status != "-1":
                         inter_status += " and"
                     else:
@@ -500,13 +474,11 @@ class SQPsolver:
                     self.status = "Solved"
                     break
             else:
-                is_converged = False
-                is_objective_converged = False
-                is_x_converged = False
+                self.is_converged = False
                 check_for_constraints = False
                 dynamic_constraints_satisfied = False
 
-            if is_converged or dynamic_constraints_satisfied:
+            if self.is_converged or dynamic_constraints_satisfied:
                 break
             penalty.value *= 10
             iteration_count = 0
@@ -515,5 +487,6 @@ class SQPsolver:
         self.logger.debug("\n initial x_0 " + str(x_0))
         self.logger.debug("\n final x_k " + str(x_k))
         self.logger.debug("solver status: " + self.status)
+        self.calc_cost_improve()
 
         return self.status, x_k

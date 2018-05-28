@@ -1,0 +1,198 @@
+robot:
+#    urdf: "/home/mahesh/catkin_ws/src/robot_descriptions/kuka_husky_description/urdf/kuka_husky.urdf"
+#    srdf: "/home/mahesh/catkin_ws/src/robot_descriptions/kuka_husky_description/moveit_config/config/kuka_husky.srdf"
+#    position: [0.0, 0.0, 0.0]
+#    orientation: [0.0, 0.0, 0.0]
+    joints_groups:
+      full_arm: ["lbr_iiwa_joint_1", "lbr_iiwa_joint_2", "lbr_iiwa_joint_3", "lbr_iiwa_joint_4", "lbr_iiwa_joint_5", "lbr_iiwa_joint_6", "lbr_iiwa_joint_7"]
+
+    joint_configurations:
+      home:
+        lbr_iiwa_joint_1: -2.055
+        lbr_iiwa_joint_2: 0.944
+        lbr_iiwa_joint_3: -1.591
+        lbr_iiwa_joint_4: -1.922
+        lbr_iiwa_joint_5: 1.572
+        lbr_iiwa_joint_6: 1.574
+        lbr_iiwa_joint_7: 1.571
+
+      pick:
+        lbr_iiwa_joint_1: -0.08180533826032865
+        lbr_iiwa_joint_2: 1.5474152457596664
+        lbr_iiwa_joint_3: -1.5873548294514912
+        lbr_iiwa_joint_4: -0.5791571346767671
+        lbr_iiwa_joint_5: 1.5979105177314896
+        lbr_iiwa_joint_6: 1.5857854098720727
+        lbr_iiwa_joint_7: 1.5726221954434347
+      place:
+        lbr_iiwa_joint_1: -2.4823357809267463
+        lbr_iiwa_joint_2: 1.4999975516996142
+        lbr_iiwa_joint_3: -1.5762726255540713
+        lbr_iiwa_joint_4: -0.8666279970481103
+        lbr_iiwa_joint_5: 1.5855963769735366
+        lbr_iiwa_joint_6: 1.5770985888989753
+        lbr_iiwa_joint_7: 1.5704531145724918
+#      loc1:
+#        lbr_iiwa_joint_1: 0.812198299407959
+#        lbr_iiwa_joint_2: -1.8384520244598389
+#        lbr_iiwa_joint_3: 1.530663013458252
+#        lbr_iiwa_joint_4: 1.43227758407592773
+#        lbr_iiwa_joint_5: 1.6247374725341797
+#        lbr_iiwa_joint_6: 1.21023132801055908
+#        lbr_iiwa_joint_7: 0.0
+#      loc2:
+#        lbr_iiwa_joint_1: 2.96705961227417
+#        lbr_iiwa_joint_2: -1.1243594884872437
+#        lbr_iiwa_joint_3: 0.28108978271484375
+#        lbr_iiwa_joint_4: 0.8598041534423828
+#        lbr_iiwa_joint_5: 2.96705961227417
+#        lbr_iiwa_joint_6: 0.6613879203796387
+#        lbr_iiwa_joint_7: 0.0
+#      loc3:
+#        lbr_iiwa_joint_1: 0.9346442794799805
+#        lbr_iiwa_joint_2: 1.4375624561309814
+#        lbr_iiwa_joint_3: -1.2100934314727783
+#        lbr_iiwa_joint_4: -1.5273310565948486
+#        lbr_iiwa_joint_5: -0.1803781032562256
+#        lbr_iiwa_joint_6: -1.415516128540039
+#        lbr_iiwa_joint_7: 1.5110876560211182
+#      loc4:
+#        lbr_iiwa_joint_1: -2.3424153327941895
+#        lbr_iiwa_joint_2: 1.918025016784668
+#        lbr_iiwa_joint_3: -2.685969829559326
+#        lbr_iiwa_joint_4: -1.7196086645126343
+#        lbr_iiwa_joint_5: -0.24985766410827637
+#        lbr_iiwa_joint_6: -0.9479894638061523
+#        lbr_iiwa_joint_7: 1.2217304706573486
+#      loc5:
+#        lbr_iiwa_joint_1: 0.3435544967651367
+#        lbr_iiwa_joint_2: 0.8818504810333252
+#        lbr_iiwa_joint_3: 2.092557907104492
+#        lbr_iiwa_joint_4: 2.0723490715026855
+#        lbr_iiwa_joint_5: 1.998861312866211
+#        lbr_iiwa_joint_6: 1.4330072402954102
+#        lbr_iiwa_joint_7: 0.0
+#      loc6:
+#        lbr_iiwa_joint_1: -2.529808759689331
+#        lbr_iiwa_joint_2: 0.6393415927886963
+#        lbr_iiwa_joint_3: -2.810898542404175
+#        lbr_iiwa_joint_4: 1.5652849674224854
+#        lbr_iiwa_joint_5: 0.46848297119140625
+#        lbr_iiwa_joint_6: -0.617295503616333
+#        lbr_iiwa_joint_7: 0.0
+#      loc7:
+#        lbr_iiwa_joint_1: -0.08180533826032865
+#        lbr_iiwa_joint_2: 1.5474152457596664
+#        lbr_iiwa_joint_3: -1.5873548294514912
+#        lbr_iiwa_joint_4: -0.5791571346767671
+#        lbr_iiwa_joint_5: 1.5979105177314896
+#        lbr_iiwa_joint_6: 1.5857854098720727
+#        lbr_iiwa_joint_7: 1.5726221954434347
+#      loc8:
+#        lbr_iiwa_joint_1: -2.4823357809267463
+#        lbr_iiwa_joint_2: 1.4999975516996142
+#        lbr_iiwa_joint_3: -1.5762726255540713
+#        lbr_iiwa_joint_4: -0.8666279970481103
+#        lbr_iiwa_joint_5: 1.5855963769735366
+#        lbr_iiwa_joint_6: 1.5770985888989753
+#        lbr_iiwa_joint_7: 1.5704531145724918
+
+      loc1:
+        lbr_iiwa_joint_1: -2.2799510955810547
+        lbr_iiwa_joint_2: 1.1904981136322021
+        lbr_iiwa_joint_3: 0.46848297119140625
+        lbr_iiwa_joint_4: -1.1464056968688965
+        lbr_iiwa_joint_5: 2.96705961227417
+        lbr_iiwa_joint_6: -1.6534698009490967
+        lbr_iiwa_joint_7: 1.6396911144256592
+      loc2:
+        lbr_iiwa_joint_1: -2.43611216545105
+        lbr_iiwa_joint_2: 1.741654872894287
+        lbr_iiwa_joint_3: 2.311183452606201
+        lbr_iiwa_joint_4: -0.9700356721878052
+        lbr_iiwa_joint_5: 0.6871085166931152
+        lbr_iiwa_joint_6: -1.6534698009490967
+        lbr_iiwa_joint_7: 1.6396911144256592
+      loc3:
+        lbr_iiwa_joint_1: 0.9057340621948242
+        lbr_iiwa_joint_2: 1.5873310565948486
+        lbr_iiwa_joint_3: -1.4366816282272339
+        lbr_iiwa_joint_4: -1.1904983520507812
+        lbr_iiwa_joint_5: -2.96705961227417
+        lbr_iiwa_joint_6: -1.5211923122406006
+        lbr_iiwa_joint_7: 1.5110876560211182
+      loc4:
+        lbr_iiwa_joint_1: 0.9057340621948242
+        lbr_iiwa_joint_2: -1.6975624561309814
+        lbr_iiwa_joint_3: -1.4366816282272339
+        lbr_iiwa_joint_4: -1.1023132801055908
+        lbr_iiwa_joint_5: 1.2805204391479492
+        lbr_iiwa_joint_6: -1.5211923122406006
+        lbr_iiwa_joint_7: 1.5110876560211182
+      loc5:
+        lbr_iiwa_joint_1: 0.46848297119140625
+        lbr_iiwa_joint_2: -1.609377384185791
+        lbr_iiwa_joint_3: -1.4991458654403687
+        lbr_iiwa_joint_4: 0.11023139953613281
+        lbr_iiwa_joint_5: 1.998861312866211
+        lbr_iiwa_joint_6: -0.7054804563522339
+        lbr_iiwa_joint_7: 1.5110876560211182
+      loc6:
+        lbr_iiwa_joint_1: 2.904595375061035
+        lbr_iiwa_joint_2: -1.455053448677063
+        lbr_iiwa_joint_3: 2.155022144317627
+        lbr_iiwa_joint_4: -1.0361744165420532
+        lbr_iiwa_joint_5: 2.96705961227417
+        lbr_iiwa_joint_6: 1.5652849674224854
+        lbr_iiwa_joint_7: 1.5110876560211182
+      loc7:
+        lbr_iiwa_joint_1: -0.6871085166931152
+        lbr_iiwa_joint_2: -1.455053448677063
+        lbr_iiwa_joint_3: 0.9369661808013916
+        lbr_iiwa_joint_4: 1.918025016784668
+        lbr_iiwa_joint_5: 2.96705961227417
+        lbr_iiwa_joint_6: 0.46297168731689453
+        lbr_iiwa_joint_7: 1.5110876560211182
+      loc8:
+        lbr_iiwa_joint_1: 0.5934121608734131
+        lbr_iiwa_joint_2: -1.4991459846496582
+        lbr_iiwa_joint_3: 1.2180557250976562
+        lbr_iiwa_joint_4: 1.5652849674224854
+        lbr_iiwa_joint_5: -1.936396837234497
+        lbr_iiwa_joint_6: -1.1904983520507812
+        lbr_iiwa_joint_7: 1.5110876560211182
+      loc9:
+        lbr_iiwa_joint_1: 2.8108983039855957
+        lbr_iiwa_joint_2: -0.462971568107605
+        lbr_iiwa_joint_3: 0.12492895126342773
+        lbr_iiwa_joint_4: 1.6534698009490967
+        lbr_iiwa_joint_5: 1.8114681243896484
+        lbr_iiwa_joint_6: 1.5652849674224854
+        lbr_iiwa_joint_7: 1.5110876560211182
+
+      loc10:
+        lbr_iiwa_joint_1: -0.08180533826032865
+        lbr_iiwa_joint_2: 1.5474152457596664
+        lbr_iiwa_joint_3: -1.5873548294514912
+        lbr_iiwa_joint_4: -0.5791571346767671
+        lbr_iiwa_joint_5: 1.5979105177314896
+        lbr_iiwa_joint_6: 1.5857854098720727
+        lbr_iiwa_joint_7: 1.5726221954434347
+      loc11:
+        lbr_iiwa_joint_1: -2.4823357809267463
+        lbr_iiwa_joint_2: 1.4999975516996142
+        lbr_iiwa_joint_3: -1.5762726255540713
+        lbr_iiwa_joint_4: -0.8666279970481103
+        lbr_iiwa_joint_5: 1.5855963769735366
+        lbr_iiwa_joint_6: 1.5770985888989753
+        lbr_iiwa_joint_7: 1.5704531145724918
+
+
+
+
+
+#      pick1: [-2.4823357809267463, 1.4999975516996142, -1.5762726255540713, -0.8666279970481103,
+#                      1.5855963769735366, 1.5770985888989753, 1.5704531145724918]
+#
+#      place1: [-0.08180533826032865, 1.5474152457596664, -1.5873548294514912, -0.5791571346767671,
+#                       1.5979105177314896, 1.5857854098720727, 1.5726221954434347]

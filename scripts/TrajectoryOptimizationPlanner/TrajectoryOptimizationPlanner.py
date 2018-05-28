@@ -10,55 +10,55 @@ from scripts.DB.Mongo_driver import MongoDriver
 import time
 
 
-class TrajectoryOptimizationPlanner():
+class TrajectoryOptimizationPlanner:
+
+    # initializing robot model, simulation environment and SQP solver
     def __init__(self, **kwargs):
+        self.robot_config = None
+        self.default_config = None
+        self.config = None
+        self.sqp_yaml = None
+        self.sqp_config = None
+        self.robot_default_config_params = None
+        self.elapsed_time = 0
 
-        if "logger_name" in kwargs:
-            main_logger_name = kwargs["logger_name"]
-        else:
-            # main_logger_name = "Trajectory_Planner."
-            main_logger_name = "Trajectory_Optimization_Planner."
+        main_logger_name = utils.get_var_from_kwargs("logger_name", optional=True,
+                                                     default="Trajectory_Optimization_Planner.", **kwargs)
+        verbose = utils.get_var_from_kwargs("verbose", optional=True, default=False, **kwargs)
 
-        if "verbose" in kwargs:
-            verbose = kwargs["verbose"]
-        else:
-            verbose = False
+        log_file = utils.get_var_from_kwargs("log_file", optional=True, default=False, **kwargs)
 
-        if "log_file" in kwargs:
-            log_file = kwargs["log_file"]
-        else:
-            log_file = False
+        robot_config = utils.get_var_from_kwargs("robot_config", optional=True, **kwargs)
+        self.load_configs(robot_config)
 
-        if "robot_config" in kwargs:
-            robot_config = kwargs["robot_config"]
-            self.load_configs(robot_config)
-        if "save_problem" in kwargs:
-            self.save_problem = kwargs["save_problem"]
-            if "db_name" in kwargs:
-                db_name = kwargs["db_name"]
-            else:
-                db_name = "Trajectory_planner_results"
-
+        self.save_problem = utils.get_var_from_kwargs("save_problem", optional=True, **kwargs)
+        if self.save_problem is not None:
+            db_name = utils.get_var_from_kwargs("db_name", optional=True, default="Trajectory_planner_results", **kwargs)
             self.db_driver = MongoDriver(db_name)
         else:
             self.db_driver = None
             self.save_problem = None
 
+        self.if_plot_traj = utils.get_var_from_kwargs("plot_trajectory", optional=True, default=False, **kwargs)
+
         self.robot = Robot(main_logger_name, verbose, log_file)
         self.world = SimulationWorld(**kwargs)
         self.logger = logging.getLogger(main_logger_name)
         utils.setup_logger(self.logger, main_logger_name, verbose, log_file)
-        self.world.toggle_rendering(0)
-        self.elapsed_time = 0
 
+        self.world.toggle_rendering(0)
+        self.load_robot_from_config()
+        self.world.toggle_rendering(1)
+
+    # to load default configuration from a file
     def load_configs(self, config_file=None):
         file_path_prefix = os.path.join(os.path.dirname(__file__), '../../config/')
         self.default_config = yaml.ConfigParser(file_path_prefix + 'default_config.yaml')
         self.config = self.default_config.get_by_key("config")
 
-        self.sqp_config_file = file_path_prefix + self.config["solver"]
+        sqp_config_file = file_path_prefix + self.config["solver"]
 
-        self.sqp_yaml = yaml.ConfigParser(self.sqp_config_file)
+        self.sqp_yaml = yaml.ConfigParser(sqp_config_file)
         self.sqp_config = self.sqp_yaml.get_by_key("sqp")
         if config_file is not None:
             robot_config_file = file_path_prefix + config_file
@@ -68,127 +68,198 @@ class TrajectoryOptimizationPlanner():
         robot_yaml = yaml.ConfigParser(robot_config_file)
         self.robot_config = robot_yaml.get_by_key("robot")
 
-    def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=False):
+    # to load a robot model from urdf file
+    def load_robot(self, urdf_file, position=[0, 0, 0], orientation=[0, 0, 0, 1], use_fixed_base=True):
         self.robot.id = self.world.load_robot(urdf_file, position, orientation, use_fixed_base)
         self.robot.load_robot_model(urdf_file)
-
         return self.robot.id
 
+    # to load a robot configuration from srdf file
+    def load_robot_srdf(self, srdf_file):
+        self.robot.load_srdf(srdf_file)
+        self.world.ignored_collisions = self.robot.get_ignored_collsion()
+
+    # load robot from urdf file specified in config file
+    def load_robot_from_config(self):
+        urdf_file = utils.get_var_from_kwargs("urdf", optional=True, **self.robot_config)
+        srdf_file = utils.get_var_from_kwargs("srdf", optional=True, **self.robot_config)
+        if urdf_file is not None:
+            pos = self.robot_config["position"] if "position" in self.robot_config else [0, 0, 0]
+            orn = self.robot_config["orientation"] if "orientation" in self.robot_config else [0, 0, 0]
+            self.load_robot(urdf_file, position=pos, orientation=orn)
+        if srdf_file is not None:
+            self.load_robot_srdf(srdf_file)
+
+    # load an objects into simulation environment from urdf file
     def load_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
         urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         return urdf_id
 
+    # load a collision constraints into simulation environment from urdf file
     def add_constraint_from_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
         urdf_id = self.world.load_urdf(name, urdf_file, position, orientation, use_fixed_base)
         self.world.add_collision_constraints(urdf_id)
         return urdf_id
 
+    # load primitive shape collision constraints into simulation environment
     def add_constraint(self, name, shape, mass, position, size=None, radius=None, height=None, orientation=None):
         shape_id = self.world.create_constraint(name, shape, mass, position, orientation, size, radius, height)
         self.world.add_collision_constraints(shape_id)
         return shape_id
 
+    # if already an object loaded into simulation environment, it can be then added as collision constraint
     def add_constraint_with_id(self, constraint_id):
         self.world.add_collision_constraints(constraint_id)
 
+    # method to plan and get the optimized trajectory
     def get_trajectory(self, **kwargs):
+        group = []
+        group_name = utils.get_var_from_kwargs("group", **kwargs)
+        if group_name is not None:
+            if type(group_name) is list:
+                group = group_name
+            if type(group_name) is str and group_name in self.robot_config["joints_groups"]:
+                group = self.robot_config["joints_groups"][group_name]
+            if not len(group):
+                group = self.robot.get_planning_group_from_srdf(group_name)
 
-        if "group" in kwargs:
-            group = kwargs["group"]
-            if type(group) is str:
-                group = self.robot_config["joints_groups"][kwargs["group"]]
-        if "start_state" in kwargs:
-            start_state = kwargs["start_state"]
-            if type(start_state) is str:
-                start_state = self.robot_config["joint_configurations"][start_state]
-
-            if type(start_state)is dict or type(start_state) is OrderedDict:
+        start_state = utils.get_var_from_kwargs("start_state", optional=True, **kwargs)
+        if start_state is not None and len(group):
+            if type(start_state) is dict or type(start_state) is OrderedDict:
                 start_state = start_state.values()
+            if not type(start_state) is list:
+                _, start_state = self.get_planning_group_and_corresponding_state("start_state", **kwargs)
+            self.reset_robot_to(start_state, group, key="start_state")
+            status, is_collision_free, trajectory = "start state in collision", False, -1
+            is_start_state_in_collision = self.world.is_given_state_in_collision(self.robot.id, start_state, group)
+            if is_start_state_in_collision:
+                print "is_start_state_in_collision", is_start_state_in_collision
+                status = "start state in collision"
+                return status, is_collision_free, trajectory
+        elif len(group):
+            start_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
 
-            self.world.reset_joint_states(self.robot.id, start_state, group)
-            # self.world.step_simulation_for(0.2)
-
-        if "goal_state" in kwargs:
-            goal_state = kwargs["goal_state"]
-            if type(goal_state) is str:
-                goal_state = self.robot_config["joint_configurations"][goal_state]
-
-            if type(goal_state)is dict or type(goal_state)is OrderedDict:
+        goal_state = utils.get_var_from_kwargs("goal_state", **kwargs)
+        if goal_state is not None and len(group):
+            if type(goal_state) is dict or type(goal_state) is OrderedDict:
                 goal_state = goal_state.values()
-        if "samples" in kwargs:
-            samples = kwargs["samples"]
-        else:
-            samples = 20
-        if "duration" in kwargs:
-            duration = kwargs["duration"]
-        else:
-            duration = 10
-        if "collision_safe_distance" in kwargs:
-            collision_safe_distance = kwargs["collision_safe_distance"]
-        else:
-            collision_safe_distance = 0.05
-        if "collision_check_distance" in kwargs:
-            collision_check_distance = kwargs["collision_check_distance"]
-        else:
-            collision_check_distance = 0.1
-        #
-        status, is_collision_free, trajectory = "goal state in collision", False, -1
-        is_goal_in_collision = self.world.is_given_state_in_collision(self.robot.id, goal_state, group)
-        print "is_goal_in_collision", is_goal_in_collision
-        if is_goal_in_collision:
-            return status, is_collision_free, trajectory
+            if not type(goal_state) is list:
+                _, goal_state = self.get_planning_group_and_corresponding_state("goal_state", **kwargs)
+                status, is_collision_free, trajectory = "goal state in collision", False, -1
+                is_goal_in_collision = self.world.is_given_state_in_collision(self.robot.id, goal_state, group)
+                if is_goal_in_collision:
+                    print "is_goal_in_collision", is_goal_in_collision
+                    status = "goal state in collision"
+                    return status, is_collision_free, trajectory
 
-        current_robot_state = self.world.get_current_states_for_given_joints(self.robot.id, group)
+        samples = utils.get_var_from_kwargs("samples", optional=True, default=20, **kwargs)
+        duration = utils.get_var_from_kwargs("duration", optional=True, default=10, **kwargs)
+        collision_safe_distance = utils.get_var_from_kwargs("collision_safe_distance", optional=True,
+                                                            default=0.05, **kwargs)
+        collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
+                                                             default=0.1, **kwargs)
+        ignore_goal_states = utils.get_var_from_kwargs("ignore_goal_states", optional=True, **kwargs)
 
-        self.robot.init_plan_trajectory(group=group, current_state=current_robot_state,
+        self.robot.init_plan_trajectory(group=group, current_state=start_state,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
-                                        collision_check_distance=collision_check_distance)
+                                        collision_check_distance=collision_check_distance,
+                                        solver_class=self.sqp_config["solver_class"],
+                                        ignore_goal_states=ignore_goal_states
+                                        )
 
-        # self.world.toggle_rendering_while_planning(False)
+        self.world.toggle_rendering_while_planning(False)
         _, planning_time, _ = self.robot.calulate_trajecotory(self.callback_function_from_solver)
         trajectory = self.robot.planner.get_trajectory()
 
-        # is_collision_free = True
         is_collision_free = self.world.is_trajectory_collision_free(self.robot.id, self.robot.get_trajectory().final,
                                                                     group,
                                                                     0.02)
         self.world.toggle_rendering_while_planning(True)
-
+        self.elapsed_time = self.robot.planner.sqp_solver.solving_time + \
+                            self.world.collision_check_time + self.robot.planner.prob_model_time
         status = "Optimal Trajectory has been found in " + str(self.elapsed_time) + " secs"
         self.logger.info(status)
+        self.log_infos()
+
+        if self.if_plot_traj:
+            self.robot.planner.trajectory.plot_trajectories()
 
         if self.save_problem:
-            self.save_to_db(samples, duration, current_robot_state, goal_state, group, collision_safe_distance,
+            self.save_to_db(samples, duration, start_state, goal_state, group, collision_safe_distance,
                             collision_check_distance, is_collision_free)
 
         return status, is_collision_free, trajectory
 
+    # method to plan an optimized trajectory
     def plan_trajectory(self, planning_group, goal_state, samples=20, duration=10,
                         collision_safe_distance=0.1,
                        collision_check_distance=0.05, solver_config=None):
+
         status, is_collision_free, _ = self.get_trajectory(group=planning_group,
                                         goal_state=goal_state, samples=samples, duration=duration,
                                         collision_safe_distance=collision_safe_distance,
                                         collision_check_distance=collision_check_distance,
                                         solver_config=solver_config)
-
+        status += ", is trajectory collision free: " + str(is_collision_free)
         return status, is_collision_free
 
+    # method to execute the planned trajectory
     def execute_trajectory(self):
         self.world.execute_trajectory(self.robot, self.robot.planner.get_trajectory())
 
         return "Trajectory execution completed"
 
-    def reset_robot_to(self, **kwargs):
-        if "group" in kwargs:
-            group = kwargs["group"]
-            if type(group) is str:
-                group = self.robot_config["joints_groups"][kwargs["group"]]
-        status = self.world.reset_joints_to_random_states(self.robot, group)
+    # method to extract planning group and corresponding joint values from a config file
+    def get_planning_group_and_corresponding_state(self, group_state, **kwargs):
+        group = []
+        joint_states = []
+
+        group_name = utils.get_var_from_kwargs("group", **kwargs)
+        if group_name is not None:
+            if type(group_name) is str:
+                if kwargs["group"] in self.robot_config["joints_groups"]:
+                    group = self.robot_config["joints_groups"][kwargs["group"]]
+                if not len(group):
+                    group = self.robot.get_planning_group_from_srdf(group_name)
+            if group_state in kwargs and len(group):
+                joint_states = kwargs[group_state]
+                if type(joint_states) is str and joint_states in self.robot_config["joint_configurations"]:
+                    joint_states = self.robot_config["joint_configurations"][joint_states]
+                # if not len(joint_states):
+                else:
+                    group, joint_states = self.robot.get_group_state_from_srdf(joint_states)
+                if type(joint_states) is dict or type(joint_states) is OrderedDict:
+                    joint_states = joint_states.values()
+
+        return group, joint_states
+
+    # robots can be reset to a given state
+    def reset_robot_to(self, state, group, key="reset_state"):
+        group, joint_states = self.get_planning_group_and_corresponding_state(key, group=group, reset_state=state)
+        self.world.reset_joint_states(self.robot.id, joint_states, group)
+
+    # robots can be reset to a random state
+    def reset_robot_to_random_state(self, group_name):
+        group =[]
+        if type(group) is str:
+            group = self.robot_config["joints_groups"][group_name]
+        if not len(group):
+            group = self.robot.get_planning_group_from_srdf(group)
+        if type(group) is dict or type(group) is OrderedDict:
+            group = group.values()
+        status = self.world.reset_joints_to_random_states(self.robot.id, group)
         self.world.step_simulation_for(0.2)
 
         return status
+
+    def get_group_names(self, group):
+        if type(group) is str:
+            group = self.robot_config["joints_groups"][group]
+        if type(group) is dict or type(group) is OrderedDict:
+            group = group.values()
+
+        return group
 
     def callback_function_from_solver(self, new_trajectory, delta_trajectory=None):
 
@@ -209,75 +280,47 @@ class TrajectoryOptimizationPlanner():
 
         return constraints, lower_limit, upper_limit
 
-    # def save_problem_in_db(self, **request):
-    #     for i in request:
-    #         print i
-    #
-    #     db_driver = MongoDriver("trajectory_planner")
-    #     db_driver.insert(request)
+    def get_group_and_state(self, group, state, **kwargs):
+        if type(group) is str:
+            group = self.robot_config["joints_groups"][kwargs["group"]]
+        goal_state = kwargs["goal_state"]
+        if type(goal_state) is str:
+            goal_state = self.robot_config["joint_configurations"][goal_state]
+
+        if type(goal_state) is dict or type(goal_state) is OrderedDict:
+            goal_state = goal_state.values()
+
+        return goal_state
 
     def save_to_db(self, samples, duration, current_robot_state, goal_state, group, d_safe, d_check, is_collision_free):
 
-        self.elapsed_time = self.robot.planner.sqp_solver.solving_time + self.world.collision_check_time + self.robot.planner.prob_model_time
-        improve = self.robot.planner.sqp_solver.initial_cost - self.robot.planner.sqp_solver.final_cost
-        improve /= (self.robot.planner.sqp_solver.initial_cost + 0.000000001)
-        improve *= 100
-        improve1 = self.robot.planner.sqp_solver.initial_cost1 - self.robot.planner.sqp_solver.final_cost1
-        improve1 /= (self.robot.planner.sqp_solver.initial_cost1 + 0.000000001)
-        improve1 *= 100
-        improve2 = self.robot.planner.sqp_solver.initial_cost2 - self.robot.planner.sqp_solver.final_cost2
-        improve2 /= (self.robot.planner.sqp_solver.initial_cost2 + 0.000000001)
-        improve2 *= 100
-        improve3 = self.robot.planner.sqp_solver.initial_cost3 - self.robot.planner.sqp_solver.final_cost3
-        improve3 /= (self.robot.planner.sqp_solver.initial_cost3 + 0.000000001)
-        improve3 *= 100
-        print "samples", samples
-        print "no of links", len(self.world.robot_info["joint_infos"])
-        print "number of qp iterations: ", self.robot.planner.sqp_solver.num_qp_iterations
-        print "number of sqp iterations: ", self.robot.planner.sqp_solver.num_sqp_iterations
-        print "initial cost: ", self.robot.planner.sqp_solver.initial_cost
-        print "final cost: ", self.robot.planner.sqp_solver.final_cost
-        print "initial cost 1: ", self.robot.planner.sqp_solver.initial_cost1
-        print "final cost 1: ", self.robot.planner.sqp_solver.final_cost1
-        print "initial cost 2: ", self.robot.planner.sqp_solver.initial_cost2
-        print "final cost 2: ", self.robot.planner.sqp_solver.final_cost2
-        print "initial cost 3: ", self.robot.planner.sqp_solver.initial_cost2
-        print "final cost 3: ", self.robot.planner.sqp_solver.final_cost2
-
-        print "initial costs: ", self.robot.planner.sqp_solver.initial_costs
-        print "final costs: ", self.robot.planner.sqp_solver.final_costs
-        print "initial costs 1: ", self.robot.planner.sqp_solver.initial_costs1
-        print "final costs 1: ", self.robot.planner.sqp_solver.final_costs1
-        print "initial costs 2: ", self.robot.planner.sqp_solver.initial_costs2
-        print "final costs 2: ", self.robot.planner.sqp_solver.final_costs2
-        print "initial costs 3: ", self.robot.planner.sqp_solver.initial_costs2
-        print "final costs 3: ", self.robot.planner.sqp_solver.final_costs2
-
-        print "cost improvement: ", improve
-        print "cost improvement 1: ", improve1
-        print "cost improvement 2: ", improve2
-        print "cost improvement 3: ", improve3
-        print "collision check time: ", self.world.collision_check_time
-        print "solving_time: ", self.robot.planner.sqp_solver.solving_time
-        print "prob_model_time: ", self.robot.planner.prob_model_time
-        print "total elapsed_time time: ", self.elapsed_time
-
-        if self.save_problem and self.db_driver is not None and improve < 101:
+        if self.save_problem and self.db_driver is not None:
             planning_request = OrderedDict()
             planning_request["samples"] = samples
             planning_request["duration"] = duration
-            planning_request["group"] = group
             planning_request["start_state"] = current_robot_state
             planning_request["goal_state"] = goal_state
             planning_request["no of links"] = len(self.world.robot_info["joint_infos"])
             planning_request["collision_safe_distance"] = d_safe
             planning_request["collision_check_distance"] = d_check
+            planning_request["no_scene_items"] = len(self.world.scene_items)
+
             result = OrderedDict()
+
+            # result["type"] = "donbot_random_state_and_obstacles"
+            result["type"] = "old_vs_new_solver"
+            # result["sub_type"] = "prob_" + str(len(self.world.scene_items))
+            # result["sub_type"] = "donbot_full_new_solver"
+            # result["sub_type"] = "donbot_arm_new_solver"
+            result["sub_type"] = "donbot_arm_old_solver"
+
             result["num_qp_iterations"] = self.robot.planner.sqp_solver.num_qp_iterations
             result["num_sqp_iterations"] = self.robot.planner.sqp_solver.num_sqp_iterations
-            result["initial_cost"] = self.robot.planner.sqp_solver.initial_cost
-            result["final_cost"] = self.robot.planner.sqp_solver.final_cost
-            result["cost_improvement"] = improve
+            result["actual_reductions"] = self.robot.planner.sqp_solver.actual_reductions
+            result["predicted_reductions"] = self.robot.planner.sqp_solver.predicted_reductions
+            result["actual_costs"] = self.robot.planner.sqp_solver.actual_costs
+            result["model_costs"] = self.robot.planner.sqp_solver.model_costs
+            result["cost_improvement"] = self.robot.planner.sqp_solver.actual_reduction_improve
             result["collision_check_time"] = self.world.collision_check_time
             result["solving_time"] = self.robot.planner.sqp_solver.solving_time
             result["prob_model_time"] = self.robot.planner.prob_model_time
@@ -285,17 +328,31 @@ class TrajectoryOptimizationPlanner():
             result["planning_time"] = self.elapsed_time
             result["is_collision_free"] = is_collision_free
             result["planning_request"] = planning_request
-            result["trajectory"] = self.robot.planner.trajectory.final.tolist()
+            result["initial_trajectory"] = self.robot.planner.trajectory.initial.tolist()
+            result["final_trajectory"] = [x.tolist() for x in self.robot.planner.trajectory.trajectory_by_name.values()]
+            planning_request["group"] = self.robot.planner.trajectory.trajectory_by_name.keys()
             result["solver_config"] = self.robot.planner.sqp_solver.solver_config
 
-            # self.db_driver.insert(result)
-            # res = self.db_driver.find({"is_collision_free": True})
-            # res = self.db_driver.find({"planning_request.samples": 10})
+            self.db_driver.insert(result)
 
-            # print "ghfdkghdghdl: ", res
+    def log_infos(self):
+        self.logger.debug("number of qp iterations: " + str(self.robot.planner.sqp_solver.num_qp_iterations))
+        self.logger.debug("number of sqp iterations: " + str(self.robot.planner.sqp_solver.num_sqp_iterations))
+        self.logger.debug("actual_reductions: " + str(self.robot.planner.sqp_solver.actual_reductions))
+        self.logger.debug("predicted_reductions: " + str(self.robot.planner.sqp_solver.predicted_reductions))
+        self.logger.debug("actual_costs: " + str(self.robot.planner.sqp_solver.actual_costs))
+        self.logger.debug("model_costs: "+ str(self.robot.planner.sqp_solver.model_costs))
+        self.logger.debug("number of qp iterations: " + str(self.robot.planner.sqp_solver.num_qp_iterations))
+        self.logger.debug("number of sqp iterations: " + str(self.robot.planner.sqp_solver.num_sqp_iterations))
+        self.logger.debug("actual reduction improvement: " + str(self.robot.planner.sqp_solver.actual_reduction_improve))
+        self.logger.debug("predicted reduction improvement: " + str(self.robot.planner.sqp_solver.predicted_reduction_improve))
+        self.logger.debug("actual cost improvement: " + str(self.robot.planner.sqp_solver.actual_cost_improve))
+        self.logger.debug("model cost improvement: " + str(self.robot.planner.sqp_solver.model_cost_improve))
+        self.logger.debug("collision check time: " + str(self.world.collision_check_time))
+        self.logger.debug("solving_time: " + str(self.robot.planner.sqp_solver.solving_time))
+        self.logger.debug("prob_model_time: " + str(self.robot.planner.prob_model_time))
+        self.logger.debug("total elapsed_time time: " + str(self.elapsed_time))
 
-            # for i in res:
-            #     print i
 
 if __name__ == '__main__':
 

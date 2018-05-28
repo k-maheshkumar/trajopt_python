@@ -137,12 +137,9 @@ class Test_sqp_solver(unittest.TestCase):
         self.solver.init(P=self.P, q=self.q, G=self.G, lbG=self.lbG, ubG=self.ubG, A=self.A, b=self.b,
                          initial_guess=self.initial_guess, solver_config=None)
         x_k = [1.0, 1.0, 1.0]
-        status = self.solver.is_constraints_satisfied(x_k)
+        p_k = np.ones(len(x_k)) * 1e-2
+        status = self.solver.is_constraints_satisfied(x_k, p_k)
         self.assertEquals(status, False)
-
-        x_k = [-0.49, -0.79, -2.040]
-        status = self.solver.is_constraints_satisfied(x_k)
-        self.assertEquals(status, True)
 
     def test_is_x_converged(self):
         self.solver = solver.SQPsolver()
@@ -182,7 +179,7 @@ class Test_sqp_solver(unittest.TestCase):
         self.assertEquals(status, True)
 
         p_k = np.zeros(x_k.shape)
-        p_k = + np.ones(x_k.shape) * 1e-2
+        p_k = np.ones(x_k.shape) * 1e-2
         status = self.solver.is_x_converged(x_k, p_k)
         self.assertEquals(status, False)
 
@@ -194,25 +191,20 @@ class Test_sqp_solver(unittest.TestCase):
                          A=self.problem_from_cvx["A"], b=self.problem_from_cvx["b"],)
         _, x = self.solver.solve()
 
-        status = self.solver.is_constraints_satisfied(x)
+        p_k = np.ones(x.shape) * 1e-2
+        status = self.solver.is_constraints_satisfied(x, p_k)
         self.assertEquals(status, True)
 
         x += np.ones(x.shape) * 1e-1
-        status = self.solver.is_constraints_satisfied(x)
-        print
+        p_k = np.ones(x.shape) * 1e-2
+        status = self.solver.is_constraints_satisfied(x, p_k)
         self.assertEquals(status, False)
-
-    # def test_solver_from_problem_file(self):
-    #     with open("problem_1_joint.yaml", 'r') as config:
-    #         self.problem = yaml.load(config)
 
     @classmethod
     def interpolate(self, start, end, samples):
         data = []
         stepSize = (end - start) / (samples - 1)
         intermediate = start
-        # if start < 0 and end < 0:
-        #     stepSize *= -1
         for i in range(samples):
             data.append(intermediate)
             intermediate += stepSize

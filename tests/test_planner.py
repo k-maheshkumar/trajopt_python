@@ -1,13 +1,11 @@
 import sys
-# sys.path.append('../')
 sys.path.insert(0, '../')
 import unittest
-from easydict import EasyDict as edict
+from scripts.utils.dict import DefaultOrderedDict
 import yaml
 import numpy as np
 from scripts.Robot import Planner as planner
 from scripts.cvxpy_optimizer.solver_cvxpy import ConvexOptimizer
-from collections import defaultdict
 import cvxpy
 import random
 import itertools
@@ -24,7 +22,7 @@ class Test_sqp_solver(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with open("problem_1_joint.yaml", 'r') as config:
-            cls.problem = edict(yaml.load(config))
+            cls.problem = dict(yaml.load(config))
         cls.planner = planner.TrajectoryPlanner()
         cls.cvx_optimizer = ConvexOptimizer()
 
@@ -36,15 +34,14 @@ class Test_sqp_solver(unittest.TestCase):
         cls.joints = []
 
         for i in range(len(joints_random)):
-
-            joints = defaultdict(lambda: defaultdict(dict))
+            joints = DefaultOrderedDict(lambda: DefaultOrderedDict(lambda: DefaultOrderedDict()))
             for j in range(joints_random[i]):
                 joints[str(j)]["states"]["start"] = cls.random_float(-2, 2)
                 joints[str(j)]["states"]["end"] = cls.random_float(-2, 2)
                 joints[str(j)]["limit"]["lower"] = cls.random_float(-5, -2)
                 joints[str(j)]["limit"]["upper"] = cls.random_float(2, 5)
                 joints[str(j)]["limit"]["velocity"] = cls.random_float(10, 12)
-            cls.joints.append(edict(joints))
+            cls.joints.append(joints)
 
     def setUp(self):
         pass
@@ -80,33 +77,31 @@ class Test_sqp_solver(unittest.TestCase):
         return x.value.T
 
     def test_random_joints_planning(self):
-        # print joints["10"].states
         for sample, duration, joints in itertools.izip(self.samples, self.durations, self.joints):
+
             self.cvx_optimizer.init(joints, sample, duration)
             actual_result = self.cvx_optimizer.solve()
-            self.planner.init(joints=joints, samples=sample, duration=duration,
-                           solver=None, solver_config=None, solver_class=1,
+
+            self.planner.init(joint_group=joints.keys(), joints=joints, samples=sample, duration=duration,
                            decimals_to_round=7, verbose=False)
-            # self.planner.display_problem()
             self.planner.calculate_trajectory()
-            trajectory =  self.planner.get_trajectory().final.T
+            trajectory = self.planner.get_trajectory().final.T
 
 
             self.assertEquals(np.isclose(actual_result, trajectory, atol=0.01).all(), True)
 
     def test_planning_from_file(self):
-        # print joints["10"].states
-        self.cvx_optimizer.init(self.problem.joints, self.problem.samples, self.problem.duration)
+        print self.problem
+        self.cvx_optimizer.init(self.problem["joints"], self.problem["samples"], self.problem["duration"])
         actual_result = self.cvx_optimizer.solve()
-        self.planner.init(joints=self.problem.joints, samples=self.problem.samples, duration=self.problem.duration,
-                          solver=None, solver_config=None, solver_class=1,
+        self.planner.init(joint_group=self.problem["joints"].keys(), joints=self.problem["joints"],
+                          samples=self.problem["samples"], duration=self.problem["duration"],
                           decimals_to_round=7, verbose=False)
-        # self.planner.display_problem()
         self.planner.calculate_trajectory()
         trajectory = self.planner.get_trajectory().final.T
-        # print trajectory
 
         self.assertEquals(np.isclose(actual_result, trajectory, atol=0.01).all(), True)
+
 
 if __name__ == '__main__':
     unittest.main()

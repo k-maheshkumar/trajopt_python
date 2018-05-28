@@ -5,6 +5,8 @@ from scripts.Robot.Planner import TrajectoryPlanner
 import itertools
 from srdfdom.srdf import SRDF
 from scripts.utils.dict import DefaultOrderedDict
+from collections import OrderedDict
+
 
 class Robot:
     def __init__(self, logger_name=__name__, verbose=False, log_file=False):
@@ -14,18 +16,30 @@ class Robot:
         self.logger = logging.getLogger(logger_name + __name__)
         self.ignored_collisions = DefaultOrderedDict(bool)
         self.srdf = None
+        self.group_states_map = OrderedDict()
+        self.joint_states_map = OrderedDict()
+        self.group_map = OrderedDict()
         utils.setup_logger(self.logger, logger_name, verbose, log_file)
 
+    # method to load robot model from urdf file
     def load_robot_model(self, urdf_file=None):
         if urdf_file is not None:
             self.model = URDF.from_xml_file(urdf_file)
         else:
             self.model = URDF.from_parameter_server()
 
+    # method to load robot' configurations from srdf file
     def load_srdf(self, srdf_file):
 
         stream = open(srdf_file, 'r')
         self.srdf = SRDF.from_xml_string(stream.read())
+        for gs in self.srdf.group_states:
+            joint_map = OrderedDict()
+            for joint in  gs.joints:
+                joint_map[joint.name] = joint.value[0]
+            self.group_states_map[gs.name, gs.group] = joint_map
+            self.joint_states_map[gs.name] = joint_map
+            self.group_map[gs.group] = joint_map.keys()
 
     def get_ignored_collsion(self):
         for collision in self.srdf.disable_collisionss:
@@ -34,60 +48,64 @@ class Robot:
 
         return self.ignored_collisions
 
+    # given a planning group and name of the configuration to be moved, corresponding joint states will be returned
+    def get_planning_group_joint_values(self, name, group):
+        joint_state = OrderedDict()
+        if (name, group) in self.group_states_map:
+            joint_state = self.group_states_map[name, group]
+        return joint_state.keys(), joint_state.values()
+
+    # planning group name as string to joint names list
+    def get_planning_group_from_srdf(self, group):
+        if group in self.group_map:
+            group = self.group_map[group]
+        return group
+
+    # planning group name as string to joint states list
+    def get_group_state_from_srdf(self, group_name):
+        joint_state = OrderedDict()
+        if group_name in self.joint_states_map:
+            joint_state = self.joint_states_map[group_name]
+        return joint_state.keys(), joint_state.values()
+
+    # returns final planned trajectory
     def get_trajectory(self):
         return self.planner.trajectory
 
+    # returns initial guess for trajectory calculation
     def get_initial_trajectory(self):
         return self.planner.trajectory.initial
 
+    # method to model the problem and to initialize the SQP solver
     def init_plan_trajectory(self, **kwargs):
-        if "group" in kwargs:
-            joint_group = kwargs["group"]
-        if "samples" in kwargs:
-            samples = kwargs["samples"]
-        if "duration" in kwargs:
-            duration = kwargs["duration"]
-        if "solver" in kwargs:
-            solver = kwargs["solver"]
+        joint_group = utils.get_var_from_kwargs("group", **kwargs)
+        samples = utils.get_var_from_kwargs("samples", **kwargs)
+        duration = utils.get_var_from_kwargs("duration", **kwargs)
+        solver = utils.get_var_from_kwargs("solver", optional=True, default="SCS", **kwargs)
+        solver_config = utils.get_var_from_kwargs("solver_config", optional=True, **kwargs)
+
+        # some default config for the SQP solver
+        if solver_config is not None:
+            if "decimals_to_round" in solver_config:
+                decimals_to_round = int(solver_config["decimals_to_round"])
         else:
-            solver = "SCS"
-        if "solver_config" in kwargs:
-            solver_config = kwargs["solver_config"]
-            if solver_config is not None:
-                if "decimals_to_round" in solver_config:
-                    decimals_to_round = int(solver_config["decimals_to_round"])
-            else:
-                decimals_to_round = 5
-        else:
-            solver_config = None
             decimals_to_round = 5
 
-        if "current_state" in kwargs:
-            current_state = kwargs["current_state"]
+        current_state = utils.get_var_from_kwargs("current_state", **kwargs)
+        goal_state = utils.get_var_from_kwargs("goal_state", **kwargs)
 
-        if "goal_state" in kwargs:
-            goal_state = kwargs["goal_state"]
+        collision_safe_distance = utils.get_var_from_kwargs("collision_safe_distance", optional=True,
+                                                            default=0.05, **kwargs)
 
-        if "collision_safe_distance" in kwargs:
-            collision_safe_distance = kwargs["collision_safe_distance"]
-        else:
-            collision_safe_distance = 0.05
+        collision_check_distance = utils.get_var_from_kwargs("collision_check_distance", optional=True,
+                                                            default=0.1, **kwargs)
+        ignore_goal_states = utils.get_var_from_kwargs("ignore_goal_states", optional=True, **kwargs)
 
-        if "collision_check_distance" in kwargs:
-            collision_check_distance = kwargs["collision_check_distance"]
-        else:
-            collision_check_distance = 0.1
+        solver_class = utils.get_var_from_kwargs("solver_class", optional=True, default="new", **kwargs)
 
-        if "verbose" in kwargs:
-            verbose = kwargs["verbose"]
-        else:
-            verbose = False
+        verbose = utils.get_var_from_kwargs("verbose", optional=True, default=False, **kwargs)
 
-        if verbose:
-            main_logger_name = "Trajectory_Planner"
-            self.logger = logging.getLogger(main_logger_name)
-            self.setup_logger(main_logger_name, verbose)
-
+        # combing all necessary infos to model and plan a trajectory
         if "current_state" in kwargs and "goal_state" in kwargs:
             if type(current_state) is dict and type(current_state) is dict:
                 states = {}
@@ -96,26 +114,35 @@ class Robot:
                     if joint_in_group in current_state and joint_in_group in goal_state and \
                                     joint_in_group in self.model.joint_map:
                         if self.model.joint_map[joint_in_group].type != "fixed":
+                            ignore_state = False
+                            if joint_in_group in ignore_goal_states:
+                                ignore_state = True
                             states[joint_in_group] = {"start": current_state[joint_in_group],
                                                       "end": goal_state[joint_in_group]}
                             joints[joint_in_group] = {
                                 "states": states[joint_in_group],
                                 "limit": self.model.joint_map[joint_in_group].limit,
+                                "ignore_state": ignore_state
                             }
             elif type(current_state) is list and type(current_state) is list:
                 joints = []
+
                 assert len(current_state) == len(goal_state) == len(joint_group)
-                for joint, current_state, next_state in itertools.izip(joint_group, current_state, goal_state):
+                for joint, c_state, n_state in itertools.izip(joint_group, current_state, goal_state):
                     if joint in self.model.joint_map:
-                        joints.append([current_state, next_state, self.model.joint_map[joint].limit,
-                                       self.model.joint_map[joint].type])
+                        ignore_state = False
+                        if ignore_goal_states is not None and len(ignore_goal_states):
+                            if joint in ignore_goal_states:
+                                ignore_state = True
+                        joints.append([c_state, n_state, self.model.joint_map[joint].limit, ignore_state])
         if len(joints):
+            # initializing the trajectory planner to model the problem
             self.planner.init(joints=joints, samples=samples, duration=duration,
                               joint_group=joint_group,
                               collision_safe_distance=collision_safe_distance,
                               collision_check_distance=collision_check_distance,
                               solver=solver, solver_config=solver_config,
-                              solver_class=1, decimals_to_round=decimals_to_round, verbose=verbose)
+                              solver_class=solver_class, decimals_to_round=decimals_to_round, verbose=verbose)
 
     def calulate_trajecotory(self, callback_function=None):
         status, planning_time, can_execute_trajectory = self.planner.calculate_trajectory(callback_function=callback_function)

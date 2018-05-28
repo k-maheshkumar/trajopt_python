@@ -1,10 +1,7 @@
-from collections import defaultdict
 import numpy as np
-import matplotlib.pyplot as plt
-from pylab import *
 from scripts.utils.dict import DefaultOrderedDict
 from collections import OrderedDict
-from scripts.plotter.results import Plotter
+from scripts.plotter.results import Plotter as plt
 
 class Trajectory:
     def __init__(self):
@@ -16,12 +13,6 @@ class Trajectory:
         self.__trajectories = []
         self.__final = None
         self.__trajectory_group = None
-        # self.__plotter = Plotter()
-
-    def get_single_joint_trajectory(self, joint_index):
-        if joint_index == self.__trajectory.shape[0]:
-            joint_index = joint_index - 1
-        return self.__trajectory[joint_index]
 
     @property
     def trajectory(self):
@@ -53,66 +44,30 @@ class Trajectory:
     def trajectory_group(self):
         return self.__trajectory_group
 
+    # initializing initial trajectory guess for the SQP solver, number of samples and planning group
     def init(self, trajectory, no_of_samples, duration, group):
         self.__no_of_samples = no_of_samples
         self.__duration = duration
         self.__initial = np.array(trajectory).T
         self.__trajectory_group = group
 
+    # updating final trajectory from the SQP solver
     def update(self, trajectory, group):
         self.__trajectory = trajectory
         self.__final = np.array(trajectory)
         self.extract_trajectory_of_individual_joints(group)
-        # self.add_trajectory(trajectory)
+        self.add_trajectory(trajectory)
 
+    # converting and combining list of trajectory to trajectory by joint name
     def extract_trajectory_of_individual_joints(self, group):
         self.__trajectory_by_joint_name = OrderedDict(zip(group, self.final.T))
 
+    # adding trajectory from each SQP iteration
     def add_trajectory(self, trajectory):
-
-        # self.__trajectories.append(dict(zip(self.trajectory_group, np.array(trajectory).T)))
         self.__trajectories.append(OrderedDict(zip(self.trajectory_group, np.array(trajectory).T)))
 
-    # def get_trajectory_by_name(self, trajectory):
-    #     self.add_trajectory(trajectory)
-
-
+    # to plot final result
     def plot_trajectories(self):
-        # print self.trajectory_by_name
-        # print self.final
-        # self.__plotter.multi_plot(self.trajectory_by_name.keys(), self.initial.T, self.final.T,
-        #                           "Time steps (t)", "Joint angle (q)")
-        pass
-        # # print self.trajectories[0]
-        # fig = plt.figure()
-        # subplots_adjust(hspace=0.000)
-        #
-        # # for index, trajectory in enumerate(self.trajectories):
-        # #     if (index == 0 or index == len(self.trajectories) - 1):
-        # #         count = 0
-        # #         for joint_name, traj in trajectory.items():
-        # #             # plt.plot(traj, label=joint_name, marker='x')
-        # #             count += 1
-        # #
-        # #             # plt.subplot(7, 1, count)
-        # #             if index == 0:
-        # #                 label = "initial"
-        # #             elif index == 6:
-        # #                 label = "final"
-        # #             # plt.plot(traj, label=label, marker='x')
-        # #
-        # #             ax = plt.subplot(self.no_of_samples, 1, count)
-        # #             ax.plot(traj, label=joint_name, marker='x')
-        # #
-        # #             # plt.title('A tale of 2 subplots')
-        # #             # plt.ylabel('Damped oscillation')
-        # #
-        # # # plt.scatter(x, y, c='b', marker='x', label='1')
-        # # # plt.scatter(x, y, c='r', marker='s', label='-1')
-        # # plt.legend(loc='upper left')
-        # # plt.show(block=False)
-        # #
-
-
-
-
+        plt.multi_plot(self.trajectory_by_name.keys(), self.initial, self.trajectory_by_name.values(),
+                                  # "Time steps (t)", "Joint angle (q)", block=True)
+                                  "Samples", "Joint angle ($\\Theta$)", block=True)

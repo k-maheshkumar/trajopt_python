@@ -1,5 +1,6 @@
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 from scripts.simulation.SimulationWorld import SimulationWorld
-import os
 from scripts.GUI import TrajPlanner
 from PyQt4 import QtGui
 import sys

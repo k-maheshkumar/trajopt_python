@@ -242,7 +242,7 @@ class TrajectoryOptimizationPlanner:
     # robots can be reset to a random state
     def reset_robot_to_random_state(self, group_name):
         group =[]
-        if type(group) is str:
+        if type(group_name) is str:
             group = self.robot_config["joints_groups"][group_name]
         if not len(group):
             group = self.robot.get_planning_group_from_srdf(group)
@@ -352,10 +352,3 @@ class TrajectoryOptimizationPlanner:
         self.logger.debug("solving_time: " + str(self.robot.planner.sqp_solver.solving_time))
         self.logger.debug("prob_model_time: " + str(self.robot.planner.prob_model_time))
         self.logger.debug("total elapsed_time time: " + str(self.elapsed_time))
-
-
-if __name__ == '__main__':
-
-    temp = {}
-    planner = TrajectoryOptimizationPlanner(**temp)
-    planner.save_problem_in_db("", "", "")

@@ -88,10 +88,10 @@ class SimulationWorld(ISimulationWorldBase):
         if position is not None:
             if radius is not None:
                 col_id = sim.createCollisionShape(shape, radius=radius, height=height)
-                vis_id = sim.createVisualShape(shape, radius=radius, height=height)
+                vis_id = sim.createCollisionShape(shape, radius=radius, height=height)
             if size is not None:
                 col_id = sim.createCollisionShape(shape, halfExtents=size)
-                vis_id = sim.createVisualShape(shape, halfExtents=size)
+                vis_id = sim.createCollisionShape(shape, halfExtents=size)
 
         shape_id = sim.createMultiBody(mass, col_id, vis_id, basePosition=position, baseOrientation=orientation)
         self.scene_items[shape_id] = name
@@ -143,6 +143,11 @@ class SimulationWorld(ISimulationWorldBase):
 
     # method to load urdf file. Urdf can be a robot model or even a collision constraint
     def load_urdf(self, name, urdf_file, position, orientation=None, use_fixed_base=False):
+
+        if orientation is None:
+            orientation = [0, 0, 0, 1]
+        if len(orientation) == 3:
+            orientation = sim.getQuaternionFromEuler(orientation)
 
         if orientation is None:
             urdf_id = sim.loadURDF(urdf_file, basePosition=position, useFixedBase=use_fixed_base)

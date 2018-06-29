@@ -17,7 +17,7 @@ class PlannerExample:
 
         config = {
             "use_gui": True,
-            "verbose": "DEBUG",
+            # "verbose": "DEBUG",
             "log_file": True,
             # "save_problem": True,
             # "plot_trajectory": True,
@@ -44,15 +44,15 @@ class PlannerExample:
         # offset = uniform(-0.7, -0.58)
         zs = [0.2, 0.6, 1]
 
-        obj_at_shelf = randint(1, 4)
-        for x in range(obj_at_shelf):
-            y = uniform(-0.2, 0.2)
-            # z = uniform(0.3, 1.5)
-            z = randint(0, 2)
-            gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
-                                                              position=[offset + 0.1 * x, y, zs[z]])
-            gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
-                                                                  position=[offset + 0.1 * x, y - 0.38, zs[z]])
+        # obj_at_shelf = randint(1, 4)
+        # for x in range(obj_at_shelf):
+        #     y = uniform(-0.2, 0.2)
+        #     # z = uniform(0.3, 1.5)
+        #     z = randint(0, 2)
+        #     gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+        #                                                       position=[offset + 0.1 * x, y, zs[z]])
+        #     gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+        #                                                           position=[offset + 0.1 * x, y - 0.38, zs[z]])
         # offset = 0.38
         # obj_at_bot = randint(1, 4)
         #
@@ -85,7 +85,35 @@ class PlannerExample:
         #     lotion_id[x] = self.planner.add_constraint_from_urdf("lotion" + str(x), urdf_file=lotion_urdf,
         #                                                          position=[offset + 0.1 * x, y, z])
 
+        y, z = 0.3, 1.0
+        offset = -0.58
+        # offset = uniform(-0.7, -0.58)
+        zs = [0.2, 0.6, 1]
+
+        obj_at_shelf = randint(1, 4)
+        obj_at_shelf = 3
+        y = 0.3
+        z = 2
+        for x in range(obj_at_shelf):
+            # y = uniform(-0.2, 0.2)
+            # z = uniform(0.3, 1.5)
+            # z = randint(0, 2)
+            gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+                                                              position=[offset + 0.1 * x, y-0.2, zs[z]])
+            gel_id[x + 4] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+                                                                  position=[offset + 0.1 * x, y - 0.38, zs[z]])
+
+        y, z = -0.3, 0.62
+        offset = -0.59
+        for x in range(2):
+            gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=gel_urdf,
+                                                              position=[offset + 0.1 * x, y, z])
+        for x in range(2):
+            gel_id[x] = self.planner.add_constraint_from_urdf("gel" + str(x), urdf_file=salt_urdf,
+                                                              position=[offset + 0.1 * x, 0.3, z])
+
         self.planner.world.toggle_rendering(1)
+
 
     def run(self):
         start = randint(1, 5)
@@ -93,13 +121,20 @@ class PlannerExample:
 
         start_state = "aloc" + str(start)
         goal_state = "aloc" + str(end)
-        group = "ur5_arm1"
+        # group = "ur5_arm1"
 
-        # start_state = "floc" + str(start)
-        # goal_state = "floc" + str(end)
-        # group = "full_body"
+        start_state = "floc" + str(start)
+        goal_state = "floc" + str(end)
+        group = "full_body"
+
+        start_state, goal_state = "floc4", "floc9"
+
+        print start_state, goal_state
 
         self.planner.reset_robot_to(start_state, group)
+
+        import time
+        time.sleep(20)
 
         duration = 10
         samples = 20

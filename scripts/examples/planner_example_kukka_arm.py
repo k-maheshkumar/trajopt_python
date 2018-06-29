@@ -6,6 +6,8 @@ from PyQt4 import QtGui
 import sys
 from scripts.TrajectoryOptimizationPlanner.TrajectoryOptimizationPlanner import TrajectoryOptimizationPlanner
 from collections import OrderedDict
+from random import randrange, uniform, randint
+
 
 class PlannerExample:
     def __init__(self):
@@ -25,17 +27,26 @@ class PlannerExample:
 
         self.planner.world.set_gravity(0, 0, -10)
         self.planner.world.toggle_rendering(0)
+        box = randint(0, 4)
+        loc = randint(0, 4)
+
+        box, loc = 2, 1
+
+        box_loc = [[0.164830659421, -0.464962595183, 0.9], [0.255743925678, -0.373197182129, 0.9],
+                   [0.2, -0.4, 0.9], [0.4, -0.2, 0.9], [0.5, -0.3, 0.9], [0.48, -0.43, 0.9]]
+        box_size = [[0.05, 0.05, 0.35], [0.03, 0.03, 0.25], [0.03, 0.1, 0.25], [0.03, 0.2, 0.15],
+                    [0.06, 0.04, 0.35]]
         # self.robot_id = self.planner.load_robot(urdf_file, position=[0, 0.25, 0.6])
+
+        self.planner.world.toggle_rendering(0)
         plane_id = self.planner.load_from_urdf("plane", urdf_file=location_prefix + "plane.urdf", position=[0, 0, 0.0])
 
         table_id = self.planner.add_constraint_from_urdf("table", urdf_file=location_prefix + "table/table.urdf",
                                                          position=[0, 0, 0.0])
 
-        self.box_id = self.planner.add_constraint("box", shape=self.planner.world.BOX, size=[0.1, 0.2, 0.45],
-                                                  position=[0.28, -0.43, 0.9], mass=100)
-
-        # self.planner.robot.load_srdf(srdf_file)
-        # self.planner.world.ignored_collisions = self.planner.robot.get_ignored_collsion()
+        self.box_id = self.planner.add_constraint("box1", shape=self.planner.world.BOX, size=box_size[box],
+                                                  position=box_loc[loc],
+                                                  mass=100)
 
         self.planner.world.toggle_rendering(1)
         self.planner.world.step_simulation_for(0.01)

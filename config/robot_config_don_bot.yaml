@@ -11,7 +11,7 @@ robot:
     joint_configurations:
 
       below_shelf:
-       odom_x_joint: 0.1
+       odom_x_joint: 0.0
        odom_y_joint: 0.0
        odom_z_joint: 0.01
        ur5_shoulder_pan_joint: 1.9823357809267463
@@ -24,7 +24,7 @@ robot:
        gripper_joint: 0
 
       above_shelf:
-        odom_x_joint: 0.1
+        odom_x_joint: 0.0
         odom_y_joint: 0.0
         odom_z_joint: 0.01
         ur5_shoulder_pan_joint: 1.9823357809267463
@@ -36,7 +36,7 @@ robot:
         gripper_base_gripper_left_joint: 0
         gripper_joint: 0
 
-      below_shelf1:
+      below_shelf_arm:
        ur5_shoulder_pan_joint: 1.9823357809267463
        ur5_shoulder_lift_joint: -2.4299975516996142
        ur5_elbow_joint: -1.9762726255540713
@@ -46,7 +46,7 @@ robot:
        gripper_base_gripper_left_joint: 0
        gripper_joint: 0
 
-      above_shelf1:
+      above_shelf_arm:
         ur5_shoulder_pan_joint: 1.9823357809267463
         ur5_shoulder_lift_joint: -1.8299975516996142
         ur5_elbow_joint: -1.9762726255540713

@@ -1,4 +1,4 @@
-# trajopt_reimpl
+# trajopt_python
 Re-implementation of [trajopt](http://rll.berkeley.edu/trajopt/doc/sphinx_build/html/#) in python.
 
 
